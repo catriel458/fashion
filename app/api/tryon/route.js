@@ -1,3 +1,16 @@
+export async function GET(request) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+  );
+  const data = await res.json();
+  const imageModels = data.models?.filter(m => 
+    m.name.toLowerCase().includes('image') || 
+    m.supportedGenerationMethods?.includes('generateContent') && m.name.includes('flash')
+  );
+  return Response.json(imageModels?.map(m => m.name) || data);
+}
+
 export async function POST(request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
