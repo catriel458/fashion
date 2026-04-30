@@ -3,7 +3,7 @@ export const maxDuration = 60;
 export async function POST(request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: 'OPENROUTER_API_KEY no configurada en .env.local' }, { status: 500 });
+    return Response.json({ error: 'OPENROUTER_API_KEY no configurada' }, { status: 500 });
   }
 
   let formData;
@@ -87,30 +87,41 @@ Return ONLY the image.`;
     return Response.json({ error: data?.error?.message || `Error HTTP ${res.status}` }, { status: res.status });
   }
 
-  const parts = data?.choices?.[0]?.message?.content;
+  const message = data?.choices?.[0]?.message;
+  const parts = message?.content;
 
-  // LOG para ver la estructura exacta en Vercel Logs
-  console.log('PARTS TYPE:', typeof parts);
-  console.log('FULL RESPONSE:', JSON.stringify(data?.choices?.[0]?.message, null, 2));
-
+  // Caso 1: content es array con image_url
   if (Array.isArray(parts)) {
     const imgPart = parts.find(p => p.type === 'image_url');
     if (imgPart?.image_url?.url) {
       return Response.json({ image: imgPart.image_url.url });
     }
+    const txtPart = parts.find(p => p.type === 'text');
+    if (txtPart?.text) {
+      return Response.json({ error: `Gemini respondió texto: ${txtPart.text.substring(0, 200)}` }, { status: 422 });
+    }
   }
 
-  if (typeof parts === 'string' && parts.startsWith('data:image')) {
-    return Response.json({ image: parts });
+  // Caso 2: content es string con data URL
+  if (typeof parts === 'string') {
+    if (parts.startsWith('data:image')) {
+      return Response.json({ image: parts });
+    }
+    // Caso 3: string base64 puro sin prefijo
+    if (parts.length > 500) {
+      return Response.json({ image: `data:image/png;base64,${parts}` });
+    }
+    return Response.json({ error: `Sin imagen. Respuesta: ${parts.substring(0, 300)}` }, { status: 422 });
   }
 
-  // A veces OpenRouter devuelve base64 puro sin el prefijo data:
-  if (typeof parts === 'string' && parts.length > 1000) {
-    return Response.json({ image: `data:image/png;base64,${parts}` });
+  // Caso 4: imagen en message.images (formato alternativo de OpenRouter)
+  const imageData = message?.images?.[0];
+  if (imageData) {
+    const url = imageData?.image_url?.url || imageData?.url;
+    if (url) return Response.json({ image: url });
   }
 
-  const textPart = Array.isArray(parts) ? parts.find(p => p.type === 'text')?.text : parts;
   return Response.json({
-    error: `No se generó imagen. Respuesta: ${textPart || JSON.stringify(data).substring(0, 300)}`
+    error: `Formato desconocido. content type: ${typeof parts}. Keys del mensaje: ${Object.keys(message || {}).join(', ')}`
   }, { status: 422 });
 }
