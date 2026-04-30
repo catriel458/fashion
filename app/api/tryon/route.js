@@ -72,9 +72,6 @@ Return ONLY the image.`;
     return Response.json({ error: 'Error de red: ' + e.message }, { status: 502 });
   }
 
-  console.log('OpenRouter status:', res.status);
-  console.log('OpenRouter response:', rawText?.substring(0, 400));
-
   if (!rawText || rawText.trim() === '') {
     return Response.json({ error: 'Respuesta vacía de OpenRouter.' }, { status: 500 });
   }
@@ -90,8 +87,11 @@ Return ONLY the image.`;
     return Response.json({ error: data?.error?.message || `Error HTTP ${res.status}` }, { status: res.status });
   }
 
-  // OpenRouter devuelve la imagen como data URL en el content
   const parts = data?.choices?.[0]?.message?.content;
+
+  // LOG para ver la estructura exacta en Vercel Logs
+  console.log('PARTS TYPE:', typeof parts);
+  console.log('FULL RESPONSE:', JSON.stringify(data?.choices?.[0]?.message, null, 2));
 
   if (Array.isArray(parts)) {
     const imgPart = parts.find(p => p.type === 'image_url');
@@ -100,13 +100,17 @@ Return ONLY the image.`;
     }
   }
 
-  // Fallback: a veces viene como string base64 directo
   if (typeof parts === 'string' && parts.startsWith('data:image')) {
     return Response.json({ image: parts });
   }
 
+  // A veces OpenRouter devuelve base64 puro sin el prefijo data:
+  if (typeof parts === 'string' && parts.length > 1000) {
+    return Response.json({ image: `data:image/png;base64,${parts}` });
+  }
+
   const textPart = Array.isArray(parts) ? parts.find(p => p.type === 'text')?.text : parts;
-  return Response.json({ 
-    error: `No se generó imagen. Respuesta: ${textPart || JSON.stringify(data).substring(0, 200)}` 
+  return Response.json({
+    error: `No se generó imagen. Respuesta: ${textPart || JSON.stringify(data).substring(0, 300)}`
   }, { status: 422 });
 }
