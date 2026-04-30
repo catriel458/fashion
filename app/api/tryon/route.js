@@ -1,23 +1,18 @@
-// export async function GET(request) {
-//   const apiKey = process.env.GEMINI_API_KEY;
-//   const res = await fetch(
-//     `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
-//   );
-//   const data = await res.json();
-//   const imageModels = data.models?.filter(m => 
-//     m.name.toLowerCase().includes('image') || 
-//     m.supportedGenerationMethods?.includes('generateContent') && m.name.includes('flash')
-//   );
-//   return Response.json(imageModels?.map(m => m.name) || data);
-// }
+export const maxDuration = 60;
 
 export async function POST(request) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: 'GEMINI_API_KEY no configurada en .env.local' }, { status: 500 });
+    return Response.json({ error: 'OPENROUTER_API_KEY no configurada en .env.local' }, { status: 500 });
   }
 
-  const formData = await request.formData();
+  let formData;
+  try {
+    formData = await request.formData();
+  } catch (e) {
+    return Response.json({ error: 'Error leyendo el form: ' + e.message }, { status: 400 });
+  }
+
   const personFile = formData.get('person');
   const garmentFile = formData.get('garment');
 
@@ -36,44 +31,82 @@ export async function POST(request) {
   const prompt = `You are a virtual try-on AI for a fashion e-commerce platform.
 The first image shows a person (the customer).
 The second image shows a clothing item (the garment to try on).
-
-Generate a single realistic photographic image of that exact person wearing that exact garment. Requirements:
-- Preserve the person's face, body shape, skin tone, hair, and original pose as faithfully as possible
-- Reproduce the garment's color, pattern, texture, print, and design exactly as shown in the product photo
-- Apply natural lighting, realistic fabric draping and wrinkles
-- The result should look like a real photograph, not a digital composite
-Return ONLY the image with no text, watermarks, or borders.`;
+Generate a single realistic photographic image of that exact person wearing that exact garment.
+- Preserve the person's face, body shape, skin tone, hair, and original pose
+- Reproduce the garment's color, pattern, texture exactly
+- Apply natural lighting and realistic fabric draping
+Return ONLY the image.`;
 
   const body = {
-    contents: [{
-      parts: [
-        { text: prompt },
-        { inline_data: { mime_type: personFile.type, data: personB64 } },
-        { inline_data: { mime_type: garmentFile.type, data: garmentB64 } }
+    model: 'google/gemini-2.5-flash-image',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:${personFile.type};base64,${personB64}` } },
+        { type: 'image_url', image_url: { url: `data:${garmentFile.type};base64,${garmentB64}` } }
       ]
     }],
-    generationConfig: { responseModalities: ['IMAGE', 'TEXT'] }
+    modalities: ['image', 'text']
   };
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
+  let res, rawText;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
+    res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    rawText = await res.text();
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      return Response.json({ error: 'Timeout: la generación tardó más de 55 segundos.' }, { status: 504 });
+    }
+    return Response.json({ error: 'Error de red: ' + e.message }, { status: 502 });
+  }
 
-  const data = await res.json();
+  console.log('OpenRouter status:', res.status);
+  console.log('OpenRouter response:', rawText?.substring(0, 400));
+
+  if (!rawText || rawText.trim() === '') {
+    return Response.json({ error: 'Respuesta vacía de OpenRouter.' }, { status: 500 });
+  }
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (e) {
+    return Response.json({ error: 'Respuesta inválida: ' + rawText.substring(0, 200) }, { status: 500 });
+  }
 
   if (!res.ok) {
-    return Response.json({ error: data?.error?.message || 'Error de Gemini API' }, { status: res.status });
+    return Response.json({ error: data?.error?.message || `Error HTTP ${res.status}` }, { status: res.status });
   }
 
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-  const imgPart = parts.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+  // OpenRouter devuelve la imagen como data URL en el content
+  const parts = data?.choices?.[0]?.message?.content;
 
-  if (!imgPart) {
-    return Response.json({ error: 'Gemini no devolvió imagen. Probá con otras fotos.' }, { status: 422 });
+  if (Array.isArray(parts)) {
+    const imgPart = parts.find(p => p.type === 'image_url');
+    if (imgPart?.image_url?.url) {
+      return Response.json({ image: imgPart.image_url.url });
+    }
   }
 
-  return Response.json({
-    image: `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`
-  });
+  // Fallback: a veces viene como string base64 directo
+  if (typeof parts === 'string' && parts.startsWith('data:image')) {
+    return Response.json({ image: parts });
+  }
+
+  const textPart = Array.isArray(parts) ? parts.find(p => p.type === 'text')?.text : parts;
+  return Response.json({ 
+    error: `No se generó imagen. Respuesta: ${textPart || JSON.stringify(data).substring(0, 200)}` 
+  }, { status: 422 });
 }
