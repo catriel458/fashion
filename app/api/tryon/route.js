@@ -10,6 +10,7 @@ export async function POST(request) {
     );
   }
 
+  // 📥 Leer form
   let formData;
   try {
     formData = await request.formData();
@@ -30,6 +31,7 @@ export async function POST(request) {
     );
   }
 
+  // 🔄 Convertir a base64
   const toBase64 = async (file) => {
     const buffer = await file.arrayBuffer();
     return Buffer.from(buffer).toString('base64');
@@ -38,16 +40,18 @@ export async function POST(request) {
   const personB64 = await toBase64(personFile);
   const garmentB64 = await toBase64(garmentFile);
 
-  const prompt = `You are a virtual try-on AI for a fashion e-commerce platform.
-The first image shows a person (the customer).
-The second image shows a clothing item (the garment to try on).
-Generate a single realistic photographic image of that exact person wearing that exact garment.
+  // 🧠 Prompt
+  const prompt = `You are a virtual try-on AI.
+Put the garment from the second image onto the person in the first image.
 
-- Preserve the person's face, body shape, skin tone, hair, and original pose
-- Reproduce the garment's color, pattern, texture exactly
-- Apply natural lighting and realistic fabric draping
+Keep:
+- same face
+- same body
+- same pose
 
-Return ONLY a base64 encoded image. No text.`;
+Garment must match exactly (color, texture, print).
+
+Return ONLY a base64 image. No text.`;
 
   const body = {
     model: 'google/gemini-2.5-flash-image',
@@ -71,7 +75,7 @@ Return ONLY a base64 encoded image. No text.`;
         ]
       }
     ],
-    modalities: ['image', 'text']
+    modalities: ['image'] // 🔥 importante
   };
 
   let res, rawText;
@@ -129,13 +133,15 @@ Return ONLY a base64 encoded image. No text.`;
     );
   }
 
-  // 🔍 DEBUG (podés activarlo si vuelve a fallar)
-  // console.log(JSON.stringify(data, null, 2));
+  // 🧪 DEBUG (activar si necesitás)
+  // console.log("FULL RESPONSE:", JSON.stringify(data, null, 2));
 
   const message = data?.choices?.[0]?.message;
   const parts = message?.content;
 
-  // ✅ CASO 1: Gemini devuelve image_base64 (EL MÁS IMPORTANTE)
+  // =========================
+  // 🟢 CASO 1: image_base64
+  // =========================
   if (Array.isArray(parts)) {
     const base64Img = parts.find(p => p.image_base64);
     if (base64Img?.image_base64) {
@@ -144,63 +150,70 @@ Return ONLY a base64 encoded image. No text.`;
       });
     }
 
-    // image_url
-    const imgPart = parts.find(p => p.type === 'image_url');
-    if (imgPart?.image_url?.url) {
-      return Response.json({ image: imgPart.image_url.url });
-    }
-
-    // texto (error del modelo)
-    const txtPart = parts.find(p => p.type === 'text');
-    if (txtPart?.text) {
-      return Response.json(
-        { error: `Gemini respondió texto: ${txtPart.text.substring(0, 200)}` },
-        { status: 422 }
-      );
+    const imgUrl = parts.find(p => p.type === 'image_url');
+    if (imgUrl?.image_url?.url) {
+      return Response.json({ image: imgUrl.image_url.url });
     }
   }
 
-  // ✅ CASO 2: string (data URL o base64)
+  // =========================
+  // 🟢 CASO 2: string directo
+  // =========================
   if (typeof parts === 'string') {
     if (parts.startsWith('data:image')) {
       return Response.json({ image: parts });
     }
 
-    if (parts.length > 500) {
+    if (parts.length > 100) {
       return Response.json({
         image: `data:image/png;base64,${parts}`
       });
     }
-
-    return Response.json(
-      { error: `Sin imagen. Respuesta: ${parts.substring(0, 300)}` },
-      { status: 422 }
-    );
   }
 
-  // ✅ CASO 3: formato alternativo OpenRouter
-  const imageData = message?.images?.[0];
-  if (imageData) {
+  // =========================
+  // 🟢 CASO 3: images (TU CASO)
+  // =========================
+  const img =
+    message?.images?.[0] ||
+    data?.images?.[0] ||
+    data?.choices?.[0]?.images?.[0];
+
+  if (img) {
     const url =
-      imageData?.image_url?.url ||
-      imageData?.url ||
-      imageData?.image_base64;
+      img?.image_url?.url ||
+      img?.url ||
+      img?.b64_json ||
+      img?.image_base64;
 
     if (url) {
-      if (url.startsWith?.('http') || url.startsWith?.('data:image')) {
+      // URL directa
+      if (typeof url === 'string' &&
+        (url.startsWith('http') || url.startsWith('data:image'))
+      ) {
         return Response.json({ image: url });
       }
 
-      return Response.json({
-        image: `data:image/png;base64,${url}`
-      });
+      // base64 puro
+      if (typeof url === 'string' && url.length > 100) {
+        return Response.json({
+          image: `data:image/png;base64,${url}`
+        });
+      }
     }
   }
 
-  // ❌ fallback
+  // =========================
+  // 🔴 ERROR FINAL
+  // =========================
   return Response.json(
     {
-      error: `Formato desconocido. Keys: ${Object.keys(message || {}).join(', ')}`
+      error: 'No se pudo extraer la imagen',
+      debug: {
+        hasMessage: !!message,
+        hasContent: !!parts,
+        hasImages: !!message?.images
+      }
     },
     { status: 422 }
   );
