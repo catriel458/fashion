@@ -70,7 +70,11 @@ Rules:
 - The result must look like a real professional fashion photo
 - Never return a blank, broken or incomplete result under any circumstance
 
-Return ONLY the result image. No text, no explanation.`;
+CRITICAL: Return ONE single image showing ONLY the person wearing the clothes.
+Do NOT show the garment collage in the result.
+Do NOT split the image in two halves.
+Do NOT show any clothing layout or reference images.
+The output must be a single photo of the person dressed, nothing else.`;
 
   const body = {
     model: 'google/gemini-2.5-flash-image',
