@@ -43,18 +43,32 @@ export async function POST(request) {
   // 🧠 Prompt
 const prompt = `You are a virtual try-on AI. Your task is to dress the person from the first image with the clothing items shown in the second image.
 
-The second image may contain one or multiple garments (shirt, pants, shoes, jacket, hat, etc). Identify EVERY item present in the second image and apply ALL of them to the person.
+The first image may not be perfect — it could be:
+- A half-body or upper-body photo (no legs visible)
+- A photo taken with a phone in a real environment
+- A photo with a cluttered or colored background
+- A photo with imperfect lighting or angle
+
+In all these cases you must adapt intelligently:
+- If the photo is upper-body only, apply the upper-body garments and reconstruct the lower body naturally to show pants or shoes if provided
+- If the background is cluttered, focus on the person and ignore the background
+- If the pose is not ideal, do your best to apply the garments naturally
+- Never return a broken, distorted or empty result — always return a complete person wearing the clothes
+- If a body part is not visible, reconstruct it naturally based on the visible parts
+
+The second image may contain one or multiple garments. Identify EVERY item present and apply ALL of them to the person.
 
 Rules:
 - Apply every garment visible in the second image, whether it is one item or many
 - If there is only one garment, apply just that one
-- If there are multiple garments arranged in a collage, apply all of them as a complete outfit
+- If there are multiple garments in a collage, apply all of them as a complete outfit
 - Replace only the clothing parts that correspond to the provided garments, keep everything else natural
 - Keep the exact colors, textures, prints and details of each garment
 - Keep the person's face, skin tone, hair and body proportions identical
 - Keep the original pose and body position
+- If body parts need to be reconstructed, do it naturally and proportionally
 - The result must look like a real professional fashion photo
-- Do NOT skip any garment present in the second image
+- Never return a blank, broken or incomplete result under any circumstance
 
 Return ONLY the result image. No text, no explanation.`;
 

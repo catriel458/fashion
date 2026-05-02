@@ -206,12 +206,19 @@ export default function Probador() {
             </div>
 
             {/* Tip */}
-            <div style={{
-              marginTop: 10, padding: '10px 14px', borderRadius: 8,
-              background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.06)',
-              fontSize: 11, color: '#555', lineHeight: 1.7,
+           <div style={{
+            marginTop: 10, padding: '12px 14px', borderRadius: 8,
+            background: 'rgba(255,255,255,0.03)', border: '0.5px solid rgba(255,255,255,0.06)',
+            fontSize: 11, color: '#555', lineHeight: 1.9,
             }}>
-              💡 Mejor resultado con foto de cuerpo entero, fondo claro y buena iluminación
+            💡 <strong style={{ color: '#777', fontWeight: 500 }}>Consejos para mejor resultado:</strong><br />
+            · Foto de frente, mínimo de cintura para arriba<br />
+            · Buena iluminación, preferentemente natural<br />
+            · Fondo simple funciona mejor, pero no es obligatorio<br />
+            · Fotos del celular son bienvenidas<br />
+            <span style={{ color: '#3a3a38', fontSize: 10 }}>
+                La IA reconstruye las partes del cuerpo que no se ven en la foto
+            </span>
             </div>
           </div>
 
