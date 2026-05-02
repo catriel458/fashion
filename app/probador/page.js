@@ -334,6 +334,17 @@ export default function Probador() {
           </div>
         </div>
 
+
+        {result && (
+        <div style={{
+            marginBottom: 16, padding: '10px 14px', borderRadius: 8,
+            background: 'rgba(255,180,0,0.08)', border: '0.5px solid rgba(255,180,0,0.2)',
+            fontSize: 11, color: '#a07a00', lineHeight: 1.7, textAlign: 'center',
+        }}>
+            ⚠ Para generar un nuevo conjunto, recargá la página primero
+        </div>
+        )}
+
         {/* ── BOTÓN GENERAR ── */}
         <button
           onClick={generate}
