@@ -41,17 +41,22 @@ export async function POST(request) {
   const garmentB64 = await toBase64(garmentFile);
 
   // 🧠 Prompt
-  const prompt = `You are a virtual try-on AI.
-Put the garment from the second image onto the person in the first image.
+const prompt = `You are a virtual try-on AI. Your task is to dress the person from the first image with the clothing items shown in the second image.
 
-Keep:
-- same face
-- same body
-- same pose
+The second image may contain one or multiple garments (shirt, pants, shoes, jacket, hat, etc). Identify EVERY item present in the second image and apply ALL of them to the person.
 
-Garment must match exactly (color, texture, print).
+Rules:
+- Apply every garment visible in the second image, whether it is one item or many
+- If there is only one garment, apply just that one
+- If there are multiple garments arranged in a collage, apply all of them as a complete outfit
+- Replace only the clothing parts that correspond to the provided garments, keep everything else natural
+- Keep the exact colors, textures, prints and details of each garment
+- Keep the person's face, skin tone, hair and body proportions identical
+- Keep the original pose and body position
+- The result must look like a real professional fashion photo
+- Do NOT skip any garment present in the second image
 
-Return ONLY a base64 image. No text.`;
+Return ONLY the result image. No text, no explanation.`;
 
   const body = {
     model: 'google/gemini-2.5-flash-image',
