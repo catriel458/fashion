@@ -1,0 +1,160 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useCart } from './CartContext';
+
+const NAV_CATEGORIES = [
+  { label: 'Remeras',    slug: 'remeras' },
+  { label: 'Pantalones', slug: 'pantalones' },
+  { label: 'Abrigos',    slug: 'abrigos' },
+  { label: 'Camisas',    slug: 'camisas' },
+  { label: 'Zapatillas', slug: 'zapatillas' },
+];
+
+export default function StoreNavbar() {
+  const { itemCount, setIsOpen } = useCart();
+  const [isMobile, setIsMobile] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  return (
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+      height: isMobile ? '56px' : '64px',
+      background: 'rgba(250,250,248,0.92)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '0.5px solid #e8e4df',
+      display: 'flex', alignItems: 'center',
+      padding: isMobile ? '0 1.2rem' : '0 2.5rem',
+      gap: '12px',
+    }}>
+
+      {/* Logo */}
+      <Link href="/" style={{
+        textDecoration: 'none', color: '#0f0f0f',
+        fontFamily: 'var(--font-serif)', fontWeight: 400,
+        fontSize: isMobile ? '1rem' : '1.15rem',
+        letterSpacing: '0.08em', whiteSpace: 'nowrap',
+      }}>
+        FASHION<span style={{ color: '#6b6560' }}>MALL</span>
+      </Link>
+
+      <span style={{ color: '#c8c4bc', fontWeight: 300, fontSize: '1rem' }}>/</span>
+
+      <Link href="/store/zara" style={{
+        textDecoration: 'none', color: '#0f0f0f',
+        fontFamily: 'var(--font-sans)', fontSize: '0.7rem',
+        letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 500,
+        whiteSpace: 'nowrap',
+      }}>
+        Zara
+      </Link>
+
+      {/* Category links desktop */}
+      {!isMobile && (
+        <div style={{
+          display: 'flex', gap: '20px', marginLeft: '16px', flex: 1,
+        }}>
+          {NAV_CATEGORIES.map(cat => (
+            <Link
+              key={cat.slug}
+              href={`/store/zara/category/${cat.slug}`}
+              style={{
+                textDecoration: 'none', color: '#6b6560',
+                fontFamily: 'var(--font-sans)', fontSize: '0.68rem',
+                letterSpacing: '0.16em', textTransform: 'uppercase',
+                transition: 'color 0.2s',
+                whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#0f0f0f'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#6b6560'; }}
+            >
+              {cat.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {isMobile && <div style={{ flex: 1 }} />}
+
+      {/* Cart button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          position: 'relative', padding: '8px', color: '#0f0f0f',
+          display: 'flex', alignItems: 'center',
+        }}
+        aria-label="Abrir carrito"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
+        </svg>
+        {itemCount > 0 && (
+          <span style={{
+            position: 'absolute', top: '2px', right: '2px',
+            background: '#0f0f0f', color: '#fafaf8',
+            width: '16px', height: '16px', borderRadius: '50%',
+            fontSize: '0.6rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--font-sans)',
+          }}>
+            {itemCount > 9 ? '9+' : itemCount}
+          </span>
+        )}
+      </button>
+
+      {/* Hamburger mobile */}
+      {isMobile && (
+        <button
+          onClick={() => setMenuOpen(o => !o)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', gap: 5, padding: 4,
+          }}
+        >
+          <span style={{ display: 'block', width: 22, height: 1.5, background: '#1a1a1a', transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translateY(6px)' : 'none' }} />
+          <span style={{ display: 'block', width: 22, height: 1.5, background: menuOpen ? 'transparent' : '#1a1a1a', transition: 'all 0.2s' }} />
+          <span style={{ display: 'block', width: 22, height: 1.5, background: '#1a1a1a', transition: 'all 0.2s', transform: menuOpen ? 'rotate(-45deg) translateY(-6px)' : 'none' }} />
+        </button>
+      )}
+
+      {/* Mobile menu */}
+      {isMobile && menuOpen && (
+        <div style={{
+          position: 'fixed', top: '56px', left: 0, right: 0,
+          background: 'rgba(250,250,248,0.97)', backdropFilter: 'blur(12px)',
+          borderBottom: '0.5px solid #e8e4df',
+          padding: '1.5rem',
+          display: 'flex', flexDirection: 'column', gap: 16,
+          zIndex: 99,
+        }}>
+          {NAV_CATEGORIES.map(cat => (
+            <Link
+              key={cat.slug}
+              href={`/store/zara/category/${cat.slug}`}
+              onClick={() => setMenuOpen(false)}
+              style={{
+                textDecoration: 'none', color: '#6b6560',
+                fontFamily: 'var(--font-sans)', fontSize: '0.8rem',
+                letterSpacing: '0.16em', textTransform: 'uppercase',
+                borderBottom: '0.5px solid #e8e4df', paddingBottom: 14,
+              }}
+            >
+              {cat.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </nav>
+  );
+}

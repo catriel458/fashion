@@ -11,12 +11,12 @@ const CAROUSEL_ITEMS = [
 ];
 
 const BRANDS = [
-  { name: 'Zara',     category: 'Moda' },
-  { name: 'Nike',     category: 'Deporte' },
-  { name: 'Mango',    category: 'Moda' },
-  { name: 'Adidas',   category: 'Deporte' },
-  { name: 'H&M',      category: 'Casual' },
-  { name: "Levi's",   category: 'Denim' },
+  { name: 'Zara',     category: 'Moda',    href: '/store/zara' },
+  { name: 'Nike',     category: 'Deporte', href: null },
+  { name: 'Mango',    category: 'Moda',    href: null },
+  { name: 'Adidas',   category: 'Deporte', href: null },
+  { name: 'H&M',      category: 'Casual',  href: null },
+  { name: "Levi's",   category: 'Denim',   href: null },
 ];
 
 export default function Home() {
@@ -196,20 +196,25 @@ export default function Home() {
           gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(180px, 1fr))',
           gap: isMobile ? 10 : 16,
         }}>
-          {BRANDS.map(brand => (
-            <div key={brand.name} style={{
-              border: '0.5px solid #e0dbd4', borderRadius: 8,
-              padding: isMobile ? '24px 12px' : '32px 16px',
-              textAlign: 'center', cursor: 'pointer',
-              transition: 'all 0.2s', background: '#fff',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#888'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dbd4'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 20, marginBottom: 6 }}>{brand.name}</div>
-              <div style={{ fontSize: 10, color: 'var(--gray-dark)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{brand.category}</div>
-            </div>
-          ))}
+          {BRANDS.map(brand => {
+            const card = (
+              <div style={{
+                border: '0.5px solid #e0dbd4', borderRadius: 8,
+                padding: isMobile ? '24px 12px' : '32px 16px',
+                textAlign: 'center', cursor: 'pointer',
+                transition: 'all 0.2s', background: '#fff',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#888'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dbd4'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <div style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 20, marginBottom: 6 }}>{brand.name}</div>
+                <div style={{ fontSize: 10, color: 'var(--gray-dark)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{brand.category}</div>
+              </div>
+            );
+            return brand.href
+              ? <Link key={brand.name} href={brand.href} style={{ textDecoration: 'none' }}>{card}</Link>
+              : card;
+          })}
         </div>
       </section>
 
