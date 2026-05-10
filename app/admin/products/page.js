@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 const EMPTY_FORM = {
   name: '', category_id: '', description: '', price: '', stock: '0', active: true,
@@ -161,33 +160,8 @@ export default function AdminProductsPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#fafaf8', fontFamily: 'var(--font-sans)' }}>
 
-      {/* Navbar */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, height: '56px', zIndex: 100,
-        background: 'rgba(250,250,248,0.95)', backdropFilter: 'blur(12px)',
-        borderBottom: '0.5px solid #e8e4df',
-        display: 'flex', alignItems: 'center',
-        padding: '0 clamp(1.2rem, 4vw, 2.5rem)', gap: '12px',
-      }}>
-        <Link href="/" style={{ textDecoration: 'none', color: '#0f0f0f', fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.1rem', letterSpacing: '0.08em' }}>
-          FASHION<span style={{ color: '#6b6560' }}>MALL</span>
-        </Link>
-        <span style={{ color: '#c8c4bc' }}>/</span>
-        <span style={{ color: '#6b6560', fontSize: '0.7rem', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-          Admin
-        </span>
-        <span style={{ color: '#c8c4bc' }}>/</span>
-        <span style={{ color: '#0f0f0f', fontSize: '0.7rem', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
-          Productos
-        </span>
-        <div style={{ flex: 1 }} />
-        <Link href="/store/zara" style={{ textDecoration: 'none', color: '#6b6560', fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', transition: 'color 0.2s' }}>
-          Ver tienda →
-        </Link>
-      </nav>
-
       {/* Content */}
-      <div style={{ paddingTop: '56px', maxWidth: '1200px', margin: '0 auto', padding: 'clamp(4rem, 6vw, 5rem) clamp(1.2rem, 4vw, 2.5rem) 2.5rem' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: 'clamp(2.5rem, 4vw, 3rem) clamp(1.2rem, 4vw, 2.5rem) 2.5rem' }}>
 
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>

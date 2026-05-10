@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import UserButton from '@/components/UserButton';
 
 const CAROUSEL_ITEMS = [
   { gif: '/gifs/1.gif', label: 'Nueva colección' },
@@ -73,6 +74,7 @@ export default function Home() {
               Probador IA
             </Link>
           )}
+          <UserButton />
           <span style={{ fontSize: isMobile ? 22 : 20, cursor: 'pointer' }}>🛍</span>
 
           {/* Hamburguesa mobile */}

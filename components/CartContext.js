@@ -58,11 +58,13 @@ export function CartProvider({ children }) {
     await fetchCart(sessionId);
   };
 
+  const clearCartItems = () => setItems([]);
+
   const total     = items.reduce((s, i) => s + parseFloat(i.price) * i.quantity, 0);
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, removeItem, updateQuantity, total, itemCount, sessionId }}>
+    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, removeItem, updateQuantity, total, itemCount, sessionId, clearCartItems }}>
       {children}
     </CartContext.Provider>
   );
