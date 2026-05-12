@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -52,15 +52,27 @@ export default function ProfilePage() {
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [savingPw, setSavingPw] = useState(false);
 
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const avatarInputRef = useRef(null);
+  const [uploadingAvatar,    setUploadingAvatar]    = useState(false);
+  const [deletingAccount,    setDeletingAccount]    = useState(false);
+  const [confirmDelete,      setConfirmDelete]      = useState(false);
+  const [bodyPhotoUrl,       setBodyPhotoUrl]       = useState(null);
+  const [bodyPhotoPreview,   setBodyPhotoPreview]   = useState(null);
+  const [uploadingBodyPhoto, setUploadingBodyPhoto] = useState(false);
+  const avatarInputRef    = useRef(null);
+  const bodyPhotoInputRef = useRef(null);
 
   function showToast(message, type = 'success') {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   }
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/profile/body-photo')
+      .then(r => r.json())
+      .then(d => { if (d.body_photo_url) setBodyPhotoUrl(d.body_photo_url); })
+      .catch(() => {});
+  }, [session]);
 
   const user = session?.user;
   const form = profileForm || { username: user?.username || '', email: user?.email || '' };
@@ -124,6 +136,26 @@ export default function ProfilePage() {
       showToast(err.message, 'error');
     } finally {
       setUploadingAvatar(false);
+    }
+  }
+
+  async function handleBodyPhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBodyPhotoPreview(URL.createObjectURL(file));
+    setUploadingBodyPhoto(true);
+    try {
+      const fd = new FormData();
+      fd.append('body_photo', file);
+      const res = await fetch('/api/profile/body-photo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setBodyPhotoUrl(data.body_photo_url);
+      showToast('Foto del probador actualizada');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUploadingBodyPhoto(false);
     }
   }
 
@@ -271,6 +303,38 @@ export default function ProfilePage() {
                 {uploadingAvatar ? 'Subiendo...' : 'Cambiar foto'}
               </button>
               <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: '6px 0 0' }}>JPG, PNG o WEBP. Máx 4 MB.</p>
+            </div>
+          </div>
+        </Section>
+
+        {/* Foto para el probador */}
+        <Section title="Foto para el probador virtual">
+          <p style={{ margin: '0 0 14px', fontSize: '0.78rem', color: '#6b6560', lineHeight: 1.6 }}>
+            Usada en el vestidor virtual al probarte outfits. Subí una foto de cuerpo entero con buena iluminación.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+            <div style={{ width: '72px', height: '96px', background: '#f0ede8', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '0.5px solid #e0dbd4', borderRadius: '4px' }}>
+              {(bodyPhotoPreview || bodyPhotoUrl)
+                ? <img src={bodyPhotoPreview || bodyPhotoUrl} alt="Foto cuerpo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <span style={{ fontSize: '2rem', color: '#c8c4bc' }}>👤</span>
+              }
+            </div>
+            <div>
+              <input ref={bodyPhotoInputRef} type="file" accept="image/*" onChange={handleBodyPhotoChange}
+                style={{ display: 'none' }} />
+              <button
+                onClick={() => bodyPhotoInputRef.current?.click()}
+                disabled={uploadingBodyPhoto}
+                style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: uploadingBodyPhoto ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}
+              >
+                {uploadingBodyPhoto ? 'Subiendo...' : bodyPhotoUrl ? 'Cambiar foto' : 'Subir foto'}
+              </button>
+              <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: '6px 0 0' }}>
+                Foto de frente, cuerpo entero. JPG, PNG o WEBP.
+              </p>
+              {bodyPhotoUrl && !bodyPhotoPreview && (
+                <p style={{ fontSize: '0.68rem', color: '#2e7d32', margin: '4px 0 0' }}>✓ Foto guardada</p>
+              )}
             </div>
           </div>
         </Section>

@@ -3,16 +3,19 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
+import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
 
 export default function ProductPage({ params }) {
   const { slug } = params;
 
-  const [product,  setProduct]  = useState(null);
-  const [loading,  setLoading]  = useState(true);
-  const [quantity, setQuantity] = useState(1);
-  const [added,    setAdded]    = useState(false);
+  const [product,      setProduct]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [quantity,     setQuantity]     = useState(1);
+  const [added,        setAdded]        = useState(false);
+  const [addedToRoom,  setAddedToRoom]  = useState(false);
 
   const { addItem, setIsOpen } = useCart();
+  const { addToFittingRoom }   = useFittingRoom();
 
   useEffect(() => {
     fetch(`/api/products?slug=${slug}`)
@@ -27,6 +30,14 @@ export default function ProductPage({ params }) {
     setAdded(true);
     setIsOpen(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handleAddToFittingRoom = () => {
+    if (!product) return;
+    const category = CATEGORY_MAP[product.category_slug] || product.category_slug;
+    addToFittingRoom({ id: product.id, name: product.name, category, image_url: product.image_url, slug: product.slug });
+    setAddedToRoom(true);
+    setTimeout(() => setAddedToRoom(false), 2000);
   };
 
   if (loading) {
@@ -193,10 +204,29 @@ export default function ProductPage({ params }) {
                     letterSpacing: '0.2em', textTransform: 'uppercase',
                     cursor: 'pointer', borderRadius: '2px',
                     transition: 'background 0.3s',
-                    marginBottom: '12px',
+                    marginBottom: '10px',
                   }}
                 >
                   {added ? '✓ Agregado al carrito' : 'Agregar al carrito'}
+                </button>
+
+                <button
+                  onClick={handleAddToFittingRoom}
+                  style={{
+                    width: '100%', maxWidth: '400px',
+                    padding: '12px',
+                    background: addedToRoom ? '#4a7c59' : 'transparent',
+                    color: addedToRoom ? '#fafaf8' : '#6b6560',
+                    border: '0.5px solid',
+                    borderColor: addedToRoom ? '#4a7c59' : '#d4cfc8',
+                    fontFamily: 'var(--font-sans)', fontSize: '0.75rem',
+                    letterSpacing: '0.16em', textTransform: 'uppercase',
+                    cursor: 'pointer', borderRadius: '2px',
+                    transition: 'all 0.3s',
+                    marginBottom: '12px',
+                  }}
+                >
+                  {addedToRoom ? '✓ En el vestidor' : '🧥 Agregar al vestidor'}
                 </button>
               </>
             )}

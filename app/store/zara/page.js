@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
+import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
 
 const CATEGORY_ICONS = {
   remeras:    '👕',
@@ -230,13 +231,23 @@ function CategoryCard({ cat }) {
 }
 
 function ProductCard({ product }) {
-  const [hovered, setHovered] = useState(false);
-  const { addItem, setIsOpen } = useCart();
+  const [hovered,     setHovered]     = useState(false);
+  const [addedToRoom, setAddedToRoom] = useState(false);
+  const { addItem, setIsOpen }    = useCart();
+  const { addToFittingRoom }      = useFittingRoom();
 
   const handleAddToCart = async (e) => {
     e.preventDefault();
     await addItem(product.id);
     setIsOpen(true);
+  };
+
+  const handleAddToFittingRoom = (e) => {
+    e.preventDefault();
+    const category = CATEGORY_MAP[product.category_slug] || product.category_slug;
+    addToFittingRoom({ id: product.id, name: product.name, category, image_url: product.image_url, slug: product.slug });
+    setAddedToRoom(true);
+    setTimeout(() => setAddedToRoom(false), 2000);
   };
 
   return (
@@ -290,7 +301,7 @@ function ProductCard({ product }) {
         </div>
       </Link>
 
-      <div style={{ padding: '0 16px 16px' }}>
+      <div style={{ padding: '0 16px 8px' }}>
         <button
           onClick={handleAddToCart}
           style={{
@@ -302,11 +313,28 @@ function ProductCard({ product }) {
             letterSpacing: '0.14em', textTransform: 'uppercase',
             cursor: 'pointer', borderRadius: '2px',
             transition: 'all 0.25s',
+            marginBottom: '6px',
           }}
         >
           Agregar al carrito
         </button>
+        <button
+          onClick={handleAddToFittingRoom}
+          style={{
+            width: '100%', padding: '7px',
+            background: addedToRoom ? '#4a7c59' : 'transparent',
+            color: addedToRoom ? '#fff' : '#6b6560',
+            border: `0.5px solid ${addedToRoom ? '#4a7c59' : '#d4cfc8'}`,
+            fontFamily: 'var(--font-sans)', fontSize: '0.65rem',
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            cursor: 'pointer', borderRadius: '2px',
+            transition: 'all 0.25s',
+          }}
+        >
+          {addedToRoom ? '✓ En el vestidor' : '🧥 Al vestidor'}
+        </button>
       </div>
+      <div style={{ height: '8px' }} />
     </div>
   );
 }
