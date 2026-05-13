@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 
 const NAV = [
+  { href: '/superadmin/dashboard',  label: 'Dashboard'     },
   { href: '/superadmin/stores',     label: 'Tiendas'       },
   { href: '/superadmin/stores/new', label: '+ Crear tienda' },
   { href: '/superadmin/users',      label: 'Usuarios'      },
@@ -47,11 +48,6 @@ export default function SuperadminSidebar() {
           );
         })}
 
-        <div style={{ margin: '10px 16px', height: '0.5px', background: 'rgba(255,255,255,0.08)' }} />
-
-        <Link href="/admin" style={{ display: 'block', padding: '10px 20px', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>
-          Panel Admin →
-        </Link>
       </nav>
 
       <div style={{ padding: '16px 20px', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>

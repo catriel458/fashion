@@ -4,11 +4,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 
-const NAV = [
-  { href: '/admin/dashboard', label: 'Dashboard'  },
-  { href: '/admin/products',  label: 'Productos'  },
-  { href: '/admin/users',     label: 'Usuarios'   },
-  { href: '/admin/store',     label: 'Mi tienda'  },
+const NAV_ADMIN = [
+  { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/products',  label: 'Productos' },
+  { href: '/admin/users',     label: 'Usuarios'  },
+  { href: '/admin/store',     label: 'Mi tienda' },
+];
+const NAV_SUPERADMIN = [
+  { href: '/admin/dashboard',     label: 'Dashboard' },
+  { href: '/admin/products',      label: 'Productos' },
+  { href: '/admin/users',         label: 'Usuarios'  },
 ];
 
 
@@ -16,6 +21,8 @@ export default function AdminSidebar() {
   const pathname           = usePathname();
   const { data: session }  = useSession();
   const [open, setOpen]    = useState(false);
+  const isSuperadmin       = session?.user?.role === 'superadmin';
+  const NAV                = isSuperadmin ? NAV_SUPERADMIN : NAV_ADMIN;
 
   return (
     <>

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function SuperadminIndex() {
-  redirect('/superadmin/stores');
+  redirect('/superadmin/dashboard');
 }

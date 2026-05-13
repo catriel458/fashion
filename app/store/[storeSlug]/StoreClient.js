@@ -10,13 +10,24 @@ const CATEGORY_ICONS = {
   camisas: '👔', zapatillas: '👟', gorros: '🧢', accesorios: '👜',
 };
 
+function btnRadius(style) {
+  if (style === 'pill')  return '999px';
+  if (style === 'sharp') return '0';
+  return '4px';
+}
+
 export default function StoreClient({ store, images, categories, products, storeSlug }) {
-  const primary = store.primary_color || '#009aae';
+  const primary  = store.primary_color  || '#009aae';
+  const accent   = store.accent_color   || store.primary_color || '#0f0f0f';
+  const radius   = btnRadius(store.button_style);
+  const heroBtn  = store.hero_button_text || 'Ver colección';
+
+  const hasSocial  = store.social_instagram || store.social_whatsapp || store.social_facebook;
+  const hasContact = store.contact_email || store.contact_phone;
 
   return (
     <div style={{ minHeight: '100vh', background: '#fafaf8' }}>
 
-      {/* Keyframes para animaciones */}
       <style>{`
         @keyframes bounceDown {
           0%, 100% { transform: translateY(0) translateX(-50%); opacity: 0.7; }
@@ -36,21 +47,23 @@ export default function StoreClient({ store, images, categories, products, store
         paddingTop: '64px',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Contenido */}
         <div style={{
           position: 'relative', zIndex: 2,
           padding: '0 clamp(1.5rem, 8vw, 6rem)',
           animation: 'fadeIn 0.7s ease both',
         }}>
-          <p style={{
-            fontFamily: 'var(--font-sans)', fontSize: '0.65rem',
-            letterSpacing: '0.35em', textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.65)', marginBottom: '16px',
-          }}>
-            Nueva temporada · 2025
-          </p>
+          {(store.hero_season || 'Nueva temporada · 2025') && (
+            <p style={{
+              fontFamily: 'var(--font-sans)', fontSize: '0.65rem',
+              letterSpacing: '0.35em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.65)', marginBottom: '16px',
+            }}>
+              {store.hero_season || 'Nueva temporada · 2025'}
+            </p>
+          )}
           <h1 style={{
-            fontFamily: 'var(--font-serif)', fontWeight: 300,
+            fontFamily: store.font_family ? `'${store.font_family}', var(--font-serif)` : 'var(--font-serif)',
+            fontWeight: 300,
             fontSize: 'clamp(3.5rem, 10vw, 7rem)',
             color: '#fff', margin: '0 0 20px 0',
             lineHeight: 1.0, letterSpacing: '-0.01em',
@@ -67,32 +80,29 @@ export default function StoreClient({ store, images, categories, products, store
           </p>
           <a href={images.length > 0 ? '#carousel' : '#productos'} style={{
             display: 'inline-block', padding: '12px 28px',
-            border: '0.5px solid rgba(255,255,255,0.6)',
+            background: accent,
             color: '#fff', textDecoration: 'none',
             fontFamily: 'var(--font-sans)', fontSize: '0.7rem',
             letterSpacing: '0.22em', textTransform: 'uppercase',
+            borderRadius: radius,
+            transition: 'opacity 0.2s',
           }}>
-            Ver colección
+            {heroBtn}
           </a>
         </div>
 
-        {/* Fade inferior — transición suave hacia el carousel */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, height: '120px', zIndex: 3,
           background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.18) 100%)',
           pointerEvents: 'none',
         }} />
 
-        {/* Flecha animada — solo si hay carousel */}
         {images.length > 0 && (
-          <a
-            href="#carousel"
-            style={{
-              position: 'absolute', bottom: '28px', left: '50%',
-              animation: 'bounceDown 2s ease-in-out infinite',
-              zIndex: 4, textDecoration: 'none',
-            }}
-          >
+          <a href="#carousel" style={{
+            position: 'absolute', bottom: '28px', left: '50%',
+            animation: 'bounceDown 2s ease-in-out infinite',
+            zIndex: 4, textDecoration: 'none',
+          }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="6 9 12 15 18 9" />
             </svg>
@@ -103,18 +113,13 @@ export default function StoreClient({ store, images, categories, products, store
       {/* ── CARRUSEL ── */}
       {images.length > 0 && (
         <div id="carousel" style={{ scrollMarginTop: '64px' }}>
-          {/* Encabezado de sección */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '16px',
             padding: 'clamp(2rem, 4vw, 2.5rem) clamp(1.5rem, 5vw, 3rem) clamp(1rem, 2vw, 1.2rem)',
             background: '#fafaf8',
           }}>
             <div style={{ flex: 1, height: '0.5px', background: '#e0dbd4' }} />
-            <p style={{
-              fontFamily: 'var(--font-sans)', fontSize: '0.65rem',
-              letterSpacing: '0.28em', textTransform: 'uppercase',
-              color: '#6b6560', margin: 0, whiteSpace: 'nowrap',
-            }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#6b6560', margin: 0, whiteSpace: 'nowrap' }}>
               Colección
             </p>
             <div style={{ flex: 1, height: '0.5px', background: '#e0dbd4' }} />
@@ -144,7 +149,7 @@ export default function StoreClient({ store, images, categories, products, store
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '8px' }}>Explorar</p>
             <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', margin: '0 0 32px 0' }}>Categorías</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
-              {categories.map(cat => <CategoryCard key={cat.id} cat={cat} storeSlug={storeSlug} />)}
+              {categories.map(cat => <CategoryCard key={cat.id} cat={cat} storeSlug={storeSlug} accent={accent} radius={radius} />)}
             </div>
           </div>
         </section>
@@ -159,19 +164,83 @@ export default function StoreClient({ store, images, categories, products, store
           </h2>
           {products.length > 0 && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '16px' }}>
-              {products.map(p => <ProductCard key={p.id} product={p} storeSlug={storeSlug} />)}
+              {products.map(p => <ProductCard key={p.id} product={p} storeSlug={storeSlug} accent={accent} radius={radius} />)}
             </div>
           )}
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '0.5px solid #e8e4df', padding: 'clamp(1.5rem, 4vw, 2.5rem) clamp(1.5rem, 5vw, 3rem)', display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'space-between', alignItems: 'center', background: '#fafaf8' }}>
-        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', letterSpacing: '0.08em', color: '#1a1a1a' }}>
-          FASHION<span style={{ color: '#6b6560' }}>MALL</span>
+      <footer style={{ borderTop: '0.5px solid #e8e4df', padding: 'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 5vw, 3rem)', background: '#fafaf8' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
+
+          {/* Marca */}
+          <div>
+            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', letterSpacing: '0.08em', color: '#1a1a1a', marginBottom: '8px' }}>
+              {store.name}
+            </div>
+            {store.tagline && (
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.75rem', color: '#6b6560', margin: 0, lineHeight: 1.6 }}>{store.tagline}</p>
+            )}
+          </div>
+
+          {/* Contacto */}
+          {hasContact && (
+            <div>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '12px' }}>Contacto</p>
+              {store.contact_email && (
+                <a href={`mailto:${store.contact_email}`} style={{ display: 'block', fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#1a1a1a', textDecoration: 'none', marginBottom: '6px' }}>
+                  {store.contact_email}
+                </a>
+              )}
+              {store.contact_phone && (
+                <a href={`tel:${store.contact_phone}`} style={{ display: 'block', fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#1a1a1a', textDecoration: 'none' }}>
+                  {store.contact_phone}
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Redes sociales */}
+          {hasSocial && (
+            <div>
+              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '12px' }}>Seguinos</p>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {store.social_instagram && (
+                  <a href={store.social_instagram.startsWith('http') ? store.social_instagram : `https://instagram.com/${store.social_instagram.replace('@', '')}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#1a1a1a', textDecoration: 'none', padding: '6px 12px', border: '0.5px solid #e0dbd4', borderRadius: radius }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                    Instagram
+                  </a>
+                )}
+                {store.social_whatsapp && (
+                  <a href={`https://wa.me/${store.social_whatsapp.replace(/\D/g, '')}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#1a1a1a', textDecoration: 'none', padding: '6px 12px', border: '0.5px solid #e0dbd4', borderRadius: radius }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    WhatsApp
+                  </a>
+                )}
+                {store.social_facebook && (
+                  <a href={store.social_facebook} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#1a1a1a', textDecoration: 'none', padding: '6px 12px', border: '0.5px solid #e0dbd4', borderRadius: radius }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    Facebook
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-        <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: '#bbb', letterSpacing: '0.06em' }}>
-          © {new Date().getFullYear()} FashionMall · {store.name}
+
+        <div style={{ borderTop: '0.5px solid #e8e4df', marginTop: '2rem', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '0.9rem', letterSpacing: '0.08em', color: '#1a1a1a' }}>
+            FASHION<span style={{ color: '#6b6560' }}>MALL</span>
+          </div>
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: '#bbb', letterSpacing: '0.06em' }}>
+            © {new Date().getFullYear()} FashionMall · {store.name}
+          </div>
         </div>
       </footer>
     </div>
@@ -190,35 +259,13 @@ function Carousel({ images }) {
 
   return (
     <div style={{ position: 'relative', width: '100%', background: '#0f0f0f', overflow: 'hidden' }}>
-
-      {/* Slides — altura se adapta a la imagen activa */}
       <div style={{ position: 'relative', width: '100%' }}>
         {images.map((img, i) => (
-          <div
-            key={img.id}
-            style={{
-              display: i === idx ? 'block' : 'none',
-              position: 'relative',
-              width: '100%',
-            }}
-          >
-            <img
-              src={img.image_url}
-              alt={img.caption || ''}
-              style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '80vh', objectFit: 'contain', margin: '0 auto' }}
-            />
-            {/* Caption editable desde admin */}
+          <div key={img.id} style={{ display: i === idx ? 'block' : 'none', position: 'relative', width: '100%' }}>
+            <img src={img.image_url} alt={img.caption || ''} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '80vh', objectFit: 'contain', margin: '0 auto' }} />
             {img.caption && (
-              <div style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0,
-                padding: '48px 32px 24px',
-                background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
-              }}>
-                <p style={{
-                  fontFamily: 'var(--font-serif)', fontWeight: 300,
-                  fontSize: 'clamp(1rem, 3vw, 1.6rem)',
-                  color: '#fff', margin: 0, letterSpacing: '0.02em',
-                }}>
+              <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '48px 32px 24px', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))' }}>
+                <p style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1rem, 3vw, 1.6rem)', color: '#fff', margin: 0, letterSpacing: '0.02em' }}>
                   {img.caption}
                 </p>
               </div>
@@ -227,26 +274,13 @@ function Carousel({ images }) {
         ))}
       </div>
 
-      {/* Controles debajo */}
       {images.length > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '14px 0', background: '#0f0f0f' }}>
-          <button
-            onClick={() => setIdx(i => (i - 1 + images.length) % images.length)}
-            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >‹</button>
-
+          <button onClick={() => setIdx(i => (i - 1 + images.length) % images.length)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
           {images.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setIdx(i)}
-              style={{ width: i === idx ? '24px' : '8px', height: '8px', borderRadius: '4px', border: 'none', cursor: 'pointer', padding: 0, background: i === idx ? '#fff' : 'rgba(255,255,255,0.35)', transition: 'all 0.3s' }}
-            />
+            <button key={i} onClick={() => setIdx(i)} style={{ width: i === idx ? '24px' : '8px', height: '8px', borderRadius: '4px', border: 'none', cursor: 'pointer', padding: 0, background: i === idx ? '#fff' : 'rgba(255,255,255,0.35)', transition: 'all 0.3s' }} />
           ))}
-
-          <button
-            onClick={() => setIdx(i => (i + 1) % images.length)}
-            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >›</button>
+          <button onClick={() => setIdx(i => (i + 1) % images.length)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
         </div>
       )}
     </div>
@@ -254,7 +288,7 @@ function Carousel({ images }) {
 }
 
 /* ─────────────────── CategoryCard ─────────────────── */
-function CategoryCard({ cat, storeSlug }) {
+function CategoryCard({ cat, storeSlug, accent, radius }) {
   const [hovered, setHovered] = useState(false);
   return (
     <Link href={`/store/${storeSlug}/category/${cat.slug}`} style={{ textDecoration: 'none' }}>
@@ -262,7 +296,8 @@ function CategoryCard({ cat, storeSlug }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          padding: '24px 12px', border: `0.5px solid ${hovered ? '#888' : '#e0dbd4'}`,
+          padding: '24px 12px',
+          border: `0.5px solid ${hovered ? accent : '#e0dbd4'}`,
           borderRadius: '4px', textAlign: 'center', cursor: 'pointer',
           transition: 'all 0.25s', background: '#fff',
           transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
@@ -278,11 +313,11 @@ function CategoryCard({ cat, storeSlug }) {
 }
 
 /* ─────────────────── ProductCard ─────────────────── */
-function ProductCard({ product, storeSlug }) {
-  const [hovered, setHovered] = useState(false);
+function ProductCard({ product, storeSlug, accent, radius }) {
+  const [hovered,    setHovered]    = useState(false);
   const [addedToRoom, setAddedToRoom] = useState(false);
-  const { addItem, setIsOpen } = useCart();
-  const { addToFittingRoom } = useFittingRoom();
+  const { addItem, setIsOpen }  = useCart();
+  const { addToFittingRoom }    = useFittingRoom();
 
   return (
     <div
@@ -322,9 +357,12 @@ function ProductCard({ product, storeSlug }) {
           onClick={async (e) => { e.preventDefault(); await addItem(product.id); setIsOpen(true); }}
           style={{
             width: '100%', padding: '9px', marginBottom: '6px',
-            background: hovered ? '#0f0f0f' : 'transparent', color: hovered ? '#fafaf8' : '#0f0f0f',
-            border: '0.5px solid #0f0f0f', fontFamily: 'var(--font-sans)', fontSize: '0.68rem',
-            letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '2px', transition: 'all 0.25s',
+            background: hovered ? accent : 'transparent',
+            color: hovered ? '#fff' : '#0f0f0f',
+            border: `0.5px solid ${hovered ? accent : '#0f0f0f'}`,
+            fontFamily: 'var(--font-sans)', fontSize: '0.68rem',
+            letterSpacing: '0.14em', textTransform: 'uppercase',
+            cursor: 'pointer', borderRadius: radius, transition: 'all 0.25s',
           }}
         >
           Agregar al carrito
@@ -339,10 +377,11 @@ function ProductCard({ product, storeSlug }) {
           }}
           style={{
             width: '100%', padding: '7px',
-            background: addedToRoom ? '#4a7c59' : 'transparent', color: addedToRoom ? '#fff' : '#6b6560',
+            background: addedToRoom ? '#4a7c59' : 'transparent',
+            color: addedToRoom ? '#fff' : '#6b6560',
             border: `0.5px solid ${addedToRoom ? '#4a7c59' : '#d4cfc8'}`,
             fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase',
-            cursor: 'pointer', borderRadius: '2px', transition: 'all 0.25s',
+            cursor: 'pointer', borderRadius: radius, transition: 'all 0.25s',
           }}
         >
           {addedToRoom ? '✓ En el vestidor' : '🧥 Al vestidor'}
