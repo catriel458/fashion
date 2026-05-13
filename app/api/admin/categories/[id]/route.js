@@ -27,10 +27,14 @@ export async function PUT(req, { params }) {
 
       const ext = file.name.split('.').pop() || 'jpg';
       const blob = await put(
-        `category-images/${store.slug}/${cat.slug}.${ext}`,
-        file,
-        { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN }
-      );
+      `category-images/${store.slug}/${cat.slug}.${ext}`,
+      file,
+      {
+        access: 'public',
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+        allowOverwrite: true,
+      }
+    );
 
       const [updated] = await sql`
         UPDATE categories SET image_url = ${blob.url}
