@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
@@ -76,6 +77,7 @@ export async function PUT(request, { params }) {
       WHERE id = ${id}
       RETURNING *
     `;
+    revalidatePath(`/store/${store[0].slug}`);
     return NextResponse.json(store[0]);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

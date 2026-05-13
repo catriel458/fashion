@@ -27,6 +27,12 @@ async function handleJsonMode(request, apiKey) {
 
 const prompt = `You are a virtual try-on AI. Your task is to dress the person from the first image with the clothing items shown in the second image.
 
+MANDATORY OUTPUT REQUIREMENTS:
+- The result MUST always be a FULL BODY image showing the person from head to feet — legs and feet must always be fully visible
+- NEVER crop the image at the waist, hips, or knees under any circumstance
+- If the input photo shows only the upper body, you MUST reconstruct the lower body (legs and feet) naturally to produce a complete standing person
+- The background MUST always be a natural park setting: green grass, trees, soft natural daylight — apply this background regardless of the original photo background
+
 The first image may not be perfect — it could be:
 - A half-body or upper-body photo (no legs visible)
 - A photo taken with a phone in a real environment
@@ -34,11 +40,10 @@ The first image may not be perfect — it could be:
 - A photo with imperfect lighting or angle
 
 In all these cases you must adapt intelligently:
-- If the photo is upper-body only, apply the upper-body garments and reconstruct the lower body naturally to show pants or shoes if provided
-- If the background is cluttered, focus on the person and ignore the background
+- Always output a full body from head to feet, reconstructing any missing parts naturally
+- Always replace the background with a park setting (green grass, trees, natural light)
 - If the pose is not ideal, do your best to apply the garments naturally
 - Never return a broken, distorted or empty result — always return a complete person wearing the clothes
-- If a body part is not visible, reconstruct it naturally based on the visible parts
 
 The second image may contain one or multiple garments. Identify EVERY item present and apply ALL of them to the person.
 
@@ -50,15 +55,15 @@ Rules:
 - Keep the exact colors, textures, prints and details of each garment
 - Keep the person's face, skin tone, hair and body proportions identical
 - Keep the original pose and body position
-- If body parts need to be reconstructed, do it naturally and proportionally
-- The result must look like a real professional fashion photo
+- Reconstruct any missing body parts naturally and proportionally
+- The result must look like a real professional fashion photo taken outdoors in a park
 - Never return a blank, broken or incomplete result under any circumstance
 
 CRITICAL: Return ONE single image showing ONLY the person wearing the clothes.
 Do NOT show the garment collage in the result.
 Do NOT split the image in two halves.
 Do NOT show any clothing layout or reference images.
-The output must be a single photo of the person dressed, nothing else.`;
+The output must be a single full-body photo of the person dressed, standing in a park setting.`;
 
   const content = [
     { type: 'text', text: prompt },
@@ -170,6 +175,12 @@ export async function POST(request) {
   // 🧠 Prompt
 const prompt = `You are a virtual try-on AI. Your task is to dress the person from the first image with the clothing items shown in the second image.
 
+MANDATORY OUTPUT REQUIREMENTS:
+- The result MUST always be a FULL BODY image showing the person from head to feet — legs and feet must always be fully visible
+- NEVER crop the image at the waist, hips, or knees under any circumstance
+- If the input photo shows only the upper body, you MUST reconstruct the lower body (legs and feet) naturally to produce a complete standing person
+- The background MUST always be a natural park setting: green grass, trees, soft natural daylight — apply this background regardless of the original photo background
+
 The first image may not be perfect — it could be:
 - A half-body or upper-body photo (no legs visible)
 - A photo taken with a phone in a real environment
@@ -177,11 +188,10 @@ The first image may not be perfect — it could be:
 - A photo with imperfect lighting or angle
 
 In all these cases you must adapt intelligently:
-- If the photo is upper-body only, apply the upper-body garments and reconstruct the lower body naturally to show pants or shoes if provided
-- If the background is cluttered, focus on the person and ignore the background
+- Always output a full body from head to feet, reconstructing any missing parts naturally
+- Always replace the background with a park setting (green grass, trees, natural light)
 - If the pose is not ideal, do your best to apply the garments naturally
 - Never return a broken, distorted or empty result — always return a complete person wearing the clothes
-- If a body part is not visible, reconstruct it naturally based on the visible parts
 
 The second image may contain one or multiple garments. Identify EVERY item present and apply ALL of them to the person.
 
@@ -193,15 +203,15 @@ Rules:
 - Keep the exact colors, textures, prints and details of each garment
 - Keep the person's face, skin tone, hair and body proportions identical
 - Keep the original pose and body position
-- If body parts need to be reconstructed, do it naturally and proportionally
-- The result must look like a real professional fashion photo
+- Reconstruct any missing body parts naturally and proportionally
+- The result must look like a real professional fashion photo taken outdoors in a park
 - Never return a blank, broken or incomplete result under any circumstance
 
 CRITICAL: Return ONE single image showing ONLY the person wearing the clothes.
 Do NOT show the garment collage in the result.
 Do NOT split the image in two halves.
 Do NOT show any clothing layout or reference images.
-The output must be a single photo of the person dressed, nothing else.`;
+The output must be a single full-body photo of the person dressed, standing in a park setting.`;
 
   const body = {
     model: 'google/gemini-2.5-flash-image',

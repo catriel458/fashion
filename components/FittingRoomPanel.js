@@ -27,7 +27,10 @@ export default function FittingRoomPanel() {
   const [result,          setResult]          = useState(null);
   const [addedAll,        setAddedAll]        = useState(false);
   const [error,           setError]           = useState('');
-  const photoInputRef = useRef(null);
+  const [lightboxOpen,    setLightboxOpen]    = useState(false);
+  const [zoom,            setZoom]            = useState(1);
+  const photoInputRef  = useRef(null);
+  const lightboxRef    = useRef(null);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -123,6 +126,22 @@ export default function FittingRoomPanel() {
     setAddedAll(true);
     openCart(true);
     setTimeout(() => setAddedAll(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const a = document.createElement('a');
+    a.href = result;
+    a.download = 'mi-look.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleFullscreen = () => {
+    const el = lightboxRef.current;
+    if (!el) return;
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   };
 
   const canTryOn    = !!bodyPhotoUrl && !uploadingPhoto && items.length > 0 && !generating;
@@ -353,8 +372,28 @@ export default function FittingRoomPanel() {
               <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--store-panel-text, #6b6560)', opacity: 0.7 }}>
                 Tu look
               </p>
-              <div style={{ border: '0.5px solid #e0dbd4', borderRadius: 6, overflow: 'hidden', marginBottom: '12px' }}>
+              <div
+                onClick={() => { setZoom(1); setLightboxOpen(true); }}
+                style={{ border: '0.5px solid #e0dbd4', borderRadius: 6, overflow: 'hidden', marginBottom: '8px', cursor: 'zoom-in', position: 'relative' }}
+              >
                 <img src={result} alt="Look generado" style={{ width: '100%', display: 'block' }} />
+                <div style={{ position: 'absolute', bottom: 6, right: 6, background: 'rgba(0,0,0,0.45)', color: '#fff', fontSize: '0.58rem', padding: '3px 7px', borderRadius: 3, letterSpacing: '0.1em', fontFamily: 'var(--font-sans)', textTransform: 'uppercase' }}>
+                  Ver completo
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginBottom: '12px' }}>
+                <button
+                  onClick={() => { setZoom(1); setLightboxOpen(true); }}
+                  style={{ flex: 1, padding: '7px 4px', background: 'transparent', border: '0.5px solid #e0dbd4', borderRadius: '2px', fontFamily: 'var(--font-sans)', fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', color: '#6b6560' }}
+                >
+                  ⛶ Pantalla completa
+                </button>
+                <button
+                  onClick={handleDownload}
+                  style={{ flex: 1, padding: '7px 4px', background: 'transparent', border: '0.5px solid #e0dbd4', borderRadius: '2px', fontFamily: 'var(--font-sans)', fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', color: '#6b6560' }}
+                >
+                  ↓ Descargar
+                </button>
               </div>
               {items.length > 0 && (
                 <button
@@ -377,6 +416,68 @@ export default function FittingRoomPanel() {
           <style>{`@keyframes frSpin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div
+          ref={lightboxRef}
+          style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.93)', display: 'flex', flexDirection: 'column' }}
+        >
+          {/* Barra de controles */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'rgba(0,0,0,0.5)', flexShrink: 0, gap: 8 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))} style={lbBtnStyle}>−</button>
+              <span style={{ color: '#ccc', fontSize: '0.7rem', minWidth: 38, textAlign: 'center', fontFamily: 'var(--font-sans)' }}>
+                {Math.round(zoom * 100)}%
+              </span>
+              <button onClick={() => setZoom(z => Math.min(4, +(z + 0.25).toFixed(2)))} style={lbBtnStyle}>+</button>
+              <button onClick={() => setZoom(1)} style={{ ...lbBtnStyle, fontSize: '0.6rem', letterSpacing: '0.06em' }}>RESET</button>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={handleDownload} title="Descargar" style={lbBtnStyle}>↓ Descargar</button>
+              <button onClick={handleFullscreen} title="Pantalla completa" style={lbBtnStyle}>⛶</button>
+              <button onClick={() => setLightboxOpen(false)} title="Cerrar" style={lbBtnStyle}>✕</button>
+            </div>
+          </div>
+
+          {/* Imagen con zoom */}
+          <div
+            style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: zoom === 1 ? 'center' : 'flex-start', justifyContent: 'center', padding: 16 }}
+            onWheel={(e) => {
+              e.preventDefault();
+              setZoom(z => Math.min(4, Math.max(0.5, +(z + (e.deltaY < 0 ? 0.15 : -0.15)).toFixed(2))));
+            }}
+          >
+            <img
+              src={result}
+              alt="Look generado"
+              onClick={() => setZoom(z => z < 2.5 ? +(z + 0.5).toFixed(2) : 1)}
+              style={{
+                display: 'block',
+                maxWidth: zoom === 1 ? '100%' : 'none',
+                maxHeight: zoom === 1 ? 'calc(100vh - 80px)' : 'none',
+                objectFit: 'contain',
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top center',
+                transition: 'transform 0.15s ease',
+                cursor: zoom < 3 ? 'zoom-in' : 'zoom-out',
+              }}
+            />
+          </div>
+        </div>
+      )}
     </>
   );
 }
+
+const lbBtnStyle = {
+  background: 'rgba(255,255,255,0.1)',
+  border: '0.5px solid rgba(255,255,255,0.2)',
+  color: '#fff',
+  cursor: 'pointer',
+  borderRadius: 3,
+  padding: '5px 10px',
+  fontSize: '0.82rem',
+  lineHeight: 1,
+  fontFamily: 'var(--font-sans)',
+};
