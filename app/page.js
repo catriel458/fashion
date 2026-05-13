@@ -11,19 +11,53 @@ const CAROUSEL_ITEMS = [
   { gif: '/gifs/5.gif', label: 'Looks de temporada' },
 ];
 
-const BRANDS = [
-  { name: 'Zara',     category: 'Moda',    href: '/store/zara' },
-  { name: 'Nike',     category: 'Deporte', href: null },
-  { name: 'Mango',    category: 'Moda',    href: null },
-  { name: 'Adidas',   category: 'Deporte', href: null },
-  { name: 'H&M',      category: 'Casual',  href: null },
-  { name: "Levi's",   category: 'Denim',   href: null },
-];
+// Tiendas se cargan dinámicamente desde la DB vía API
+
+function StoreLogo({ store, isMobile }) {
+  const [imgError, setImgError] = useState(false);
+  const logoUrl = store.logo_url;
+
+  if (logoUrl && !imgError) {
+    return (
+      <img
+        src={logoUrl}
+        alt={store.name}
+        onError={() => setImgError(true)}
+        style={{
+          height: isMobile ? '44px' : '56px',
+          maxWidth: '160px',
+          objectFit: 'contain',
+          display: 'block',
+        }}
+      />
+    );
+  }
+
+  return (
+    <div style={{
+      fontFamily: 'var(--font-serif)',
+      fontSize: isMobile ? 22 : 26,
+      color: '#0f0f0f',
+      letterSpacing: '0.06em',
+      fontWeight: 400,
+    }}>
+      {store.name}
+    </div>
+  );
+}
 
 export default function Home() {
   const [current,  setCurrent]  = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [stores,   setStores]   = useState([]);
+
+  useEffect(() => {
+    fetch(`/api/stores?_=${Date.now()}`, { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => setStores(Array.isArray(d) ? d : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -65,15 +99,6 @@ export default function Home() {
 
         {/* Derecha */}
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          {!isMobile && (
-            <Link href="/probador" style={{
-              fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase',
-              background: 'var(--black)', color: '#fff',
-              padding: '8px 18px', borderRadius: 4, textDecoration: 'none',
-            }}>
-              Probador IA
-            </Link>
-          )}
           <UserButton />
           <span style={{ fontSize: isMobile ? 22 : 20, cursor: 'pointer' }}>🛍</span>
 
@@ -112,14 +137,6 @@ export default function Home() {
               {item}
             </span>
           ))}
-          <Link href="/probador" onClick={() => setMenuOpen(false)} style={{
-            fontSize: 12, letterSpacing: '0.14em', textTransform: 'uppercase',
-            background: 'var(--black)', color: '#fff',
-            padding: '12px 20px', borderRadius: 4, textDecoration: 'none',
-            textAlign: 'center',
-          }}>
-            Probador IA
-          </Link>
         </div>
       )}
 
@@ -150,13 +167,13 @@ export default function Home() {
               }}>
                 {item.label}
               </h1>
-              <Link href="/probador" style={{
+              <Link href="/#tiendas" style={{
                 display: 'inline-block', fontSize: 11, letterSpacing: '0.18em',
                 textTransform: 'uppercase', color: '#fff',
                 border: '0.5px solid rgba(255,255,255,0.6)',
                 padding: isMobile ? '12px 28px' : '14px 36px', textDecoration: 'none',
               }}>
-                Probá ahora
+                Ver tiendas
               </Link>
             </div>
           </div>
@@ -179,7 +196,7 @@ export default function Home() {
       </div>
 
       {/* ── SECCIÓN MARCAS ── */}
-      <section style={{ padding: isMobile ? '56px 1.2rem' : '80px 2.5rem', maxWidth: 1200, margin: '0 auto' }}>
+      <section id="tiendas" style={{ padding: isMobile ? '56px 1.2rem' : '80px 2.5rem', maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}>
           <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gray-dark)', marginBottom: 12 }}>
             Nuestras tiendas
@@ -198,56 +215,41 @@ export default function Home() {
           gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(180px, 1fr))',
           gap: isMobile ? 10 : 16,
         }}>
-          {BRANDS.map(brand => {
-            const card = (
+          {stores.length === 0 ? (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--gray-dark)', fontSize: 13, padding: '32px 0' }}>
+              Cargando tiendas...
+            </div>
+          ) : stores.map(store => (
+            <Link key={store.id} href={`/store/${store.slug}`} style={{ textDecoration: 'none' }}>
               <div style={{
-                border: '0.5px solid #e0dbd4', borderRadius: 8,
-                padding: isMobile ? '24px 12px' : '32px 16px',
-                textAlign: 'center', cursor: 'pointer',
-                transition: 'all 0.2s', background: '#fff',
+                border: '0.5px solid #e0dbd4', borderRadius: 10,
+                overflow: 'hidden', background: '#fff', cursor: 'pointer',
+                transition: 'all 0.25s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#888'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dbd4'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.borderColor = '#ccc'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e0dbd4'; }}
               >
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 20, marginBottom: 6 }}>{brand.name}</div>
-                <div style={{ fontSize: 10, color: 'var(--gray-dark)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{brand.category}</div>
+                {/* Zona de logo/nombre — fondo blanco */}
+                <div style={{
+                  padding: isMobile ? '28px 16px 20px' : '36px 20px 24px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  minHeight: isMobile ? '110px' : '130px', gap: '8px',
+                }}>
+                  <StoreLogo store={store} isMobile={isMobile} />
+                  {store.tagline && (
+                    <div style={{ fontSize: 10, color: '#6b6560', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      {store.tagline}
+                    </div>
+                  )}
+                </div>
+                {/* Franja de color de marca abajo */}
+                <div style={{ height: '5px', background: store.primary_color || '#009aae' }} />
               </div>
-            );
-            return brand.href
-              ? <Link key={brand.name} href={brand.href} style={{ textDecoration: 'none' }}>{card}</Link>
-              : card;
-          })}
+            </Link>
+          ))}
         </div>
       </section>
 
-      {/* ── BANNER PROBADOR IA ── */}
-      <section style={{
-        background: 'var(--black)', color: '#fff',
-        padding: isMobile ? '56px 1.5rem' : '80px 2.5rem',
-        textAlign: 'center',
-      }}>
-        <p style={{ fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', opacity: 0.5, marginBottom: 16 }}>
-          Tecnología exclusiva
-        </p>
-        <h2 style={{
-          fontFamily: 'var(--font-serif)',
-          fontSize: isMobile ? '2rem' : 'clamp(2rem, 5vw, 4rem)',
-          fontWeight: 300, marginBottom: 20,
-        }}>
-          Probate la ropa antes de comprar
-        </h2>
-        <p style={{ fontSize: 13, opacity: 0.6, maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.8 }}>
-          Subí tu foto, elegí las prendas y nuestra IA te muestra exactamente cómo te queda. Sin sorpresas.
-        </p>
-        <Link href="/probador" style={{
-          fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase',
-          background: '#fff', color: 'var(--black)',
-          padding: isMobile ? '14px 36px' : '16px 48px',
-          textDecoration: 'none', borderRadius: 2, display: 'inline-block',
-        }}>
-          Ir al probador
-        </Link>
-      </section>
 
       {/* ── FOOTER ── */}
 <footer style={{
@@ -265,7 +267,6 @@ export default function Home() {
   </div>
 
   <div style={{ display: 'flex', gap: '2rem', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>
-    <Link href="/probador" style={{ textDecoration: 'none', color: 'inherit' }}>Probador IA</Link>
     <span style={{ cursor: 'pointer' }}>Tiendas</span>
     <span style={{ cursor: 'pointer' }}>Contacto</span>
   </div>

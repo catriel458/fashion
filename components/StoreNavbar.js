@@ -14,12 +14,12 @@ const NAV_CATEGORIES = [
   { label: 'Zapatillas', slug: 'zapatillas' },
 ];
 
-export default function StoreNavbar() {
+export default function StoreNavbar({ storeSlug = 'zara', storeName = 'Zara', storeLogo = null }) {
   const { itemCount, setIsOpen } = useCart();
   const { items: fittingItems, setIsPanelOpen } = useFittingRoom();
   const { data: session } = useSession();
-  const [isMobile, setIsMobile]       = useState(false);
-  const [menuOpen, setMenuOpen]       = useState(false);
+  const [isMobile, setIsMobile]         = useState(false);
+  const [menuOpen, setMenuOpen]         = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -42,42 +42,35 @@ export default function StoreNavbar() {
     }}>
 
       {/* Logo */}
-      <Link href="/" style={{
-        textDecoration: 'none', color: '#0f0f0f',
-        fontFamily: 'var(--font-serif)', fontWeight: 400,
-        fontSize: isMobile ? '1rem' : '1.15rem',
-        letterSpacing: '0.08em', whiteSpace: 'nowrap',
-      }}>
+      <Link href="/" style={{ textDecoration: 'none', color: '#0f0f0f', fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.15rem', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
         FASHION<span style={{ color: '#6b6560' }}>MALL</span>
       </Link>
 
       <span style={{ color: '#c8c4bc', fontWeight: 300, fontSize: '1rem' }}>/</span>
 
-      <Link href="/store/zara" style={{
-        textDecoration: 'none', color: '#0f0f0f',
-        fontFamily: 'var(--font-sans)', fontSize: '0.7rem',
-        letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 500,
-        whiteSpace: 'nowrap',
-      }}>
-        Zara
+      <Link href={`/store/${storeSlug}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        {storeLogo ? (
+          <img src={storeLogo} alt={storeName} style={{ height: '28px', maxWidth: '100px', objectFit: 'contain' }} />
+        ) : (
+          <span style={{
+            color: 'var(--store-primary, #0f0f0f)',
+            fontFamily: 'var(--font-sans)', fontSize: '0.7rem',
+            letterSpacing: '0.22em', textTransform: 'uppercase', fontWeight: 500,
+            whiteSpace: 'nowrap',
+          }}>
+            {storeName}
+          </span>
+        )}
       </Link>
 
       {/* Category links desktop */}
       {!isMobile && (
-        <div style={{
-          display: 'flex', gap: '20px', marginLeft: '16px', flex: 1,
-        }}>
+        <div style={{ display: 'flex', gap: '20px', marginLeft: '16px', flex: 1 }}>
           {NAV_CATEGORIES.map(cat => (
             <Link
               key={cat.slug}
-              href={`/store/zara/category/${cat.slug}`}
-              style={{
-                textDecoration: 'none', color: '#6b6560',
-                fontFamily: 'var(--font-sans)', fontSize: '0.68rem',
-                letterSpacing: '0.16em', textTransform: 'uppercase',
-                transition: 'color 0.2s',
-                whiteSpace: 'nowrap',
-              }}
+              href={`/store/${storeSlug}/category/${cat.slug}`}
+              style={{ textDecoration: 'none', color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.16em', textTransform: 'uppercase', transition: 'color 0.2s', whiteSpace: 'nowrap' }}
               onMouseEnter={e => { e.currentTarget.style.color = '#0f0f0f'; }}
               onMouseLeave={e => { e.currentTarget.style.color = '#6b6560'; }}
             >
@@ -94,18 +87,10 @@ export default function StoreNavbar() {
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setUserMenuOpen(o => !o)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '4px', display: 'flex', alignItems: 'center',
-            }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
             aria-label="Menú de usuario"
           >
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%',
-              background: '#e8e4df', overflow: 'hidden',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '0.5px solid #d4cfc8', flexShrink: 0,
-            }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e8e4df', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '0.5px solid #d4cfc8', flexShrink: 0 }}>
               {session.user.avatar_url
                 ? <img src={session.user.avatar_url} alt={session.user.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <span style={{ fontSize: '0.75rem', color: '#6b6560', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
@@ -118,21 +103,12 @@ export default function StoreNavbar() {
           {userMenuOpen && (
             <>
               <div onClick={() => setUserMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 98 }} />
-              <div style={{
-                position: 'absolute', top: '44px', right: 0,
-                background: '#fff', border: '0.5px solid #e0dbd4',
-                borderRadius: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                minWidth: '160px', zIndex: 99, overflow: 'hidden',
-              }}>
+              <div style={{ position: 'absolute', top: '44px', right: 0, background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', minWidth: '160px', zIndex: 99, overflow: 'hidden' }}>
                 <div style={{ padding: '10px 14px', borderBottom: '0.5px solid #e8e4df' }}>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.78rem', fontWeight: 500, color: '#0f0f0f' }}>
-                    {session.user.username}
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', marginTop: 2 }}>
-                    {session.user.role}
-                  </div>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.78rem', fontWeight: 500, color: '#0f0f0f' }}>{session.user.username}</div>
+                  <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', marginTop: 2 }}>{session.user.role}</div>
                 </div>
-                <Link href="/profile" onClick={() => setUserMenuOpen(false)} style={{ display: 'block', padding: '9px 14px', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.08em', color: '#0f0f0f', textDecoration: 'none', transition: 'background 0.15s' }}
+                <Link href="/profile" onClick={() => setUserMenuOpen(false)} style={{ display: 'block', padding: '9px 14px', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.08em', color: '#0f0f0f', textDecoration: 'none' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#f5f3f0'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
@@ -144,12 +120,20 @@ export default function StoreNavbar() {
                 >
                   Mis pedidos
                 </Link>
-                {session.user.role === 'admin' && (
+                {(session.user.role === 'admin' || session.user.role === 'superadmin') && (
                   <Link href="/admin" onClick={() => setUserMenuOpen(false)} style={{ display: 'block', padding: '9px 14px', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.08em', color: '#0f0f0f', textDecoration: 'none' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#f5f3f0'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     Admin
+                  </Link>
+                )}
+                {session.user.role === 'superadmin' && (
+                  <Link href="/superadmin/stores" onClick={() => setUserMenuOpen(false)} style={{ display: 'block', padding: '9px 14px', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.08em', color: '#a78bfa', textDecoration: 'none' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f5f3f0'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    Superadmin
                   </Link>
                 )}
               </div>
@@ -159,13 +143,7 @@ export default function StoreNavbar() {
       )}
 
       {!session?.user && (
-        <Link href="/login" style={{
-          fontFamily: 'var(--font-sans)', fontSize: '0.68rem',
-          letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: '#6b6560', textDecoration: 'none', padding: '4px 8px',
-          border: '0.5px solid #d4cfc8', borderRadius: '2px',
-          whiteSpace: 'nowrap', transition: 'all 0.2s',
-        }}
+        <Link href="/login" style={{ fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', textDecoration: 'none', padding: '4px 8px', border: '0.5px solid #d4cfc8', borderRadius: '2px', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
           onMouseEnter={e => { e.currentTarget.style.color = '#0f0f0f'; e.currentTarget.style.borderColor = '#0f0f0f'; }}
           onMouseLeave={e => { e.currentTarget.style.color = '#6b6560'; e.currentTarget.style.borderColor = '#d4cfc8'; }}
         >
@@ -174,59 +152,28 @@ export default function StoreNavbar() {
       )}
 
       {/* Fitting room button */}
-      <button
-        onClick={() => setIsPanelOpen(true)}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          position: 'relative', padding: '8px', color: '#0f0f0f',
-          display: 'flex', alignItems: 'center',
-        }}
-        aria-label="Abrir vestidor"
-        title="Vestidor virtual"
-      >
+      <button onClick={() => setIsPanelOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '8px', color: '#0f0f0f', display: 'flex', alignItems: 'center' }} aria-label="Abrir vestidor" title="Vestidor virtual">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2"/>
           <circle cx="12" cy="10" r="3"/>
           <path d="M7 21v-1a5 5 0 0110 0v1"/>
         </svg>
         {fittingItems.length > 0 && (
-          <span style={{
-            position: 'absolute', top: '2px', right: '2px',
-            background: '#6b6560', color: '#fafaf8',
-            width: '16px', height: '16px', borderRadius: '50%',
-            fontSize: '0.6rem',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-sans)',
-          }}>
+          <span style={{ position: 'absolute', top: '2px', right: '2px', background: '#6b6560', color: '#fafaf8', width: '16px', height: '16px', borderRadius: '50%', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)' }}>
             {fittingItems.length > 9 ? '9+' : fittingItems.length}
           </span>
         )}
       </button>
 
       {/* Cart button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          position: 'relative', padding: '8px', color: '#0f0f0f',
-          display: 'flex', alignItems: 'center',
-        }}
-        aria-label="Abrir carrito"
-      >
+      <button onClick={() => setIsOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '8px', color: '#0f0f0f', display: 'flex', alignItems: 'center' }} aria-label="Abrir carrito">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
           <line x1="3" y1="6" x2="21" y2="6" />
           <path d="M16 10a4 4 0 01-8 0" />
         </svg>
         {itemCount > 0 && (
-          <span style={{
-            position: 'absolute', top: '2px', right: '2px',
-            background: '#0f0f0f', color: '#fafaf8',
-            width: '16px', height: '16px', borderRadius: '50%',
-            fontSize: '0.6rem',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--font-sans)',
-          }}>
+          <span style={{ position: 'absolute', top: '2px', right: '2px', background: 'var(--store-primary, #0f0f0f)', color: '#fafaf8', width: '16px', height: '16px', borderRadius: '50%', fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)' }}>
             {itemCount > 9 ? '9+' : itemCount}
           </span>
         )}
@@ -234,13 +181,7 @@ export default function StoreNavbar() {
 
       {/* Hamburger mobile */}
       {isMobile && (
-        <button
-          onClick={() => setMenuOpen(o => !o)}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', gap: 5, padding: 4,
-          }}
-        >
+        <button onClick={() => setMenuOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 5, padding: 4 }}>
           <span style={{ display: 'block', width: 22, height: 1.5, background: '#1a1a1a', transition: 'all 0.2s', transform: menuOpen ? 'rotate(45deg) translateY(6px)' : 'none' }} />
           <span style={{ display: 'block', width: 22, height: 1.5, background: menuOpen ? 'transparent' : '#1a1a1a', transition: 'all 0.2s' }} />
           <span style={{ display: 'block', width: 22, height: 1.5, background: '#1a1a1a', transition: 'all 0.2s', transform: menuOpen ? 'rotate(-45deg) translateY(-6px)' : 'none' }} />
@@ -249,26 +190,9 @@ export default function StoreNavbar() {
 
       {/* Mobile menu */}
       {isMobile && menuOpen && (
-        <div style={{
-          position: 'fixed', top: '56px', left: 0, right: 0,
-          background: 'rgba(250,250,248,0.97)', backdropFilter: 'blur(12px)',
-          borderBottom: '0.5px solid #e8e4df',
-          padding: '1.5rem',
-          display: 'flex', flexDirection: 'column', gap: 16,
-          zIndex: 99,
-        }}>
+        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, background: 'rgba(250,250,248,0.97)', backdropFilter: 'blur(12px)', borderBottom: '0.5px solid #e8e4df', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: 16, zIndex: 99 }}>
           {NAV_CATEGORIES.map(cat => (
-            <Link
-              key={cat.slug}
-              href={`/store/zara/category/${cat.slug}`}
-              onClick={() => setMenuOpen(false)}
-              style={{
-                textDecoration: 'none', color: '#6b6560',
-                fontFamily: 'var(--font-sans)', fontSize: '0.8rem',
-                letterSpacing: '0.16em', textTransform: 'uppercase',
-                borderBottom: '0.5px solid #e8e4df', paddingBottom: 14,
-              }}
-            >
+            <Link key={cat.slug} href={`/store/${storeSlug}/category/${cat.slug}`} onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.8rem', letterSpacing: '0.16em', textTransform: 'uppercase', borderBottom: '0.5px solid #e8e4df', paddingBottom: 14 }}>
               {cat.label}
             </Link>
           ))}

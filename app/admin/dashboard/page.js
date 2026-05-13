@@ -37,7 +37,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetch('/api/admin/dashboard')
       .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
+      .then(d => {
+        if (d.error) { setError(d.error); setLoading(false); return; }
+        setData(d);
+        setLoading(false);
+      })
       .catch(() => { setError('Error al cargar datos'); setLoading(false); });
   }, []);
 

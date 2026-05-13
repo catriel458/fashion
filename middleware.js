@@ -5,7 +5,12 @@ export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
-    if (pathname.startsWith('/admin') && token?.role !== 'admin') {
+
+    if (pathname.startsWith('/superadmin') && token?.role !== 'superadmin') {
+      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
+
+    if (pathname.startsWith('/admin') && token?.role !== 'admin' && token?.role !== 'superadmin') {
       return NextResponse.redirect(new URL('/unauthorized', req.url));
     }
   },
@@ -17,5 +22,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ['/admin/:path*', '/profile/:path*'],
+  matcher: ['/admin/:path*', '/superadmin/:path*', '/profile/:path*'],
 };

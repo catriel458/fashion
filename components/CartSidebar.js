@@ -179,7 +179,7 @@ export default function CartSidebar() {
                         Para finalizar tu compra necesitás iniciar sesión
                       </p>
                       <Link
-                        href="/login?callbackUrl=/store/zara"
+                        href={`/login?callbackUrl=${typeof window !== 'undefined' ? window.location.pathname : '/'}`}
                         onClick={handleClose}
                         style={{
                           display: 'block', width: '100%', background: '#0f0f0f', color: '#fafaf8',

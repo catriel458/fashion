@@ -5,7 +5,7 @@ import sql from '@/lib/db';
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
+  if (!session || !['admin', 'superadmin'].includes(session.user.role)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 

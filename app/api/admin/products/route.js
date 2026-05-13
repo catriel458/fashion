@@ -1,26 +1,38 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { put } from '@vercel/blob';
 import sql from '@/lib/db';
 
 function slugify(text) {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
+  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
 }
 
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || !['admin', 'superadmin'].includes(session.user.role)) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   try {
-    const products = await sql`
-      SELECT p.*, c.name AS category_name
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      ORDER BY p.created_at DESC
-    `;
+    let products;
+    if (session.user.role === 'superadmin') {
+      products = await sql`
+        SELECT p.*, c.name AS category_name, s.name AS store_name
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN stores s ON p.store_id = s.id
+        ORDER BY p.created_at DESC
+      `;
+    } else {
+      products = await sql`
+        SELECT p.*, c.name AS category_name
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.store_id = ${session.user.store_id}
+        ORDER BY p.created_at DESC
+      `;
+    }
     return NextResponse.json(products);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -28,6 +40,11 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const session = await getServerSession(authOptions);
+  if (!session || !['admin', 'superadmin'].includes(session.user.role)) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
+
   try {
     const formData    = await request.formData();
     const name        = formData.get('name');
@@ -52,9 +69,10 @@ export async function POST(request) {
 
     const slug = slugify(name) + '-' + Date.now();
     const finalCategoryId = categoryId === '' ? null : categoryId;
+    const storeId = session.user.role === 'admin' ? session.user.store_id : (formData.get('store_id') || null);
 
     const product = await sql`
-      INSERT INTO products (name, slug, category_id, description, price, stock, image_url, active)
+      INSERT INTO products (name, slug, category_id, description, price, stock, image_url, active, store_id)
       VALUES (
         ${name},
         ${slug},
@@ -63,7 +81,8 @@ export async function POST(request) {
         ${parseFloat(price)},
         ${stock},
         ${imageUrl},
-        true
+        true,
+        ${storeId}
       )
       RETURNING *
     `;

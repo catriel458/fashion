@@ -9,12 +9,13 @@ export async function GET() {
 
   try {
     const orders = await sql`
-      SELECT o.id, o.status, o.total, o.created_at,
+      SELECT o.id, o.status, o.total, o.created_at, s.name AS store_name,
         COUNT(oi.id)::int AS item_count
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN stores s ON o.store_id = s.id
       WHERE o.user_id = ${session.user.id}
-      GROUP BY o.id
+      GROUP BY o.id, s.name
       ORDER BY o.created_at DESC
     `;
     return NextResponse.json(orders);
@@ -32,7 +33,7 @@ export async function POST(req) {
     if (!session_id) return NextResponse.json({ error: 'session_id requerido' }, { status: 400 });
 
     const cartItems = await sql`
-      SELECT ci.product_id, ci.quantity, p.name, p.price, p.image_url
+      SELECT ci.product_id, ci.quantity, p.name, p.price, p.image_url, p.store_id
       FROM cart_items ci
       JOIN products p ON p.id = ci.product_id
       WHERE ci.session_id = ${session_id}
@@ -41,11 +42,12 @@ export async function POST(req) {
       return NextResponse.json({ error: 'El carrito está vacío' }, { status: 400 });
     }
 
-    const total = cartItems.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
+    const total   = cartItems.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
+    const storeId = cartItems[0].store_id || null;
 
     const [order] = await sql`
-      INSERT INTO orders (user_id, session_id, status, total)
-      VALUES (${session.user.id}, ${session_id}, 'confirmed', ${total})
+      INSERT INTO orders (user_id, session_id, status, total, store_id)
+      VALUES (${session.user.id}, ${session_id}, 'confirmed', ${total}, ${storeId})
       RETURNING *
     `;
 

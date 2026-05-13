@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 
 const NAV = [
-  { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/dashboard', label: 'Dashboard'  },
   { href: '/admin/products',  label: 'Productos'  },
   { href: '/admin/users',     label: 'Usuarios'   },
+  { href: '/admin/store',     label: 'Mi tienda'  },
 ];
+
 
 export default function AdminSidebar() {
   const pathname           = usePathname();
@@ -54,11 +56,12 @@ export default function AdminSidebar() {
 
           <div style={{ margin: '10px 16px', height: '0.5px', background: 'rgba(255,255,255,0.08)' }} />
 
-          <Link href="/store/zara" target="_blank" rel="noopener noreferrer" style={{
-            display: 'block', padding: '10px 20px',
-            fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.4)', textDecoration: 'none',
-          }}>
+          {session?.user?.role === 'superadmin' && (
+            <Link href="/superadmin/stores" style={{ display: 'block', padding: '10px 20px', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a78bfa', textDecoration: 'none' }}>
+              Superadmin →
+            </Link>
+          )}
+          <Link href={session?.user?.store_slug ? `/store/${session.user.store_slug}` : '/'} target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '10px 20px', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>
             Ver tienda →
           </Link>
         </nav>
