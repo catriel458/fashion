@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { del } from '@vercel/blob';
 import sql from '@/lib/db';
 
 async function checkSuperadmin() {
@@ -88,7 +89,26 @@ export async function DELETE(request, { params }) {
   if (!await checkSuperadmin()) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
   try {
     const { id } = params;
+
+    const [store] = await sql`SELECT id, logo_url FROM stores WHERE id = ${id}`;
+    if (!store) return NextResponse.json({ error: 'No encontrada' }, { status: 404 });
+
+    const categoryRows = await sql`SELECT image_url FROM categories WHERE store_id = ${id} AND image_url IS NOT NULL`;
+    const productRows = await sql`SELECT image_url FROM products WHERE store_id = ${id} AND image_url IS NOT NULL`;
+    const galleryRows = await sql`SELECT image_url FROM store_images WHERE store_id = ${id}`;
+
     await sql`DELETE FROM stores WHERE id = ${id}`;
+
+    const urls = new Set();
+    if (store.logo_url) urls.add(store.logo_url);
+    for (const row of categoryRows) if (row.image_url) urls.add(row.image_url);
+    for (const row of productRows) if (row.image_url) urls.add(row.image_url);
+    for (const row of galleryRows) if (row.image_url) urls.add(row.image_url);
+
+    for (const url of urls) {
+      try { await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

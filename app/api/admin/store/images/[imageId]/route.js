@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { del } from '@vercel/blob';
 import sql from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -47,6 +48,9 @@ export async function DELETE(request, { params }) {
 
   try {
     await sql`DELETE FROM store_images WHERE id = ${params.imageId}`;
+    if (img.image_url) {
+      try { await del(img.image_url, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

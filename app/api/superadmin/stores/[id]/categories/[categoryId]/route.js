@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { put } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
 import sql from '@/lib/db';
 
 async function checkSuperadmin() {
@@ -24,19 +24,24 @@ export async function PUT(req, { params }) {
       if (!file || file.size === 0) return NextResponse.json({ error: 'Imagen requerida' }, { status: 400 });
 
       const [store] = await sql`SELECT slug FROM stores WHERE id = ${params.id}`;
-      const [cat]   = await sql`SELECT slug FROM categories WHERE id = ${params.categoryId} AND store_id = ${params.id}`;
+      const [cat]   = await sql`SELECT slug, image_url FROM categories WHERE id = ${params.categoryId} AND store_id = ${params.id}`;
       if (!store || !cat) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
 
       const ext = file.name.split('.').pop() || 'jpg';
       const blob = await put(
-        `category-images/${store.slug}/${cat.slug}.${ext}`,
+        `category-images/${store.slug}/${cat.slug}-${Date.now()}.${ext}`,
         file,
-        { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN, allowOverwrite: true, allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] }
+        { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN, allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] }
       );
 
       const [updated] = await sql`
         UPDATE categories SET image_url = ${blob.url} WHERE id = ${params.categoryId} AND store_id = ${params.id} RETURNING *
       `;
+
+      if (cat.image_url && cat.image_url !== blob.url) {
+        try { await del(cat.image_url, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
+      }
+
       return NextResponse.json(updated);
     } else {
       // Actualizar nombre
@@ -55,7 +60,14 @@ export async function PUT(req, { params }) {
 export async function DELETE(req, { params }) {
   if (!await checkSuperadmin()) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
   try {
+    const [cat] = await sql`
+      SELECT image_url FROM categories WHERE id = ${params.categoryId} AND store_id = ${params.id}
+    `;
+    if (!cat) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
     await sql`DELETE FROM categories WHERE id = ${params.categoryId} AND store_id = ${params.id}`;
+    if (cat.image_url) {
+      try { await del(cat.image_url, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

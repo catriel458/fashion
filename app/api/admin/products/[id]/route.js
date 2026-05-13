@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
 import sql from '@/lib/db';
 
 export async function PUT(request, { params }) {
@@ -27,11 +27,15 @@ export async function PUT(request, { params }) {
       : prev.category_id;
 
     let imageUrl = prev.image_url;
+    let oldImageToDelete = null;
     if (imageFile && imageFile.size > 0) {
       const blob = await put(`products/${Date.now()}-${imageFile.name}`, imageFile, {
         access: 'public',
         token: process.env.BLOB_READ_WRITE_TOKEN,
       });
+      if (prev.image_url && prev.image_url !== blob.url) {
+        oldImageToDelete = prev.image_url;
+      }
       imageUrl = blob.url;
     }
 
@@ -50,6 +54,10 @@ export async function PUT(request, { params }) {
       RETURNING *
     `;
 
+    if (oldImageToDelete) {
+      try { await del(oldImageToDelete, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
+    }
+
     return NextResponse.json(product[0]);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -59,7 +67,15 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = params;
+    const existing = await sql`SELECT image_url FROM products WHERE id = ${id}`;
+    if (!existing.length) {
+      return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
+    }
+    const { image_url: imageUrl } = existing[0];
     await sql`DELETE FROM products WHERE id = ${id}`;
+    if (imageUrl) {
+      try { await del(imageUrl, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

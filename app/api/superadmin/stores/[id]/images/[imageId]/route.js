@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { del } from '@vercel/blob';
 import sql from '@/lib/db';
 
 async function checkSuperadmin() {
@@ -27,8 +28,15 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   if (!await checkSuperadmin()) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
   try {
-    const { imageId } = params;
-    await sql`DELETE FROM store_images WHERE id = ${imageId}`;
+    const { id, imageId } = params;
+    const [img] = await sql`
+      SELECT image_url FROM store_images WHERE id = ${imageId} AND store_id = ${id}
+    `;
+    if (!img) return NextResponse.json({ error: 'No encontrada' }, { status: 404 });
+    await sql`DELETE FROM store_images WHERE id = ${imageId} AND store_id = ${id}`;
+    if (img.image_url) {
+      try { await del(img.image_url, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
