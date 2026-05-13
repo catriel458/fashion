@@ -2,6 +2,8 @@ import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
 import ProductClient from './ProductClient';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductPage({ params }) {
   const { storeSlug, slug } = params;
 

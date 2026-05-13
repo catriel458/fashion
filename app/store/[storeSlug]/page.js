@@ -2,6 +2,8 @@ import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
 import StoreClient from './StoreClient';
 
+export const dynamic = 'force-dynamic';
+
 async function getStoreData(slug) {
   const stores = await sql`SELECT * FROM stores WHERE slug = ${slug} AND active = true`;
   if (!stores.length) return null;

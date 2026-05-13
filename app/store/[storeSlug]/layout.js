@@ -6,6 +6,8 @@ import StoreThemeProvider from '@/components/StoreThemeProvider';
 import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 async function getStore(slug) {
   try {
     const rows = await sql`SELECT * FROM stores WHERE slug = ${slug} AND active = true`;
