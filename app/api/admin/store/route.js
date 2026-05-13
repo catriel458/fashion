@@ -41,6 +41,10 @@ export async function PUT(request) {
       name, tagline, primary_color, secondary_color, accent_color, font_family,
       button_style, hero_title, hero_subtitle, hero_button_text, hero_season, about_text,
       social_instagram, social_whatsapp, social_facebook, contact_email, contact_phone,
+      header_color, footer_color,
+      header_font, header_font_size, header_text_color,
+      footer_font, footer_font_size, footer_text_color,
+      panel_bg_color, panel_text_color,
     } = body;
 
     const existing = await sql`SELECT * FROM stores WHERE id = ${storeId}`;
@@ -66,7 +70,17 @@ export async function PUT(request) {
         social_facebook  = ${social_facebook  ?? prev.social_facebook},
         contact_email    = ${contact_email    ?? prev.contact_email},
         contact_phone    = ${contact_phone    ?? prev.contact_phone},
-        updated_at       = NOW()
+        header_color      = ${header_color      ?? prev.header_color},
+        footer_color      = ${footer_color      ?? prev.footer_color},
+        header_font       = ${header_font       ?? prev.header_font},
+        header_font_size  = ${header_font_size  ?? prev.header_font_size},
+        header_text_color = ${header_text_color ?? prev.header_text_color},
+        footer_font       = ${footer_font       ?? prev.footer_font},
+        footer_font_size  = ${footer_font_size  ?? prev.footer_font_size},
+        footer_text_color = ${footer_text_color ?? prev.footer_text_color},
+        panel_bg_color    = ${panel_bg_color    ?? prev.panel_bg_color},
+        panel_text_color  = ${panel_text_color  ?? prev.panel_text_color},
+        updated_at        = NOW()
       WHERE id = ${storeId}
       RETURNING *
     `;

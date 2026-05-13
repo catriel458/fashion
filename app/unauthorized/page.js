@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export const metadata = { title: 'Sin acceso — FashionMall' };
+export const metadata = { title: 'Sin acceso — CnB' };
 
 export default function UnauthorizedPage() {
   return (

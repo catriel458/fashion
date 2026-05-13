@@ -140,9 +140,10 @@ export default function FittingRoomPanel() {
       <div style={{
         position: 'fixed', top: 0, right: 0, height: '100vh',
         width: isPanelOpen ? '420px' : '0', maxWidth: '100vw',
-        background: '#fafaf8', zIndex: 1000,
+        background: 'var(--store-panel-bg, #fafaf8)', zIndex: 1000,
         transition: 'width 0.3s ease', overflow: 'hidden',
-        borderLeft: '0.5px solid #e0dbd4',
+        borderLeft: '0.5px solid rgba(128,128,128,0.2)',
+        color: 'var(--store-panel-text, #0f0f0f)',
       }}>
         <div style={{
           width: '420px', maxWidth: '100vw', height: '100%',
@@ -155,14 +156,14 @@ export default function FittingRoomPanel() {
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: '20px', paddingBottom: '16px',
-            borderBottom: '0.5px solid #e0dbd4', flexShrink: 0,
+            borderBottom: '0.5px solid rgba(128,128,128,0.2)', flexShrink: 0,
           }}>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.4rem', margin: 0, letterSpacing: '0.04em' }}>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.4rem', margin: 0, letterSpacing: '0.04em', color: 'var(--store-panel-text, #0f0f0f)' }}>
               Tu vestidor
             </h2>
             <button
               onClick={() => setIsPanelOpen(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b6560', padding: '4px', lineHeight: 1 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--store-panel-text, #6b6560)', padding: '4px', lineHeight: 1, opacity: 0.6 }}
             >
               ✕
             </button>
@@ -170,7 +171,7 @@ export default function FittingRoomPanel() {
 
           {/* Tu outfit */}
           <div style={{ marginBottom: '20px' }}>
-            <p style={{ margin: '0 0 14px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560' }}>
+            <p style={{ margin: '0 0 14px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--store-panel-text, #6b6560)', opacity: 0.7 }}>
               Tu outfit
             </p>
 
@@ -242,10 +243,10 @@ export default function FittingRoomPanel() {
           </div>
 
           {/* Probarte este outfit */}
-          <div style={{ borderTop: '0.5px solid #e0dbd4', paddingTop: '20px' }}>
+          <div style={{ borderTop: '0.5px solid rgba(128,128,128,0.2)', paddingTop: '20px' }}>
 
             {/* Paso 1: Foto */}
-            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560' }}>
+            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--store-panel-text, #6b6560)', opacity: 0.7 }}>
               Paso 1 — Tu foto de cuerpo
             </p>
 
@@ -298,7 +299,7 @@ export default function FittingRoomPanel() {
             )}
 
             {/* Paso 2: Botón */}
-            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560' }}>
+            <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--store-panel-text, #6b6560)', opacity: 0.7 }}>
               Paso 2 — Generá tu look
             </p>
 
@@ -348,8 +349,8 @@ export default function FittingRoomPanel() {
 
           {/* Resultado */}
           {result && (
-            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '0.5px solid #e0dbd4' }}>
-              <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560' }}>
+            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '0.5px solid rgba(128,128,128,0.2)' }}>
+              <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--store-panel-text, #6b6560)', opacity: 0.7 }}>
                 Tu look
               </p>
               <div style={{ border: '0.5px solid #e0dbd4', borderRadius: 6, overflow: 'hidden', marginBottom: '12px' }}>

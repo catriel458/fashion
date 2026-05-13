@@ -5,46 +5,41 @@ import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
 import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
 
-const CATEGORY_ICONS = {
-  remeras: '👕', pantalones: '👖', abrigos: '🧥',
-  camisas: '👔', zapatillas: '👟', gorros: '🧢', accesorios: '👜',
-};
-
-export default function CategoryClient({ storeSlug, category, slug, products }) {
+export default function CategoryClient({ storeSlug, category, slug, products, categories = [], primaryColor = '#009aae', accentColor = '#0f0f0f', buttonStyle = 'rounded' }) {
   const [search, setSearch] = useState('');
+
+  const radius = buttonStyle === 'pill' ? '999px' : buttonStyle === 'sharp' ? '0' : '4px';
 
   const filtered = products.filter(p =>
     !search || p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const otherCats = categories.filter(c => c.slug !== slug);
+
   return (
     <div style={{ minHeight: '100vh', background: '#fafaf8', paddingTop: '64px' }}>
 
-      <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 5vw, 3rem)', borderBottom: '0.5px solid #e0dbd4', background: '#fff' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '20px' }}>
-            <Link href={`/store/${storeSlug}`} style={{ textDecoration: 'none', color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.1em' }}>
-              {storeSlug}
-            </Link>
-            <span style={{ color: '#c8c4bc' }}>/</span>
-            <span style={{ color: '#0f0f0f', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.1em' }}>
-              {category?.name || slug}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '2rem' }}>{CATEGORY_ICONS[slug] || '🏷️'}</span>
-            <div>
-              <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.8rem, 5vw, 3rem)', margin: 0 }}>
-                {category?.name || slug}
-              </h1>
-              <p style={{ margin: '4px 0 0', color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.8rem' }}>
-                {filtered.length} producto{filtered.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
+      {/* ── HERO de categoría ── */}
+      <section style={{ position: 'relative', height: '260px', overflow: 'hidden' }}>
+        {category?.image_url
+          ? <img src={category.image_url} alt={category?.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          : <div style={{ width: '100%', height: '100%', background: primaryColor }} />
+        }
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.38)' }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <Link href={`/store/${storeSlug}`} style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}>
+            ← {storeSlug}
+          </Link>
+          <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(2.2rem, 6vw, 3.5rem)', color: '#fff', margin: 0, letterSpacing: '0.04em', textAlign: 'center' }}>
+            {category?.name || slug}
+          </h1>
+          <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.72rem', color: 'rgba(255,255,255,0.65)', margin: 0 }}>
+            {filtered.length} producto{filtered.length !== 1 ? 's' : ''}
+          </p>
         </div>
       </section>
 
+      {/* ── PRODUCTOS ── */}
       <section style={{ padding: 'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 5vw, 3rem)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ marginBottom: '28px' }}>
@@ -63,20 +58,48 @@ export default function CategoryClient({ storeSlug, category, slug, products }) 
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '16px' }}>
-              {filtered.map(p => <ProductCard key={p.id} product={p} storeSlug={storeSlug} />)}
+              {filtered.map(p => (
+                <ProductCard key={p.id} product={p} storeSlug={storeSlug} accent={accentColor} radius={radius} />
+              ))}
             </div>
           )}
         </div>
       </section>
+
+      {/* ── OTRAS CATEGORÍAS (editorial grid pequeño) ── */}
+      {otherCats.length > 0 && (
+        <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 5vw, 3rem)', background: '#fff', borderTop: '0.5px solid #e0dbd4' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '8px' }}>También te puede interesar</p>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.4rem, 3vw, 2rem)', margin: '0 0 20px 0' }}>Otras categorías</h2>
+          </div>
+          <div className="category-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            {otherCats.map(cat => (
+              <Link
+                key={cat.id}
+                href={`/store/${storeSlug}/category/${cat.slug}`}
+                className="category-card sm"
+              >
+                {cat.image_url
+                  ? <img src={cat.image_url} alt={cat.name} />
+                  : <div style={{ width: '100%', height: '100%', background: primaryColor }} />
+                }
+                <div className="overlay" />
+                <div className="label">{cat.name}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
 
-function ProductCard({ product, storeSlug }) {
-  const [hovered, setHovered] = useState(false);
+function ProductCard({ product, storeSlug, accent, radius }) {
+  const [hovered, setHovered]       = useState(false);
   const [addedToRoom, setAddedToRoom] = useState(false);
-  const { addItem, setIsOpen } = useCart();
-  const { addToFittingRoom } = useFittingRoom();
+  const { addItem, setIsOpen }      = useCart();
+  const { addToFittingRoom }        = useFittingRoom();
 
   return (
     <div
@@ -100,12 +123,16 @@ function ProductCard({ product, storeSlug }) {
         </div>
       </Link>
       <div style={{ padding: '0 16px 8px' }}>
-        <button onClick={async (e) => { e.preventDefault(); await addItem(product.id); setIsOpen(true); }}
-          style={{ width: '100%', padding: '9px', marginBottom: '6px', background: hovered ? '#0f0f0f' : 'transparent', color: hovered ? '#fafaf8' : '#0f0f0f', border: '0.5px solid #0f0f0f', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '2px', transition: 'all 0.25s' }}>
+        <button
+          onClick={async (e) => { e.preventDefault(); await addItem(product.id); setIsOpen(true); }}
+          style={{ width: '100%', padding: '9px', marginBottom: '6px', background: hovered ? accent : 'transparent', color: hovered ? '#fff' : '#0f0f0f', border: `0.5px solid ${hovered ? accent : '#0f0f0f'}`, fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: radius, transition: 'all 0.25s' }}
+        >
           Agregar al carrito
         </button>
-        <button onClick={(e) => { e.preventDefault(); const cat = CATEGORY_MAP[product.category_slug] || product.category_slug; addToFittingRoom({ id: product.id, name: product.name, category: cat, image_url: product.image_url, slug: product.slug }); setAddedToRoom(true); setTimeout(() => setAddedToRoom(false), 2000); }}
-          style={{ width: '100%', padding: '7px', background: addedToRoom ? '#4a7c59' : 'transparent', color: addedToRoom ? '#fff' : '#6b6560', border: `0.5px solid ${addedToRoom ? '#4a7c59' : '#d4cfc8'}`, fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: '2px', transition: 'all 0.25s' }}>
+        <button
+          onClick={(e) => { e.preventDefault(); const cat = CATEGORY_MAP[product.category_slug] || product.category_slug; addToFittingRoom({ id: product.id, name: product.name, category: cat, image_url: product.image_url, slug: product.slug }); setAddedToRoom(true); setTimeout(() => setAddedToRoom(false), 2000); }}
+          style={{ width: '100%', padding: '7px', background: addedToRoom ? '#4a7c59' : 'transparent', color: addedToRoom ? '#fff' : '#6b6560', border: `0.5px solid ${addedToRoom ? '#4a7c59' : '#d4cfc8'}`, fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: radius, transition: 'all 0.25s' }}
+        >
           {addedToRoom ? '✓ En el vestidor' : '🧥 Al vestidor'}
         </button>
       </div>

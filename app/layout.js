@@ -1,7 +1,7 @@
 import './globals.css';
 import Providers from '@/components/Providers';
 
-export const metadata = { title: 'FashionMall — Tu shopping virtual' };
+export const metadata = { title: 'CnB — Choose and Buy' };
 
 export default function RootLayout({ children }) {
   return (

@@ -55,9 +55,10 @@ export default function CartSidebar() {
       <div style={{
         position: 'fixed', top: 0, right: 0, height: '100vh',
         width: isOpen ? '380px' : '0', maxWidth: '100vw',
-        background: '#fafaf8', zIndex: 1000,
+        background: 'var(--store-panel-bg, #fafaf8)', zIndex: 1000,
         transition: 'width 0.3s ease', overflow: 'hidden',
-        borderLeft: '0.5px solid #e0dbd4',
+        borderLeft: '0.5px solid rgba(128,128,128,0.2)',
+        color: 'var(--store-panel-text, #0f0f0f)',
       }}>
         <div style={{
           width: '380px', maxWidth: '100vw', height: '100%',
@@ -69,12 +70,12 @@ export default function CartSidebar() {
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: '24px', paddingBottom: '16px',
-            borderBottom: '0.5px solid #e0dbd4',
+            borderBottom: '0.5px solid rgba(128,128,128,0.2)',
           }}>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.5rem', margin: 0, letterSpacing: '0.04em' }}>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.5rem', margin: 0, letterSpacing: '0.04em', color: 'var(--store-panel-text, #0f0f0f)' }}>
               {orderConfirmed ? 'Pedido confirmado' : 'Carrito'}
             </h2>
-            <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b6560', padding: '4px', lineHeight: 1 }}>
+            <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--store-panel-text, #6b6560)', padding: '4px', lineHeight: 1, opacity: 0.6 }}>
               ✕
             </button>
           </div>
@@ -118,22 +119,22 @@ export default function CartSidebar() {
                         }
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#0f0f0f' }}>
+                        <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--store-panel-text, #0f0f0f)' }}>
                           {item.name}
                         </p>
-                        <p style={{ margin: '0 0 12px', color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.875rem' }}>
+                        <p style={{ margin: '0 0 12px', color: 'var(--store-panel-text, #6b6560)', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', opacity: 0.7 }}>
                           ${parseFloat(item.price).toFixed(2)}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                            style={{ width: '26px', height: '26px', border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: '#0f0f0f' }}>
+                            style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>
                             −
                           </button>
-                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', minWidth: '20px', textAlign: 'center' }}>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', minWidth: '20px', textAlign: 'center', color: 'var(--store-panel-text, #0f0f0f)' }}>
                             {item.quantity}
                           </span>
                           <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                            style={{ width: '26px', height: '26px', border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: '#0f0f0f' }}>
+                            style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>
                             +
                           </button>
                           <button onClick={() => removeItem(item.product_id)}
@@ -149,12 +150,12 @@ export default function CartSidebar() {
 
               {/* Footer */}
               {items.length > 0 && (
-                <div style={{ paddingTop: '16px', borderTop: '0.5px solid #e0dbd4' }}>
+                <div style={{ paddingTop: '16px', borderTop: '0.5px solid rgba(128,128,128,0.2)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#6b6560', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: 'var(--store-panel-text, #6b6560)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7 }}>
                       Total
                     </span>
-                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400 }}>
+                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: 'var(--store-panel-text, #0f0f0f)' }}>
                       ${total.toFixed(2)}
                     </span>
                   </div>

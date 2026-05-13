@@ -7,6 +7,7 @@ const NAV = [
   { href: '/superadmin/dashboard',  label: 'Dashboard'     },
   { href: '/superadmin/stores',     label: 'Tiendas'       },
   { href: '/superadmin/stores/new', label: '+ Crear tienda' },
+  { href: '/superadmin/products',   label: 'Productos'     },
   { href: '/superadmin/users',      label: 'Usuarios'      },
 ];
 
@@ -23,7 +24,7 @@ export default function SuperadminSidebar() {
       <div style={{ padding: '22px 20px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
         <Link href="/" style={{ textDecoration: 'none' }}>
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.05rem', letterSpacing: '0.08em', color: '#fff' }}>
-            FASHION<span style={{ color: '#a78bfa' }}>MALL</span>
+            CnB<span style={{ color: '#a78bfa', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', letterSpacing: '0.18em', marginLeft: '4px' }}>Choose and Buy</span>
           </div>
         </Link>
         <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: '3px' }}>

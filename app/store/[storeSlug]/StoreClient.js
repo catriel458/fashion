@@ -142,15 +142,28 @@ export default function StoreClient({ store, images, categories, products, store
         </section>
       )}
 
-      {/* ── CATEGORÍAS ── */}
+      {/* ── CATEGORÍAS (editorial grid) ── */}
       {categories.length > 0 && (
-        <section style={{ padding: 'clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 3rem)' }}>
+        <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 5vw, 3rem)' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.28em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '8px' }}>Explorar</p>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', margin: '0 0 32px 0' }}>Categorías</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
-              {categories.map(cat => <CategoryCard key={cat.id} cat={cat} storeSlug={storeSlug} accent={accent} radius={radius} />)}
-            </div>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.6rem, 4vw, 2.5rem)', margin: '0 0 20px 0' }}>Categorías</h2>
+          </div>
+          <div className="category-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            {categories.map(cat => (
+              <Link
+                key={cat.id}
+                href={`/store/${storeSlug}/category/${cat.slug}`}
+                className="category-card"
+              >
+                {cat.image_url
+                  ? <img src={cat.image_url} alt={cat.name} />
+                  : <div style={{ width: '100%', height: '100%', background: primary }} />
+                }
+                <div className="overlay" />
+                <div className="label">{cat.name}</div>
+              </Link>
+            ))}
           </div>
         </section>
       )}
@@ -171,30 +184,60 @@ export default function StoreClient({ store, images, categories, products, store
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '0.5px solid #e8e4df', padding: 'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 5vw, 3rem)', background: '#fafaf8' }}>
+      <footer style={{ borderTop: '0.5px solid #e8e4df', padding: 'clamp(2rem, 4vw, 3rem) clamp(1.5rem, 5vw, 3rem)', background: store.footer_color || '#fafaf8' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
 
           {/* Marca */}
           <div>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', letterSpacing: '0.08em', color: '#1a1a1a', marginBottom: '8px' }}>
+            <div style={{
+              fontFamily: 'var(--store-footer-font, var(--font-serif))',
+              fontSize: 'var(--store-footer-font-size, 1.2rem)',
+              letterSpacing: '0.08em',
+              color: 'var(--store-footer-text-color, #1a1a1a)',
+              marginBottom: '8px',
+            }}>
               {store.name}
             </div>
             {store.tagline && (
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.75rem', color: '#6b6560', margin: 0, lineHeight: 1.6 }}>{store.tagline}</p>
+              <p style={{
+                fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                fontSize: 'var(--store-footer-font-size, 0.75rem)',
+                color: 'var(--store-footer-text-color, #6b6560)',
+                margin: 0, lineHeight: 1.6, opacity: 0.8,
+              }}>
+                {store.tagline}
+              </p>
             )}
           </div>
 
           {/* Contacto */}
           {hasContact && (
             <div>
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '12px' }}>Contacto</p>
+              <p style={{
+                fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                fontSize: '0.65rem', letterSpacing: '0.18em', textTransform: 'uppercase',
+                color: 'var(--store-footer-text-color, #6b6560)',
+                opacity: 0.7, marginBottom: '12px',
+              }}>Contacto</p>
               {store.contact_email && (
-                <a href={`mailto:${store.contact_email}`} style={{ display: 'block', fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#1a1a1a', textDecoration: 'none', marginBottom: '6px' }}>
+                <a href={`mailto:${store.contact_email}`} style={{
+                  display: 'block',
+                  fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                  fontSize: '0.8rem',
+                  color: 'var(--store-footer-text-color, #1a1a1a)',
+                  textDecoration: 'none', marginBottom: '6px',
+                }}>
                   {store.contact_email}
                 </a>
               )}
               {store.contact_phone && (
-                <a href={`tel:${store.contact_phone}`} style={{ display: 'block', fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#1a1a1a', textDecoration: 'none' }}>
+                <a href={`tel:${store.contact_phone}`} style={{
+                  display: 'block',
+                  fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                  fontSize: '0.8rem',
+                  color: 'var(--store-footer-text-color, #1a1a1a)',
+                  textDecoration: 'none',
+                }}>
                   {store.contact_phone}
                 </a>
               )}
@@ -204,12 +247,24 @@ export default function StoreClient({ store, images, categories, products, store
           {/* Redes sociales */}
           {hasSocial && (
             <div>
-              <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '12px' }}>Seguinos</p>
+              <p style={{
+                fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                fontSize: '0.65rem', letterSpacing: '0.18em', textTransform: 'uppercase',
+                color: 'var(--store-footer-text-color, #6b6560)',
+                opacity: 0.7, marginBottom: '12px',
+              }}>Seguinos</p>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 {store.social_instagram && (
                   <a href={store.social_instagram.startsWith('http') ? store.social_instagram : `https://instagram.com/${store.social_instagram.replace('@', '')}`}
                     target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#1a1a1a', textDecoration: 'none', padding: '6px 12px', border: '0.5px solid #e0dbd4', borderRadius: radius }}>
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                      fontSize: '0.78rem',
+                      color: 'var(--store-footer-text-color, #1a1a1a)',
+                      textDecoration: 'none', padding: '6px 12px',
+                      border: '0.5px solid currentColor', opacity: 0.85, borderRadius: radius,
+                    }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
                     Instagram
                   </a>
@@ -217,14 +272,28 @@ export default function StoreClient({ store, images, categories, products, store
                 {store.social_whatsapp && (
                   <a href={`https://wa.me/${store.social_whatsapp.replace(/\D/g, '')}`}
                     target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#1a1a1a', textDecoration: 'none', padding: '6px 12px', border: '0.5px solid #e0dbd4', borderRadius: radius }}>
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                      fontSize: '0.78rem',
+                      color: 'var(--store-footer-text-color, #1a1a1a)',
+                      textDecoration: 'none', padding: '6px 12px',
+                      border: '0.5px solid currentColor', opacity: 0.85, borderRadius: radius,
+                    }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
                     WhatsApp
                   </a>
                 )}
                 {store.social_facebook && (
                   <a href={store.social_facebook} target="_blank" rel="noopener noreferrer"
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#1a1a1a', textDecoration: 'none', padding: '6px 12px', border: '0.5px solid #e0dbd4', borderRadius: radius }}>
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      fontFamily: 'var(--store-footer-font, var(--font-sans))',
+                      fontSize: '0.78rem',
+                      color: 'var(--store-footer-text-color, #1a1a1a)',
+                      textDecoration: 'none', padding: '6px 12px',
+                      border: '0.5px solid currentColor', opacity: 0.85, borderRadius: radius,
+                    }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     Facebook
                   </a>
@@ -235,11 +304,11 @@ export default function StoreClient({ store, images, categories, products, store
         </div>
 
         <div style={{ borderTop: '0.5px solid #e8e4df', marginTop: '2rem', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '0.9rem', letterSpacing: '0.08em', color: '#1a1a1a' }}>
-            FASHION<span style={{ color: '#6b6560' }}>MALL</span>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '0.9rem', letterSpacing: '0.08em', color: 'var(--store-footer-text-color, #1a1a1a)', opacity: 0.6 }}>
+            CnB
           </div>
-          <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: '#bbb', letterSpacing: '0.06em' }}>
-            © {new Date().getFullYear()} FashionMall · {store.name}
+          <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: 'var(--store-footer-text-color, #bbb)', letterSpacing: '0.06em', opacity: 0.5 }}>
+            © {new Date().getFullYear()} CnB · {store.name}
           </div>
         </div>
       </footer>

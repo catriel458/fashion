@@ -10,7 +10,7 @@ export default withAuth(
       return NextResponse.redirect(new URL('/unauthorized', req.url));
     }
 
-    if (pathname.startsWith('/admin') && token?.role !== 'admin' && token?.role !== 'superadmin') {
+    if (pathname.startsWith('/admin') && token?.role !== 'admin') {
       return NextResponse.redirect(new URL('/unauthorized', req.url));
     }
   },

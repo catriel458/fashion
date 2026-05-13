@@ -18,8 +18,8 @@ async function getStore(slug) {
 export async function generateMetadata({ params }) {
   const store = await getStore(params.storeSlug);
   return {
-    title: `${store?.name || params.storeSlug} — FashionMall`,
-    description: store?.tagline || `Tienda en FashionMall`,
+    title: `${store?.name || params.storeSlug} — CnB`,
+    description: store?.tagline || `Tienda en CnB`,
   };
 }
 
@@ -31,7 +31,16 @@ export default async function StoreLayout({ children, params }) {
   return (
     <CartProvider>
       <StoreThemeProvider store={store} />
-      <StoreNavbar storeSlug={storeSlug} storeName={store.name} storeLogo={store.logo_url || null} />
+      <StoreNavbar
+        storeSlug={storeSlug}
+        storeName={store.name}
+        storeLogo={store.logo_url || null}
+        headerBg={store.header_color || null}
+        headerTextColor={store.header_text_color || null}
+        headerFont={store.header_font || null}
+        headerFontSize={store.header_font_size || null}
+        primaryColor={store.primary_color || '#009aae'}
+      />
       <CartSidebar storeSlug={storeSlug} />
       <FittingRoomPanel />
       {children}

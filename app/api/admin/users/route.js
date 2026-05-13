@@ -11,8 +11,10 @@ async function requireAdmin() {
 }
 
 export async function GET(req) {
-  if (!await requireAdmin()) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  const session = await requireAdmin();
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+  const storeId = session.user.store_id;
   const { searchParams } = new URL(req.url);
   const role   = searchParams.get('role');
   const search = searchParams.get('search');
@@ -23,26 +25,28 @@ export async function GET(req) {
       users = await sql`
         SELECT id, username, email, role, avatar_url, active, created_at
         FROM users
-        WHERE role = ${role}
+        WHERE store_id = ${storeId}
+          AND role = ${role}
           AND (username ILIKE ${'%' + search + '%'} OR email ILIKE ${'%' + search + '%'})
         ORDER BY created_at DESC
       `;
     } else if (role) {
       users = await sql`
         SELECT id, username, email, role, avatar_url, active, created_at
-        FROM users WHERE role = ${role} ORDER BY created_at DESC
+        FROM users WHERE store_id = ${storeId} AND role = ${role} ORDER BY created_at DESC
       `;
     } else if (search) {
       users = await sql`
         SELECT id, username, email, role, avatar_url, active, created_at
         FROM users
-        WHERE username ILIKE ${'%' + search + '%'} OR email ILIKE ${'%' + search + '%'}
+        WHERE store_id = ${storeId}
+          AND (username ILIKE ${'%' + search + '%'} OR email ILIKE ${'%' + search + '%'})
         ORDER BY created_at DESC
       `;
     } else {
       users = await sql`
         SELECT id, username, email, role, avatar_url, active, created_at
-        FROM users ORDER BY created_at DESC
+        FROM users WHERE store_id = ${storeId} ORDER BY created_at DESC
       `;
     }
     return NextResponse.json(users);
@@ -52,8 +56,10 @@ export async function GET(req) {
 }
 
 export async function POST(req) {
-  if (!await requireAdmin()) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  const session = await requireAdmin();
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+  const storeId = session.user.store_id;
   try {
     const { username, email, password, role } = await req.json();
     if (!username?.trim() || !email?.trim() || !password) {
@@ -65,8 +71,8 @@ export async function POST(req) {
     }
     const passwordHash = await bcrypt.hash(password, 10);
     const [user] = await sql`
-      INSERT INTO users (username, email, password_hash, role)
-      VALUES (${username.trim()}, ${email.toLowerCase()}, ${passwordHash}, ${role || 'visitor'})
+      INSERT INTO users (username, email, password_hash, role, store_id)
+      VALUES (${username.trim()}, ${email.toLowerCase()}, ${passwordHash}, ${role || 'visitor'}, ${storeId})
       RETURNING id, username, email, role, active, created_at
     `;
     return NextResponse.json(user, { status: 201 });

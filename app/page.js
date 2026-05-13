@@ -84,8 +84,9 @@ export default function Home() {
       }}>
 
         {/* Logo */}
-        <div style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 22, fontWeight: 400, letterSpacing: '0.08em' }}>
-          FASHION<span style={{ color: 'var(--gray-dark)' }}>MALL</span>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+          <span style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 22, fontWeight: 400, letterSpacing: '0.08em' }}>CnB</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)', marginTop: 1 }}>Choose and Buy</span>
         </div>
 
         {/* Links desktop */}
@@ -157,7 +158,7 @@ export default function Home() {
                 fontSize: 10, letterSpacing: '0.25em', textTransform: 'uppercase',
                 marginBottom: 14, opacity: 0.7, fontFamily: 'var(--font-sans)',
               }}>
-                Tu shopping virtual
+                Choose and Buy
               </p>
               <h1 style={{
                 fontFamily: 'var(--font-serif)',
@@ -262,8 +263,9 @@ export default function Home() {
   gap: isMobile ? 16 : 0,
   background: 'var(--white)',
 }}>
-  <div style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 400, letterSpacing: '0.08em', color: '#1a1a1a' }}>
-    FASHION<span style={{ color: 'var(--gray-dark)' }}>MALL</span>
+  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+    <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 400, letterSpacing: '0.08em', color: '#1a1a1a' }}>CnB</span>
+    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>Choose and Buy</span>
   </div>
 
   <div style={{ display: 'flex', gap: '2rem', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>
@@ -272,7 +274,7 @@ export default function Home() {
   </div>
 
   <div style={{ fontSize: 11, color: '#bbb', letterSpacing: '0.06em' }}>
-    © {new Date().getFullYear()} FashionMall
+    © {new Date().getFullYear()} CnB
   </div>
 </footer>
 

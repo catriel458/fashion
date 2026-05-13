@@ -36,7 +36,7 @@ export default function AdminSidebar() {
         <div style={{ padding: '22px 20px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.05rem', letterSpacing: '0.08em', color: '#fff' }}>
-              FASHION<span style={{ color: '#6b6560' }}>MALL</span>
+              CnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', letterSpacing: '0.18em', marginLeft: '4px' }}>Choose and Buy</span>
             </div>
           </Link>
           <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: '3px' }}>
@@ -63,11 +63,6 @@ export default function AdminSidebar() {
 
           <div style={{ margin: '10px 16px', height: '0.5px', background: 'rgba(255,255,255,0.08)' }} />
 
-          {session?.user?.role === 'superadmin' && (
-            <Link href="/superadmin/stores" style={{ display: 'block', padding: '10px 20px', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a78bfa', textDecoration: 'none' }}>
-              Superadmin →
-            </Link>
-          )}
           <Link href={session?.user?.store_slug ? `/store/${session.user.store_slug}` : '/'} target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '10px 20px', fontSize: '0.75rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>
             Ver tienda →
           </Link>
