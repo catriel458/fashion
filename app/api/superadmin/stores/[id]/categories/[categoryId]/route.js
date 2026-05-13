@@ -31,7 +31,7 @@ export async function PUT(req, { params }) {
       const blob = await put(
         `category-images/${store.slug}/${cat.slug}.${ext}`,
         file,
-        { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN, allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] }
+        { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN, allowOverwrite: true, allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] }
       );
 
       const [updated] = await sql`

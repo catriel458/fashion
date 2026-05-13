@@ -15,7 +15,7 @@ export async function POST(req) {
 
     const ext = file.name.split('.').pop() || 'jpg';
     const filename = `body-photos/${session.user.id}.${ext}`;
-    const blob = await put(filename, file, { access: 'public' });
+    const blob = await put(filename, file, { access: 'public', allowOverwrite: true });
 
     await sql`
       UPDATE users SET body_photo_url = ${blob.url}, updated_at = NOW()
