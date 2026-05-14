@@ -8,7 +8,7 @@ export async function PUT(req) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   try {
-    const { username, email } = await req.json();
+    const { username, email, first_name, last_name, birth_date } = await req.json();
     if (!username?.trim() || !email?.trim()) {
       return NextResponse.json({ error: 'Username y email son requeridos' }, { status: 400 });
     }
@@ -22,9 +22,15 @@ export async function PUT(req) {
 
     const [user] = await sql`
       UPDATE users
-      SET username = ${username.trim()}, email = ${email.toLowerCase()}, updated_at = NOW()
+      SET
+        username   = ${username.trim()},
+        email      = ${email.toLowerCase()},
+        first_name = ${first_name?.trim() || null},
+        last_name  = ${last_name?.trim() || null},
+        birth_date = ${birth_date || null},
+        updated_at = NOW()
       WHERE id = ${session.user.id}
-      RETURNING id, username, email, role, avatar_url
+      RETURNING id, username, email, role, avatar_url, first_name, last_name, birth_date
     `;
     return NextResponse.json(user);
   } catch (error) {

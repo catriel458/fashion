@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { put, del } from '@vercel/blob';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
+import { createNotification } from '@/lib/notify';
 
 export async function PUT(request, { params }) {
   try {
+    const session = await getServerSession(authOptions);
     const { id } = params;
     const formData = await request.formData();
 
@@ -21,8 +25,8 @@ export async function PUT(request, { params }) {
     const active      = activeRaw != null ? activeRaw === 'true' : prev.active;
     const imageFile   = formData.get('image');
 
-    const rawCatId     = formData.get('category_id');
-    const categoryId   = rawCatId != null
+    const rawCatId   = formData.get('category_id');
+    const categoryId = rawCatId != null
       ? (rawCatId === '' ? null : parseInt(rawCatId))
       : prev.category_id;
 
@@ -39,7 +43,7 @@ export async function PUT(request, { params }) {
       imageUrl = blob.url;
     }
 
-    const product = await sql`
+    const [product] = await sql`
       UPDATE products
       SET
         name        = ${name},
@@ -58,7 +62,22 @@ export async function PUT(request, { params }) {
       try { await del(oldImageToDelete, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
     }
 
-    return NextResponse.json(product[0]);
+    // Notificar stock bajo al admin de la tienda
+    if (stock <= 5 && prev.stock > 5 && product.store_id && session) {
+      const adminId = session.user.role === 'admin' ? session.user.id : null;
+      if (adminId) {
+        await createNotification({
+          userId:  adminId,
+          storeId: product.store_id,
+          type:    'low_stock',
+          title:   `Stock bajo: ${name}`,
+          message: `${name} tiene solo ${stock} unidad${stock === 1 ? '' : 'es'} en stock`,
+          link:    '/admin/products',
+        });
+      }
+    }
+
+    return NextResponse.json(product);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useCart } from './CartContext';
 import { useFittingRoom } from './FittingRoomContext';
+import NotificationBell from './NotificationBell';
 
 const NAV_CATEGORIES = [
   { label: 'Remeras',    slug: 'remeras' },
@@ -136,6 +137,14 @@ export default function StoreNavbar({
                 {session.user.role === 'superadmin' && (
                   <Link href="/superadmin/dashboard" onClick={() => setUserMenuOpen(false)} style={{ display: 'block', padding: '9px 14px', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.08em', color: '#a78bfa', textDecoration: 'none' }} onMouseEnter={e => e.currentTarget.style.background = '#f5f3f0'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>Superadmin</Link>
                 )}
+                <button
+                  onClick={() => { setUserMenuOpen(false); signOut({ callbackUrl: `/store/${storeSlug}` }); }}
+                  style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.08em', color: '#c0392b', background: 'none', border: 'none', cursor: 'pointer', borderTop: '0.5px solid #f0ede8' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  ↪ Cerrar sesión
+                </button>
               </div>
             </>
           )}
@@ -147,6 +156,18 @@ export default function StoreNavbar({
           Ingresar
         </Link>
       )}
+
+      {/* Ayuda */}
+      <Link href="/ayuda" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: textColor, display: 'flex', alignItems: 'center', opacity: 0.65, textDecoration: 'none' }} title="Centro de ayuda">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </Link>
+
+      {/* Notifications */}
+      <NotificationBell textColor={textColor} />
 
       {/* Fitting room button */}
       <button onClick={() => setIsPanelOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '8px', color: textColor, display: 'flex', alignItems: 'center' }} aria-label="Abrir vestidor" title="Vestidor virtual">

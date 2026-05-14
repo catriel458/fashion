@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
+import Link from 'next/link';
 
 const labelStyle = {
   display: 'block', marginBottom: '6px',
@@ -155,6 +156,11 @@ export default function AuthModal({ isOpen, onClose, message, onSuccess }) {
             }}>
               {loading ? 'Ingresando...' : 'Ingresar'}
             </button>
+            <div style={{ textAlign: 'center', marginTop: '12px' }}>
+              <Link href="/forgot-password" onClick={onClose} style={{ fontSize: '0.72rem', color: '#6b6560', textDecoration: 'none', letterSpacing: '0.06em' }}>
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
           </form>
         ) : (
           <form onSubmit={handleRegister}>

@@ -44,7 +44,7 @@ function Toast({ message, type }) {
 
 export default function ProfilePage() {
   const { data: session, update: updateSession } = useSession();
-  const [toast, setToast]   = useState(null);
+  const [toast, setToast] = useState(null);
 
   const [profileForm, setProfileForm] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -75,7 +75,15 @@ export default function ProfilePage() {
   }, [session]);
 
   const user = session?.user;
-  const form = profileForm || { username: user?.username || '', email: user?.email || '' };
+  const form = profileForm || {
+    username:   user?.username   || '',
+    email:      user?.email      || '',
+    first_name: user?.first_name || '',
+    last_name:  user?.last_name  || '',
+    birth_date: user?.birth_date ? user.birth_date.substring(0, 10) : '',
+  };
+
+  const hasPersonalData = user?.first_name || user?.last_name || user?.birth_date;
 
   async function handleSaveProfile(e) {
     e.preventDefault();
@@ -87,7 +95,13 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      await updateSession({ username: data.username, email: data.email });
+      await updateSession({
+        username: data.username,
+        email: data.email,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        birth_date: data.birth_date,
+      });
       setProfileForm(null);
       showToast('Datos actualizados correctamente');
     } catch (err) {
@@ -184,7 +198,7 @@ export default function ProfilePage() {
         <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px clamp(1.2rem, 4vw, 2.5rem)' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', letterSpacing: '0.08em', color: '#fff', marginBottom: '20px' }}>
-              FASHION<span style={{ color: '#6b6560' }}>MALL</span>
+              CnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px', letterSpacing: '0.16em' }}>Choose and Buy</span>
             </div>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -197,6 +211,9 @@ export default function ProfilePage() {
             <div>
               <div style={{ color: '#fff', fontFamily: 'var(--font-serif)', fontSize: '1.3rem', fontWeight: 300 }}>{user.username}</div>
               <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', marginTop: '2px' }}>{user.email}</div>
+              {user.email_verified === false && (
+                <div style={{ fontSize: '0.65rem', color: '#fde047', marginTop: '4px' }}>⚠ Email no verificado</div>
+              )}
             </div>
           </div>
 
@@ -205,6 +222,7 @@ export default function ProfilePage() {
             {[
               { label: 'Mi perfil', href: '/profile' },
               ...(user.role === 'visitor' ? [{ label: 'Mis compras', href: '/profile/orders' }] : []),
+              { label: 'Notificaciones', href: '/profile/notifications' },
             ].map(({ label, href }) => (
               <Link key={href} href={href} style={{
                 fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase',
@@ -222,8 +240,8 @@ export default function ProfilePage() {
       {/* Content */}
       <div style={{ maxWidth: '700px', margin: '0 auto', padding: '28px clamp(1.2rem, 4vw, 2.5rem) 48px' }}>
 
-        {/* Datos personales */}
-        <Section title="Datos personales">
+        {/* Datos de cuenta */}
+        <Section title="Datos de cuenta">
           <form onSubmit={handleSaveProfile}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
               <div>
@@ -239,6 +257,42 @@ export default function ProfilePage() {
                   style={inputStyle} />
               </div>
             </div>
+
+            {/* Datos personales */}
+            <div style={{ borderTop: '0.5px solid #e0dbd4', paddingTop: '16px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '14px' }}>
+                Datos personales
+              </div>
+              {!hasPersonalData && !profileForm && (
+                <div style={{ background: '#fef9c3', border: '0.5px solid #fde047', padding: '10px 14px', borderRadius: '4px', marginBottom: '14px', fontSize: '0.78rem', color: '#78350f' }}>
+                  Completá tu perfil para recibir descuentos de cumpleaños 🎂
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <label style={labelStyle}>Nombre</label>
+                  <input type="text" value={form.first_name}
+                    onChange={e => setProfileForm({ ...form, first_name: e.target.value })}
+                    style={inputStyle} placeholder="Tu nombre" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Apellido</label>
+                  <input type="text" value={form.last_name}
+                    onChange={e => setProfileForm({ ...form, last_name: e.target.value })}
+                    style={inputStyle} placeholder="Tu apellido" />
+                </div>
+              </div>
+              <div style={{ maxWidth: '240px' }}>
+                <label style={labelStyle}>Fecha de nacimiento</label>
+                <input type="date" value={form.birth_date}
+                  onChange={e => setProfileForm({ ...form, birth_date: e.target.value })}
+                  style={inputStyle} />
+                <p style={{ fontSize: '0.68rem', color: '#6b6560', margin: '4px 0 0' }}>
+                  Usada para enviarte descuentos en tu cumpleaños
+                </p>
+              </div>
+            </div>
+
             <div style={{ textAlign: 'right' }}>
               <button type="submit" disabled={savingProfile} style={{
                 background: savingProfile ? '#ccc' : '#0f0f0f', color: '#fafaf8',
@@ -296,8 +350,7 @@ export default function ProfilePage() {
               }
             </div>
             <div>
-              <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange}
-                style={{ display: 'none' }} />
+              <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
               <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}
                 style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: uploadingAvatar ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
                 {uploadingAvatar ? 'Subiendo...' : 'Cambiar foto'}
@@ -320,13 +373,9 @@ export default function ProfilePage() {
               }
             </div>
             <div>
-              <input ref={bodyPhotoInputRef} type="file" accept="image/*" onChange={handleBodyPhotoChange}
-                style={{ display: 'none' }} />
-              <button
-                onClick={() => bodyPhotoInputRef.current?.click()}
-                disabled={uploadingBodyPhoto}
-                style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: uploadingBodyPhoto ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}
-              >
+              <input ref={bodyPhotoInputRef} type="file" accept="image/*" onChange={handleBodyPhotoChange} style={{ display: 'none' }} />
+              <button onClick={() => bodyPhotoInputRef.current?.click()} disabled={uploadingBodyPhoto}
+                style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: uploadingBodyPhoto ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
                 {uploadingBodyPhoto ? 'Subiendo...' : bodyPhotoUrl ? 'Cambiar foto' : 'Subir foto'}
               </button>
               <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: '6px 0 0' }}>
@@ -354,7 +403,7 @@ export default function ProfilePage() {
           ) : (
             <div>
               <p style={{ fontSize: '0.875rem', color: '#c0392b', marginBottom: '16px', lineHeight: 1.5 }}>
-                ¿Estás seguro? Escribí <strong>ELIMINAR</strong> para confirmar.
+                ¿Estás seguro? Esta acción no se puede deshacer.
               </p>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => setConfirmDelete(false)}

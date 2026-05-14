@@ -143,7 +143,15 @@ function LoginForm() {
                     style={inputStyle} placeholder="tu@email.com" autoComplete="email" />
                 </div>
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={labelStyle}>Contraseña</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                    <label style={{ ...labelStyle, marginBottom: 0 }}>Contraseña</label>
+                    <Link href="/forgot-password" style={{ fontSize: '0.68rem', color: '#6b6560', textDecoration: 'none', letterSpacing: '0.04em' }}
+                      onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                      onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </Link>
+                  </div>
                   <input type="password" required
                     value={loginForm.password}
                     onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}

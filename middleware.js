@@ -1,6 +1,8 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
+const UNVERIFIED_BLOCKED = ['/profile', '/admin', '/superadmin'];
+
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
@@ -12,6 +14,14 @@ export default withAuth(
 
     if (pathname.startsWith('/admin') && token?.role !== 'admin') {
       return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
+
+    // Bloquear acceso a rutas sensibles si el email no está verificado
+    if (token?.email_verified === false) {
+      const blocked = UNVERIFIED_BLOCKED.some(path => pathname.startsWith(path));
+      if (blocked) {
+        return NextResponse.redirect(new URL('/?unverified=true', req.url));
+      }
     }
   },
   {

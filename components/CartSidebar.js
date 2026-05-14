@@ -3,15 +3,49 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useCart } from './CartContext';
 
 export default function CartSidebar() {
   const { items, isOpen, setIsOpen, removeItem, updateQuantity, total, sessionId, clearCartItems } = useCart();
   const { data: session } = useSession();
+  const pathname = usePathname();
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [orderConfirmed, setOrderConfirmed]   = useState(null);
   const [checkoutError, setCheckoutError]     = useState('');
+  const [couponCode, setCouponCode]     = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError]   = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
+  const storeSlugMatch = pathname?.match(/\/store\/([^/]+)/);
+  const storeSlug = storeSlugMatch?.[1] || null;
+
+  const discountedTotal = appliedCoupon
+    ? total * (1 - appliedCoupon.discount_percentage / 100)
+    : total;
+
+  async function handleApplyCoupon(e) {
+    e.preventDefault();
+    if (!couponCode.trim() || !storeSlug) return;
+    setCouponLoading(true); setCouponError('');
+    try {
+      const res = await fetch('/api/cart/apply-coupon', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode.trim(), storeSlug }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAppliedCoupon(data);
+      setCouponCode('');
+    } catch (err) {
+      setCouponError(err.message);
+    } finally {
+      setCouponLoading(false);
+    }
+  }
 
   async function doCheckout() {
     if (!sessionId) return;
@@ -21,7 +55,10 @@ export default function CartSidebar() {
       const res  = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId }),
+        body: JSON.stringify({
+          session_id: sessionId,
+          coupon_id: appliedCoupon?.coupon_id || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al procesar la compra');
@@ -151,14 +188,53 @@ export default function CartSidebar() {
               {/* Footer */}
               {items.length > 0 && (
                 <div style={{ paddingTop: '16px', borderTop: '0.5px solid rgba(128,128,128,0.2)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+
+                  {/* Cupón */}
+                  {session && storeSlug && !appliedCoupon && (
+                    <form onSubmit={handleApplyCoupon} style={{ marginBottom: '14px' }}>
+                      <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '6px' }}>
+                        ¿Tenés un cupón?
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          value={couponCode} onChange={e => setCouponCode(e.target.value)}
+                          placeholder="Código de cupón"
+                          style={{ flex: 1, padding: '7px 10px', border: '0.5px solid #e0dbd4', background: '#fafaf8', fontSize: '0.78rem', outline: 'none', borderRadius: '2px', fontFamily: 'monospace', letterSpacing: '0.08em' }}
+                        />
+                        <button type="submit" disabled={couponLoading || !couponCode.trim()} style={{ padding: '7px 12px', background: '#0f0f0f', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '2px', fontSize: '0.65rem', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+                          {couponLoading ? '...' : 'Aplicar'}
+                        </button>
+                      </div>
+                      {couponError && <p style={{ fontSize: '0.65rem', color: '#c0392b', margin: '4px 0 0' }}>{couponError}</p>}
+                    </form>
+                  )}
+
+                  {appliedCoupon && (
+                    <div style={{ marginBottom: '12px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '4px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem' }}>
+                      <span style={{ color: '#166534' }}>✓ Cupón aplicado: -{appliedCoupon.discount_percentage}%</span>
+                      <button onClick={() => setAppliedCoupon(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', fontSize: '0.7rem', padding: 0 }}>✕</button>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: appliedCoupon ? '4px' : '16px' }}>
                     <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: 'var(--store-panel-text, #6b6560)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7 }}>
                       Total
                     </span>
-                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: 'var(--store-panel-text, #0f0f0f)' }}>
+                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: 'var(--store-panel-text, #0f0f0f)', textDecoration: appliedCoupon ? 'line-through' : 'none', opacity: appliedCoupon ? 0.5 : 1 }}>
                       ${total.toFixed(2)}
                     </span>
                   </div>
+                  {appliedCoupon && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#166534', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                        Con descuento
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, color: '#166534' }}>
+                        ${discountedTotal.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
 
                   {session ? (
                     <button
