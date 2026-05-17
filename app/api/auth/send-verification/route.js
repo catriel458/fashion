@@ -24,16 +24,12 @@ export async function POST(req) {
 
     const verificationUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`;
 
-    try {
-      const { subject, html } = emailVerification({
-        username: user.username,
-        verificationUrl,
-        storeName: null,
-      });
-      await sendMail({ to: user.email, subject, html });
-    } catch {
-      // Mail falló (ej: proxy corporativo bloquea SMTP)
-    }
+    const { subject, html } = emailVerification({
+      username: user.username,
+      verificationUrl,
+      storeName: null,
+    });
+    await sendMail({ to: user.email, subject, html });
 
     const devUrl = process.env.NODE_ENV !== 'production' ? verificationUrl : null;
     return NextResponse.json({ success: true, ...(devUrl && { devVerificationUrl: devUrl }) });

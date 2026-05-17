@@ -23,7 +23,7 @@ export async function GET(req) {
     await sql`UPDATE users SET email_verified = true WHERE id = ${t.user_id}`;
     await sql`UPDATE email_verification_tokens SET used = true WHERE id = ${t.id}`;
 
-    return NextResponse.redirect(new URL('/?verified=true', req.url));
+    return NextResponse.redirect(new URL('/auth/refresh?verified=true', req.url));
   } catch {
     return NextResponse.redirect(new URL('/?error=invalid-token', req.url));
   }

@@ -55,11 +55,41 @@ export default function ProfilePage() {
   const [uploadingAvatar,    setUploadingAvatar]    = useState(false);
   const [deletingAccount,    setDeletingAccount]    = useState(false);
   const [confirmDelete,      setConfirmDelete]      = useState(false);
+  const [verifyCooldown,     setVerifyCooldown]     = useState(0);
+  const [verifySending,      setVerifySending]      = useState(false);
+  const [verifySent,         setVerifySent]         = useState(false);
   const [bodyPhotoUrl,       setBodyPhotoUrl]       = useState(null);
   const [bodyPhotoPreview,   setBodyPhotoPreview]   = useState(null);
   const [uploadingBodyPhoto, setUploadingBodyPhoto] = useState(false);
   const avatarInputRef    = useRef(null);
   const bodyPhotoInputRef = useRef(null);
+
+  useEffect(() => {
+    if (verifyCooldown <= 0) return;
+    const t = setTimeout(() => setVerifyCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [verifyCooldown]);
+
+  async function handleResendVerification() {
+    if (verifyCooldown > 0 || verifySending || !user) return;
+    setVerifySending(true);
+    try {
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al enviar');
+      setVerifySent(true);
+      setVerifyCooldown(60);
+      setTimeout(() => setVerifySent(false), 5000);
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setVerifySending(false);
+    }
+  }
 
   function showToast(message, type = 'success') {
     setToast({ message, type });
@@ -387,6 +417,42 @@ export default function ProfilePage() {
             </div>
           </div>
         </Section>
+
+        {/* Verificación de cuenta */}
+        {user.email_verified === false && (
+          <Section title="Verificación de cuenta">
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '1rem' }}>⚠️</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#78350f' }}>Tu email no está verificado</span>
+                </div>
+                <p style={{ fontSize: '0.78rem', color: '#6b6560', margin: 0, lineHeight: 1.6 }}>
+                  Verificar tu email activa el probador virtual. Revisá tu bandeja de entrada o reenviá el mail.
+                </p>
+                {verifySent && (
+                  <p style={{ fontSize: '0.75rem', color: '#166534', marginTop: '8px', fontWeight: 500 }}>
+                    ✓ Mail enviado — revisá tu bandeja de entrada
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={handleResendVerification}
+                disabled={verifySending || verifyCooldown > 0}
+                style={{
+                  border: '0.5px solid #e0dbd4', background: verifySending ? '#f0ede8' : '#0f0f0f',
+                  color: verifySending ? '#aaa' : '#fff',
+                  cursor: verifyCooldown > 0 || verifySending ? 'not-allowed' : 'pointer',
+                  padding: '9px 18px', fontSize: '0.72rem', borderRadius: '2px',
+                  letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)',
+                  whiteSpace: 'nowrap', opacity: verifyCooldown > 0 ? 0.6 : 1, flexShrink: 0,
+                }}
+              >
+                {verifySending ? 'Enviando...' : verifyCooldown > 0 ? `Reenviar (${verifyCooldown}s)` : 'Reenviar email'}
+              </button>
+            </div>
+          </Section>
+        )}
 
         {/* Danger zone */}
         <Section title="Zona peligrosa">

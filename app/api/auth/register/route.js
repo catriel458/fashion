@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import sql from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { sendMail } from '@/lib/mailer';
-import { emailVerification } from '@/lib/email-templates';
+import { welcomeVerification } from '@/lib/email-templates';
 import { createNotification } from '@/lib/notify';
 
 export async function POST(req) {
@@ -35,7 +35,7 @@ export async function POST(req) {
         VALUES (${user.id}, ${token}, ${expiresAt})
       `;
       const verificationUrl = `${process.env.NEXTAUTH_URL}/api/auth/verify-email?token=${token}`;
-      const { subject, html } = emailVerification({ username: user.username, verificationUrl, storeName: null });
+      const { subject, html } = welcomeVerification({ username: user.username, verificationUrl });
       await sendMail({ to: user.email, subject, html });
     } catch {
       // El registro continúa aunque falle el mail

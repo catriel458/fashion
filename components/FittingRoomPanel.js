@@ -29,8 +29,38 @@ export default function FittingRoomPanel() {
   const [error,           setError]           = useState('');
   const [lightboxOpen,    setLightboxOpen]    = useState(false);
   const [zoom,            setZoom]            = useState(1);
+  const [resendCooldown,  setResendCooldown]  = useState(0);
+  const [resendSending,   setResendSending]   = useState(false);
+  const [resendSent,      setResendSent]      = useState(false);
   const photoInputRef  = useRef(null);
   const lightboxRef    = useRef(null);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleResendVerification = async () => {
+    if (resendCooldown > 0 || resendSending || !session?.user) return;
+    setResendSending(true);
+    try {
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: session.user.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al enviar');
+      setResendSent(true);
+      setResendCooldown(60);
+      setTimeout(() => setResendSent(false), 4000);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setResendSending(false);
+    }
+  };
 
   useEffect(() => {
     if (!session?.user) return;
@@ -144,7 +174,8 @@ export default function FittingRoomPanel() {
     else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   };
 
-  const canTryOn    = !!bodyPhotoUrl && !uploadingPhoto && items.length > 0 && !generating;
+  const isVerified  = session?.user?.email_verified !== false;
+  const canTryOn    = isVerified && !!bodyPhotoUrl && !uploadingPhoto && items.length > 0 && !generating;
   const displayPhoto = bodyPhotoPreview || bodyPhotoUrl;
 
   return (
@@ -187,6 +218,36 @@ export default function FittingRoomPanel() {
               ✕
             </button>
           </div>
+
+          {/* Banner verificación — solo visible cuando no está verificado */}
+          {session?.user && !isVerified && (
+            <div style={{
+              background: '#fef9c3', border: '0.5px solid #fde047',
+              borderRadius: 4, padding: '8px 12px', marginBottom: '16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 8, flexWrap: 'wrap', fontSize: '0.72rem',
+            }}>
+              <span style={{ color: '#78350f' }}>
+                Verificá tu email para activar el probador
+              </span>
+              {resendSent ? (
+                <span style={{ color: '#166534', fontWeight: 500, fontSize: '0.68rem' }}>✓ Email enviado</span>
+              ) : (
+                <button
+                  onClick={handleResendVerification}
+                  disabled={resendSending || resendCooldown > 0}
+                  style={{
+                    background: '#0f0f0f', color: '#fff', border: 'none',
+                    padding: '4px 10px', borderRadius: 2, cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                    fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase',
+                    opacity: resendCooldown > 0 ? 0.6 : 1, flexShrink: 0,
+                  }}
+                >
+                  {resendSending ? 'Enviando...' : resendCooldown > 0 ? `Reenviar (${resendCooldown}s)` : 'Reenviar'}
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Tu outfit */}
           <div style={{ marginBottom: '20px' }}>
@@ -322,41 +383,72 @@ export default function FittingRoomPanel() {
               Paso 2 — Generá tu look
             </p>
 
-            <button
-              onClick={handleTryOn}
-              disabled={!canTryOn}
-              style={{
-                width: '100%', padding: '13px',
-                background: canTryOn ? '#0f0f0f' : '#f0ede8',
-                color: canTryOn ? '#fafaf8' : '#aaa',
-                border: '0.5px solid',
-                borderColor: canTryOn ? '#0f0f0f' : '#e0dbd4',
-                fontFamily: 'var(--font-sans)', fontSize: '0.72rem',
-                letterSpacing: '0.18em', textTransform: 'uppercase',
-                cursor: canTryOn ? 'pointer' : 'not-allowed',
-                borderRadius: '2px', transition: 'all 0.2s',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              }}
-            >
-              {generating && (
-                <span style={{
-                  display: 'inline-block', width: 12, height: 12, borderRadius: '50%',
-                  border: '1.5px solid #888', borderTopColor: '#fafaf8',
-                  animation: 'frSpin 0.8s linear infinite', flexShrink: 0,
-                }}/>
-              )}
-              {generating ? 'Generando tu look...' : 'Probarme este outfit →'}
-            </button>
+            {!isVerified ? (
+              <div style={{ border: '0.5px solid #fde047', background: '#fef9c3', borderRadius: 4, padding: '16px', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.6rem', marginBottom: 8 }}>✉️</div>
+                <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-sans)', fontSize: '0.8rem', fontWeight: 500, color: '#78350f' }}>
+                  Verificá tu email para usar el probador
+                </p>
+                <p style={{ margin: '0 0 12px', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: '#92400e' }}>
+                  Revisá tu bandeja de entrada o reenviá el email.
+                </p>
+                {resendSent ? (
+                  <span style={{ color: '#166534', fontWeight: 500, fontSize: '0.72rem' }}>✓ Email enviado</span>
+                ) : (
+                  <button
+                    onClick={handleResendVerification}
+                    disabled={resendSending || resendCooldown > 0}
+                    style={{
+                      background: '#0f0f0f', color: '#fff', border: 'none',
+                      padding: '8px 16px', borderRadius: 2,
+                      cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '0.68rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+                      fontFamily: 'var(--font-sans)', opacity: resendCooldown > 0 ? 0.6 : 1,
+                    }}
+                  >
+                    {resendSending ? 'Enviando...' : resendCooldown > 0 ? `Reenviar (${resendCooldown}s)` : 'Reenviar email de verificación'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleTryOn}
+                  disabled={!canTryOn}
+                  style={{
+                    width: '100%', padding: '13px',
+                    background: canTryOn ? '#0f0f0f' : '#f0ede8',
+                    color: canTryOn ? '#fafaf8' : '#aaa',
+                    border: '0.5px solid',
+                    borderColor: canTryOn ? '#0f0f0f' : '#e0dbd4',
+                    fontFamily: 'var(--font-sans)', fontSize: '0.72rem',
+                    letterSpacing: '0.18em', textTransform: 'uppercase',
+                    cursor: canTryOn ? 'pointer' : 'not-allowed',
+                    borderRadius: '2px', transition: 'all 0.2s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  }}
+                >
+                  {generating && (
+                    <span style={{
+                      display: 'inline-block', width: 12, height: 12, borderRadius: '50%',
+                      border: '1.5px solid #888', borderTopColor: '#fafaf8',
+                      animation: 'frSpin 0.8s linear infinite', flexShrink: 0,
+                    }}/>
+                  )}
+                  {generating ? 'Generando tu look...' : 'Probarme este outfit →'}
+                </button>
 
-            {!bodyPhotoUrl && !uploadingPhoto && (
-              <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', textAlign: 'center' }}>
-                Primero subí tu foto de cuerpo
-              </p>
-            )}
-            {items.length === 0 && (
-              <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', textAlign: 'center' }}>
-                Agregá prendas al vestidor desde los productos
-              </p>
+                {!bodyPhotoUrl && !uploadingPhoto && (
+                  <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', textAlign: 'center' }}>
+                    Primero subí tu foto de cuerpo
+                  </p>
+                )}
+                {items.length === 0 && (
+                  <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', textAlign: 'center' }}>
+                    Agregá prendas al vestidor desde los productos
+                  </p>
+                )}
+              </>
             )}
 
             {error && (
