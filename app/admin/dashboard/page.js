@@ -6,11 +6,13 @@ import {
 } from 'recharts';
 
 const STATUS_COLORS = {
-  confirmed: '#2e7d32',
   pending:   '#e67e22',
+  confirmed: '#1565c0',
+  ready:     '#2e7d32',
+  delivered: '#1b5e20',
   cancelled: '#c0392b',
 };
-const PIE_COLORS = ['#2e7d32', '#e67e22', '#c0392b'];
+const PIE_COLORS = ['#e67e22', '#1565c0', '#2e7d32', '#1b5e20', '#c0392b'];
 
 function StatCard({ label, value, sub }) {
   return (
@@ -59,7 +61,7 @@ export default function AdminDashboard() {
     value: s.count,
   }));
 
-  const statusLabel = { confirmed: 'Confirmadas', pending: 'Pendientes', cancelled: 'Canceladas' };
+  const statusLabel = { pending: 'Pendientes', confirmed: 'Confirmados', ready: 'Listos', delivered: 'Vendidos', cancelled: 'Cancelados' };
 
   return (
     <div style={{ padding: 'clamp(2rem, 4vw, 3rem) clamp(1.2rem, 4vw, 2.5rem)', fontFamily: 'var(--font-sans)' }}>
@@ -72,13 +74,17 @@ export default function AdminDashboard() {
       </p>
 
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px', marginBottom: '36px' }}>
-        <StatCard label="Usuarios totales" value={data.users.total} sub={`+${data.users.new_this_week} esta semana`} />
-        <StatCard label="Órdenes totales" value={data.orders.total} />
-        <StatCard label="Ingresos totales" value={`$${parseFloat(data.revenue.total).toFixed(0)}`} sub="órdenes confirmadas" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px', marginBottom: '36px' }}>
+        <StatCard label="Pedidos hoy" value={data.orders.today} sub="excluye cancelados" />
+        <StatCard
+          label="Pendientes"
+          value={data.orders.pending}
+          sub={data.orders.pending > 5 ? '⚠️ Muchos pendientes' : 'sin confirmar'}
+        />
+        <StatCard label="Listos para retirar" value={data.orders.ready} sub="esperando cliente" />
+        <StatCard label="Ingresos del mes" value={`$${parseFloat(data.revenue.this_month).toFixed(0)}`} sub="pedidos entregados" />
         <StatCard label="Productos activos" value={data.products.active} />
-        <StatCard label="Sin stock" value={data.products.out_of_stock} sub="productos en 0" />
-        <StatCard label="Nuevos esta semana" value={data.users.new_this_week} sub="usuarios" />
+        <StatCard label="Sin stock" value={data.products.out_of_stock} sub="en 0 unidades" />
       </div>
 
       {/* Charts row 1 */}
@@ -184,17 +190,21 @@ export default function AdminDashboard() {
                 </tr>
               ) : (
                 data.orders.recent.map(order => (
-                  <tr key={order.id} style={{ borderBottom: '0.5px solid #e0dbd4' }}>
+                  <tr
+                    key={order.id}
+                    style={{ borderBottom: '0.5px solid #e0dbd4', cursor: 'pointer' }}
+                    onClick={() => window.location.href = '/admin/orders'}
+                  >
                     <td style={{ padding: '12px 16px', color: '#6b6560' }}>#{order.id}</td>
                     <td style={{ padding: '12px 16px' }}>{order.username || order.email || '—'}</td>
                     <td style={{ padding: '12px 16px', fontWeight: 500 }}>${parseFloat(order.total).toFixed(2)}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{
                         padding: '3px 8px', borderRadius: '20px', fontSize: '0.65rem',
-                        background: order.status === 'confirmed' ? '#e8f5e9' : order.status === 'cancelled' ? '#fef2f2' : '#fff8e1',
+                        background: { pending: '#fff8e1', confirmed: '#e3f2fd', ready: '#e8f5e9', delivered: '#e8f5e9', cancelled: '#fef2f2' }[order.status] || '#f5f3f0',
                         color: STATUS_COLORS[order.status] || '#6b6560',
                       }}>
-                        {order.status === 'confirmed' ? 'Confirmada' : order.status === 'cancelled' ? 'Cancelada' : 'Pendiente'}
+                        {statusLabel[order.status] || order.status}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', color: '#6b6560', fontSize: '0.78rem' }}>

@@ -22,7 +22,13 @@ export async function GET(req, { params }) {
       WHERE oi.order_id = ${id}
     `;
 
-    return NextResponse.json({ ...order, items });
+    let storeWhatsapp = null;
+    if (order.store_id) {
+      const [st] = await sql`SELECT whatsapp_number FROM stores WHERE id = ${order.store_id}`;
+      storeWhatsapp = st?.whatsapp_number || null;
+    }
+
+    return NextResponse.json({ ...order, items, store_whatsapp: storeWhatsapp });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

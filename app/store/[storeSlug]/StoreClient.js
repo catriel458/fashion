@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
 import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
+import StoreStatusBadge from '@/components/StoreStatusBadge';
 
 const CATEGORY_ICONS = {
   remeras: '👕', pantalones: '👖', abrigos: '🧥',
@@ -78,6 +79,9 @@ export default function StoreClient({ store, images, categories, products, store
           }}>
             {store.hero_subtitle || store.tagline || ''}
           </p>
+          <div style={{ marginBottom: '20px' }}>
+            <StoreStatusBadge storeSlug={storeSlug} />
+          </div>
           <a href={images.length > 0 ? '#carousel' : '#productos'} style={{
             display: 'inline-block', padding: '12px 28px',
             background: accent,

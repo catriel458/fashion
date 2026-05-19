@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getAdminStoreId } from '@/lib/admin-store';
 import { put } from '@vercel/blob';
 import sql from '@/lib/db';
 
@@ -25,11 +26,12 @@ export async function GET() {
         ORDER BY p.created_at DESC
       `;
     } else {
+      const storeId = await getAdminStoreId(session);
       products = await sql`
         SELECT p.*, c.name AS category_name
         FROM products p
         LEFT JOIN categories c ON p.category_id = c.id
-        WHERE p.store_id = ${session.user.store_id}
+        WHERE p.store_id = ${storeId}
         ORDER BY p.created_at DESC
       `;
     }
@@ -69,7 +71,7 @@ export async function POST(request) {
 
     const slug = slugify(name) + '-' + Date.now();
     const finalCategoryId = categoryId === '' ? null : categoryId;
-    const storeId = session.user.role === 'admin' ? session.user.store_id : (formData.get('store_id') || null);
+    const storeId = session.user.role === 'admin' ? await getAdminStoreId(session) : (formData.get('store_id') || null);
 
     const product = await sql`
       INSERT INTO products (name, slug, category_id, description, price, stock, image_url, active, store_id)

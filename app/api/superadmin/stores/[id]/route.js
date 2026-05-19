@@ -19,7 +19,8 @@ export async function GET(request, { params }) {
     if (stores.length === 0) return NextResponse.json({ error: 'No encontrada' }, { status: 404 });
     const images = await sql`SELECT * FROM store_images WHERE store_id = ${id} ORDER BY sort_order, id`;
     const admin  = await sql`SELECT id, username, email FROM users WHERE store_id = ${id} AND role = 'admin' LIMIT 1`;
-    return NextResponse.json({ ...stores[0], images, admin: admin[0] || null });
+    const hours  = await sql`SELECT * FROM store_hours WHERE store_id = ${id} ORDER BY day_of_week`.catch(() => []);
+    return NextResponse.json({ ...stores[0], images, admin: admin[0] || null, hours });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -38,7 +39,10 @@ export async function PUT(request, { params }) {
       header_font, header_font_size, header_text_color,
       footer_font, footer_font_size, footer_text_color,
       panel_bg_color, panel_text_color,
+      whatsapp_number, whatsapp_message_template, address, pickup_info, hours,
     } = body;
+
+    const cleanWa = whatsapp_number ? whatsapp_number.replace(/\D/g, '') || null : undefined;
 
     const existing = await sql`SELECT * FROM stores WHERE id = ${id}`;
     if (existing.length === 0) return NextResponse.json({ error: 'No encontrada' }, { status: 404 });
@@ -72,12 +76,29 @@ export async function PUT(request, { params }) {
         footer_font       = ${footer_font       ?? prev.footer_font},
         footer_font_size  = ${footer_font_size  ?? prev.footer_font_size},
         footer_text_color = ${footer_text_color ?? prev.footer_text_color},
-        panel_bg_color    = ${panel_bg_color    ?? prev.panel_bg_color},
-        panel_text_color  = ${panel_text_color  ?? prev.panel_text_color},
+        panel_bg_color              = ${panel_bg_color              ?? prev.panel_bg_color},
+        panel_text_color            = ${panel_text_color            ?? prev.panel_text_color},
+        whatsapp_number             = ${cleanWa                    !== undefined ? cleanWa          : (prev.whatsapp_number             ?? null)},
+        whatsapp_message_template   = ${whatsapp_message_template  !== undefined ? whatsapp_message_template : (prev.whatsapp_message_template   ?? null)},
+        address                     = ${address                    !== undefined ? address          : (prev.address                     ?? null)},
+        pickup_info                 = ${pickup_info                !== undefined ? pickup_info      : (prev.pickup_info                 ?? null)},
         updated_at        = NOW()
       WHERE id = ${id}
       RETURNING *
     `;
+
+    // Upsert horarios si se enviaron
+    if (Array.isArray(hours)) {
+      for (const h of hours) {
+        await sql`
+          INSERT INTO store_hours (store_id, day_of_week, is_open, open_time, close_time)
+          VALUES (${id}, ${h.day_of_week}, ${h.is_open}, ${h.open_time || null}, ${h.close_time || null})
+          ON CONFLICT (store_id, day_of_week)
+          DO UPDATE SET is_open = EXCLUDED.is_open, open_time = EXCLUDED.open_time, close_time = EXCLUDED.close_time
+        `.catch(() => {});
+      }
+    }
+
     revalidatePath(`/store/${store[0].slug}`);
     return NextResponse.json(store[0]);
   } catch (error) {

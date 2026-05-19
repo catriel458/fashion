@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { getAdminStoreId } from '@/lib/admin-store';
 import sql from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ export async function GET() {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-  const storeId = session.user.role === 'superadmin' ? null : session.user.store_id;
+  const storeId = session.user.role === 'superadmin' ? null : await getAdminStoreId(session);
   if (!storeId) return NextResponse.json({ error: 'Sin tienda asignada' }, { status: 404 });
 
   try {
@@ -33,7 +34,7 @@ export async function PUT(request) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-  const storeId = session.user.store_id;
+  const storeId = await getAdminStoreId(session);
   if (!storeId) return NextResponse.json({ error: 'Sin tienda asignada' }, { status: 404 });
 
   try {

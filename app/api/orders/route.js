@@ -6,6 +6,25 @@ import { createNotification } from '@/lib/notify';
 import { sendMail } from '@/lib/mailer';
 import { orderConfirmed } from '@/lib/email-templates';
 
+// Auto-migración de columnas de pickup si no existen
+async function ensurePickupColumns() {
+  await Promise.all([
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_point_id INTEGER`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_point_name VARCHAR(200)`.catch(() => {}),
+    sql`
+      CREATE TABLE IF NOT EXISTS pickup_points (
+        id SERIAL PRIMARY KEY,
+        store_id INTEGER REFERENCES stores(id) ON DELETE CASCADE,
+        name VARCHAR(200) NOT NULL,
+        address TEXT,
+        description TEXT,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `.catch(() => {}),
+  ]);
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -32,7 +51,9 @@ export async function POST(req) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   try {
-    const { session_id, coupon_id } = await req.json();
+    await ensurePickupColumns();
+
+    const { session_id, coupon_id, pickup_point_id } = await req.json();
     if (!session_id) return NextResponse.json({ error: 'session_id requerido' }, { status: 400 });
 
     const cartItems = await sql`
@@ -48,7 +69,6 @@ export async function POST(req) {
     let total = cartItems.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
     const storeId = cartItems[0].store_id || null;
 
-    // Aplicar descuento de cupón si se envió
     let appliedCoupon = null;
     if (coupon_id) {
       const coupons = await sql`
@@ -61,11 +81,23 @@ export async function POST(req) {
       }
     }
 
+    // Validar y guardar punto de retiro
+    let pickupPointId = null;
+    let pickupPointName = null;
+    if (pickup_point_id && storeId) {
+      const [pp] = await sql`SELECT id, name FROM pickup_points WHERE id = ${pickup_point_id} AND store_id = ${storeId} AND active = true`.catch(() => []);
+      if (pp) { pickupPointId = pp.id; pickupPointName = pp.name; }
+    }
+
     const [order] = await sql`
-      INSERT INTO orders (user_id, session_id, status, total, store_id)
-      VALUES (${session.user.id}, ${session_id}, 'confirmed', ${total}, ${storeId})
+      INSERT INTO orders (user_id, session_id, status, total, store_id, pickup_point_id, pickup_point_name)
+      VALUES (${session.user.id}, ${session_id}, 'pending', ${total}, ${storeId}, ${pickupPointId}, ${pickupPointName})
       RETURNING *
-    `;
+    `.catch(() => sql`
+      INSERT INTO orders (user_id, session_id, status, total, store_id)
+      VALUES (${session.user.id}, ${session_id}, 'pending', ${total}, ${storeId})
+      RETURNING *
+    `);
 
     for (const item of cartItems) {
       await sql`
@@ -76,56 +108,65 @@ export async function POST(req) {
 
     await sql`DELETE FROM cart_items WHERE session_id = ${session_id}`;
 
-    // Marcar cupón como usado
     if (appliedCoupon) {
       await sql`UPDATE coupons SET used = true WHERE id = ${appliedCoupon.id}`;
     }
 
-    // Obtener datos de tienda y usuario para notificaciones
-    const [user]  = await sql`SELECT email, username FROM users WHERE id = ${session.user.id}`;
-    const [store] = storeId ? await sql`SELECT name, id FROM stores WHERE id = ${storeId}` : [null];
+    const [user] = await sql`SELECT email, username, first_name, last_name FROM users WHERE id = ${session.user.id}`;
+    const [store] = storeId
+      ? await sql`SELECT id, name, whatsapp_number, whatsapp_message_template, address, pickup_info FROM stores WHERE id = ${storeId}`
+      : [null];
     const storeName = store?.name || 'CnB';
 
-    // Notificación interna al comprador
     await createNotification({
       userId:  session.user.id,
       storeId: storeId,
-      type:    'order_confirmed',
-      title:   `Tu pedido #${order.id} fue confirmado`,
+      type:    'order_pending',
+      title:   `Tu pedido #${order.id} fue recibido`,
       message: `${cartItems.length} producto(s) · Total $${parseFloat(total).toFixed(2)} en ${storeName}`,
-      link:    `/profile/orders/${order.id}`,
+      link:    '/profile/orders',
     });
 
-    // Notificación al admin de la tienda
     if (storeId) {
       const [admin] = await sql`SELECT id FROM users WHERE store_id = ${storeId} AND role = 'admin' LIMIT 1`;
       if (admin) {
         await createNotification({
           userId:  admin.id,
           storeId: storeId,
-          type:    'order_confirmed',
-          title:   `Nueva venta #${order.id}`,
-          message: `${user.username} compró ${cartItems.length} producto(s) · $${parseFloat(total).toFixed(2)}`,
-          link:    `/admin/dashboard`,
+          type:    'new_order',
+          title:   `Nuevo pedido #${order.id}`,
+          message: `${user.username} · ${cartItems.length} producto(s) · $${parseFloat(total).toFixed(2)}`,
+          link:    '/admin/orders',
         });
       }
     }
 
-    // Email de confirmación al comprador
     try {
       const { subject, html } = orderConfirmed({
-        username:  user.username,
-        orderId:   order.id,
+        username:       user.username,
+        orderId:        order.id,
         storeName,
-        items:     cartItems,
+        items:          cartItems,
         total,
+        pickupPointName: pickupPointName || null,
       });
       await sendMail({ to: user.email, subject, html });
     } catch {
       // No bloquear si falla el mail
     }
 
-    return NextResponse.json(order, { status: 201 });
+    return NextResponse.json({
+      ...order,
+      pickup_point_name: pickupPointName,
+      items: cartItems,
+      store: store ? {
+        name:                       store.name,
+        whatsapp_number:            store.whatsapp_number || null,
+        whatsapp_message_template:  store.whatsapp_message_template || null,
+        address:                    store.address || null,
+        pickup_info:                store.pickup_info || null,
+      } : null,
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

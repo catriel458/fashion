@@ -1,47 +1,41 @@
 ---
-name: project-ecommerce
-description: Estado del proyecto ecommerce multi-tienda FashionMall — arquitectura, DB, rutas y roles
+name: project-cnb-ecommerce
+description: CnB Choose and Buy — ecommerce multi-tienda Next.js 14 con WhatsApp checkout, panel admin, panel superadmin
 metadata:
   type: project
 ---
 
-Proyecto Next.js 14 App Router, Neon PostgreSQL, NextAuth (JWT), Vercel Blob.
+Proyecto CnB (Choose and Buy) - ecommerce multi-tienda en Next.js 14.
 
-**Migración multi-tenant aplicada** (via `/api/seed/migrate`):
-- Tabla `stores` con colores, fuentes, hero, about, logo
-- Tabla `store_images` para carruseles
-- Columnas `store_id` en products, categories, orders, users
-- Columnas `height`, `weight` en users
-- Tienda Zara seed insertada
-- Superadmin seed: super@admin.com / superadmin123
+**Stack:** Next.js 14 App Router, NeonDB (Postgres serverless), @vercel/blob, NextAuth JWT, nodemailer Gmail
 
-**Roles**: superadmin, admin, visitor
+**Roles**: superadmin, admin, user
 
-**Rutas dinámicas tiendas**: `app/store/[storeSlug]/` (layout server async, valida tienda en DB)
-- `page.js` — hero + carousel + about + productos + categorías
-- `category/[slug]/page.js`
-- `product/[slug]/page.js`
+**Bug crítico resuelto (2026-05-19):**
+- Admin "sin tienda asignada": JWT token puede estar stale. Fix: `lib/admin-store.js` → `getAdminStoreId()` lee de DB si session.user.store_id es null
+- Notificaciones apuntaban a `/profile/orders/${id}` (ruta inexistente → 404). Corregido a `/profile/orders`
+- Status inicial de orders era 'confirmed', ahora es 'pending'
+- Nuevos estados: pending, confirmed, ready, delivered, cancelled
 
-**Panel superadmin**: `/superadmin/` (solo role=superadmin)
-- `stores/` — CRUD tiendas, toggle activo
-- `stores/new/` — crear tienda con preview visual
-- `stores/[id]/edit/` — editar + carrusel + crear admin
-- `users/` — todos los usuarios, filtros rol/tienda
+**Migración a correr:** GET /api/seed/orders-whatsapp
+- Agrega a stores: whatsapp_number, whatsapp_message_template, address, pickup_info
+- Agrega a orders: status_updated_at, admin_notes, pickup_date
+- Crea tabla store_hours (store_id, day_of_week 0-6, is_open, open_time, close_time)
 
-**Panel admin**: `/admin/` (admin y superadmin)
-- Products API filtra por store_id si role=admin
-- Categories POST asigna store_id automáticamente del session
+**Features implementadas (2026-05-19):**
+- Checkout WhatsApp: POST /api/orders retorna store{whatsapp_number, template, address, pickup_info, items}; CartSidebar abre wa.me con mensaje templated
+- StoreStatusBadge en hero de tienda: muestra abierto/cerrado según store_hours (UTC-3 Argentina)
+- Panel admin/orders: tabla filtrable, detalle expandible, cambio de estado, notas admin
+- admin/settings: WhatsApp number, template con preview, dirección, horarios por día
+- orderStatusUpdate() en lib/email-templates.js
+- Dashboard: métricas pedidos hoy, pendientes, listos, ingresos del mes
 
-**APIs clave**:
-- `GET /api/stores` — tiendas activas (public)
-- `GET /api/stores/[slug]` — store + images (public)
-- `/api/superadmin/stores/*` — CRUD completo (superadmin only)
-- `/api/superadmin/users/*` — CRUD completo (superadmin only)
-- `/api/products?storeSlug=` — filtra por tienda
-- `/api/categories?storeSlug=` — filtra por tienda
-- `/api/seed/migrate` — corre migración + hashea password superadmin
+**APIs nuevas:**
+- GET/PUT /api/admin/settings — config WhatsApp+horarios de la tienda del admin
+- GET /api/admin/orders — lista pedidos con filtros ?status=&search=
+- GET/PUT /api/admin/orders/[id] — detalle y cambio de estado + notif + mail
+- GET /api/stores/[slug]/status — {is_open, closes_at, opens_next_day, opens_next_time}
 
-**Auth JWT**: incluye store_id y store_slug en el token/session
+**Auth JWT**: incluye store_id y store_slug en el token/session. store_id puede quedar stale → usar getAdminStoreId()
 
-**Why:** Migración de tienda estática Zara → sistema multi-tenant dinámico
-**How to apply:** Cualquier nueva funcionalidad debe respetar el filtro por store_id según el role del usuario
+**How to apply:** Siempre correr GET /api/seed/orders-whatsapp antes de usar features de WhatsApp/horarios.

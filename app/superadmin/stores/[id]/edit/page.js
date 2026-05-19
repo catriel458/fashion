@@ -4,6 +4,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import StoreHeaderFooterPreview from '@/components/StoreHeaderFooterPreview';
 
+const DAY_NAMES_SA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DEFAULT_HOURS_SA = Array.from({ length: 7 }, (_, i) => ({
+  day_of_week: i,
+  is_open: i !== 0,
+  open_time: '09:00',
+  close_time: '18:00',
+}));
+
 const FONTS = ['Inter', 'Roboto', 'Playfair Display', 'Montserrat', 'Poppins', 'Raleway', 'Open Sans', 'Lato', 'Nunito', 'Oswald'];
 const BUTTON_STYLES = [
   { value: 'sharp',   label: 'Sharp (cuadrado)' },
@@ -40,6 +48,13 @@ export default function EditStorePage({ params }) {
   const [uploadingLogo,setUploadingLogo]= useState(false);
   const [adminForm,    setAdminForm]    = useState({ username: '', email: '', password: '', store_id: id });
   const [savingAdmin,  setSavingAdmin]  = useState(false);
+  const [waNumber,     setWaNumber]     = useState('');
+  const [waTemplate,   setWaTemplate]   = useState('');
+  const [waAddress,    setWaAddress]    = useState('');
+  const [waPickup,     setWaPickup]     = useState('');
+  const [storeHours,   setStoreHours]   = useState(DEFAULT_HOURS_SA);
+  const [savingWa,     setSavingWa]     = useState(false);
+  const [successWa,    setSuccessWa]    = useState('');
 
   useEffect(() => {
     fetch(`/api/superadmin/stores/${id}`)
@@ -48,6 +63,18 @@ export default function EditStorePage({ params }) {
         setStore(data);
         setImages(data.images || []);
         setAdmin(data.admin || null);
+        setWaNumber(data.whatsapp_number || '');
+        setWaTemplate(data.whatsapp_message_template || '');
+        setWaAddress(data.address || '');
+        setWaPickup(data.pickup_info || '');
+        if (data.hours?.length === 7) {
+          setStoreHours(data.hours.map(h => ({
+            day_of_week: h.day_of_week,
+            is_open:    h.is_open,
+            open_time:  h.open_time ? h.open_time.slice(0, 5) : '09:00',
+            close_time: h.close_time ? h.close_time.slice(0, 5) : '18:00',
+          })));
+        }
         setForm({
           name:             data.name            || '',
           tagline:          data.tagline          || '',
@@ -189,6 +216,30 @@ export default function EditStorePage({ params }) {
       setCategories(prev => prev.map(c => c.id === catId ? data : c));
     } catch (err) { setError(err.message); }
     finally { setUploadingCatId(null); }
+  }
+
+  async function handleSaveWa(e) {
+    e.preventDefault();
+    setSavingWa(true); setSuccessWa('');
+    try {
+      const res = await fetch(`/api/superadmin/stores/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          whatsapp_number:          waNumber.trim(),
+          whatsapp_message_template: waTemplate,
+          address:                  waAddress.trim(),
+          pickup_info:              waPickup.trim(),
+          hours:                    storeHours,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSuccessWa('Configuración guardada');
+      setTimeout(() => setSuccessWa(''), 3000);
+    } catch (e) { setError(e.message); }
+    finally { setSavingWa(false); }
   }
 
   async function handleCreateAdmin(e) {
@@ -524,6 +575,67 @@ export default function EditStorePage({ params }) {
           </div>
         </div>
       )}
+
+      {/* ── Contacto y horarios ── */}
+      <form onSubmit={handleSaveWa} style={card}>
+        <h2 style={h2s}>Contacto y horarios</h2>
+        {successWa && <div style={{ background: '#e8f5e9', border: '0.5px solid #a5d6a7', padding: '10px 14px', borderRadius: '3px', marginBottom: '14px', color: '#2e7d32', fontSize: '0.78rem' }}>{successWa}</div>}
+
+        <div style={{ marginBottom: '14px' }}>
+          <label style={lbl}>Número de WhatsApp</label>
+          <input type="text" value={waNumber} onChange={e => setWaNumber(e.target.value)} style={inp} placeholder="5491112345678" />
+          <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Sin espacios ni +. Ej: 5491112345678</p>
+        </div>
+        <div style={{ marginBottom: '14px' }}>
+          <label style={lbl}>Template de WhatsApp</label>
+          <textarea value={waTemplate} onChange={e => setWaTemplate(e.target.value)} rows={6} style={{ ...inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.78rem' }} placeholder={'Hola! Quiero realizar el pedido #{{order_id}}\n\nProductos:\n{{productos}}\n\nTotal: ${{total}}'} />
+          <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Variables: {'{{order_id}}'}, {'{{productos}}'}, {'{{total}}'}, {'{{nombre_cliente}}'}</p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+          <div>
+            <label style={lbl}>Dirección</label>
+            <textarea value={waAddress} onChange={e => setWaAddress(e.target.value)} rows={2} style={{ ...inp, resize: 'vertical' }} placeholder="Av. Corrientes 1234, CABA" />
+          </div>
+          <div>
+            <label style={lbl}>Info de retiro</label>
+            <textarea value={waPickup} onChange={e => setWaPickup(e.target.value)} rows={2} style={{ ...inp, resize: 'vertical' }} placeholder="Retiro de Lun a Vie. Coordinar por WA." />
+          </div>
+        </div>
+
+        {/* Horarios */}
+        <div style={{ marginBottom: '16px' }}>
+          <label style={{ ...lbl, marginBottom: '10px' }}>Horarios de atención</label>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            <thead>
+              <tr style={{ background: '#f5f3f0' }}>
+                {['Día', 'Abierto', 'Apertura', 'Cierre'].map(h => (
+                  <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560', fontWeight: 400 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {storeHours.map((h, i) => (
+                <tr key={i} style={{ borderBottom: '0.5px solid #f0ede8' }}>
+                  <td style={{ padding: '8px 10px' }}>{DAY_NAMES_SA[h.day_of_week]}</td>
+                  <td style={{ padding: '8px 10px' }}>
+                    <input type="checkbox" checked={h.is_open} onChange={e => setStoreHours(prev => prev.map((x, j) => j === i ? { ...x, is_open: e.target.checked } : x))} style={{ cursor: 'pointer' }} />
+                  </td>
+                  <td style={{ padding: '8px 10px' }}>
+                    <input type="time" value={h.open_time} disabled={!h.is_open} onChange={e => setStoreHours(prev => prev.map((x, j) => j === i ? { ...x, open_time: e.target.value } : x))} style={{ ...inp, width: 'auto', fontSize: '0.78rem', opacity: h.is_open ? 1 : 0.4 }} />
+                  </td>
+                  <td style={{ padding: '8px 10px' }}>
+                    <input type="time" value={h.close_time} disabled={!h.is_open} onChange={e => setStoreHours(prev => prev.map((x, j) => j === i ? { ...x, close_time: e.target.value } : x))} style={{ ...inp, width: 'auto', fontSize: '0.78rem', opacity: h.is_open ? 1 : 0.4 }} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <button type="submit" disabled={savingWa} style={{ padding: '9px 20px', background: savingWa ? '#ccc' : '#1a0a2e', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '2px', fontSize: '0.72rem' }}>
+          {savingWa ? 'Guardando...' : 'Guardar contacto y horarios'}
+        </button>
+      </form>
 
       {/* ── Admin de la tienda ── */}
       <div style={card}>

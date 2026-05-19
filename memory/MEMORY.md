@@ -1,3 +1,3 @@
 # Memory Index
 
-- [Ecommerce Zara backend](project_ecommerce.md) — Backend multi-tenant implementado: DB Neon, Blob, admin CRUD, carrito, superadmin panel, tiendas dinámicas [storeSlug]
+- [CnB Ecommerce multi-tienda](project_ecommerce.md) — Multi-tienda Next.js 14; checkout WhatsApp, store_hours, estado tienda, panel pedidos admin, emails

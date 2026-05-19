@@ -7,9 +7,11 @@ import NotificationBell from './NotificationBell';
 
 const NAV_ADMIN = [
   { href: '/admin/dashboard', label: 'Dashboard' },
+  { href: '/admin/orders',    label: 'Pedidos' },
   { href: '/admin/products',  label: 'Productos' },
   { href: '/admin/users',     label: 'Usuarios'  },
   { href: '/admin/store',     label: 'Mi tienda' },
+  { href: '/admin/settings',  label: 'Configuración' },
   { href: '/admin/birthday',  label: 'Cumpleaños 🎂' },
 ];
 const NAV_SUPERADMIN = [
