@@ -1,6 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import dynamic from 'next/dynamic';
+
+const MapWithRadius = dynamic(() => import('@/components/MapWithRadius'), { ssr: false });
+
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DEFAULT_TEMPLATE = 'Hola! Quiero realizar el pedido #{{order_id}}\n\nProductos:\n{{productos}}\n\nTotal: ${{total}}\n\nMis datos:\nNombre: {{nombre_cliente}}\nEmail: {{email_cliente}}\nPunto de retiro: {{punto_retiro}}';
@@ -52,6 +56,74 @@ export default function AdminSettingsPage() {
   const [pickupPoints,   setPickupPoints]       = useState([]);
   const [newPoint,       setNewPoint]           = useState({ name: '', address: '', description: '' });
   const [addingPoint,    setAddingPoint]        = useState(false);
+
+  // Payment settings state
+  const [paymentLoading,  setPaymentLoading]  = useState(true);
+  const [paymentSaving,   setPaymentSaving]   = useState(false);
+  const [paymentError,    setPaymentError]    = useState('');
+  const [paymentSuccess,  setPaymentSuccess]  = useState('');
+  const [systemTestMode,  setSystemTestMode]  = useState(false);
+  const [mpEnabled,       setMpEnabled]       = useState(false);
+  const [transferEnabled, setTransferEnabled] = useState(false);
+  const [transferCbu,     setTransferCbu]     = useState('');
+  const [transferAlias,   setTransferAlias]   = useState('');
+  const [transferBank,    setTransferBank]    = useState('');
+  const [transferHolder,  setTransferHolder]  = useState('');
+  const [mpAccessToken,   setMpAccessToken]   = useState('');
+
+  // Delivery settings state
+  const [deliveryLoading,    setDeliveryLoading]    = useState(true);
+  const [deliverySaving,     setDeliverySaving]     = useState(false);
+  const [deliveryError,      setDeliveryError]      = useState('');
+  const [deliverySuccess,    setDeliverySuccess]    = useState('');
+  const [deliveryEnabled,    setDeliveryEnabled]    = useState(false);
+  const [deliveryCost,       setDeliveryCost]       = useState(0);
+  const [deliveryRadiusKm,   setDeliveryRadiusKm]   = useState(5);
+  const [deliveryWhatsapp,   setDeliveryWhatsapp]   = useState('');
+  const [contactEmail,       setContactEmail]       = useState('');
+  const [storeAddress,       setStoreAddress]       = useState('');
+  const [storeLat,           setStoreLat]           = useState(null);
+  const [storeLng,           setStoreLng]           = useState(null);
+  const [storeAddressSugg,   setStoreAddressSugg]   = useState([]);
+  const [showAddressSugg,    setShowAddressSugg]    = useState(false);
+  const addressDebounceRef = useRef(null);
+
+  useEffect(() => {
+    fetch('/api/admin/delivery-settings')
+      .then(r => r.json())
+      .then(d => {
+        if (!d.error) {
+          setDeliveryEnabled(d.delivery_enabled ?? false);
+          setDeliveryCost(d.delivery_cost ?? 0);
+          setDeliveryRadiusKm(d.delivery_radius_km ?? 5);
+          setDeliveryWhatsapp(d.delivery_whatsapp || '');
+          setContactEmail(d.contact_email || '');
+          setStoreAddress(d.store_address || '');
+          setStoreLat(d.store_lat ?? null);
+          setStoreLng(d.store_lng ?? null);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setDeliveryLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/admin/payment-settings')
+      .then(r => r.json())
+      .then(d => {
+        if (!d.error) {
+          setSystemTestMode(d.system_test_mode ?? false);
+          setMpEnabled(d.mp_enabled ?? false);
+          setTransferEnabled(d.transfer_enabled ?? false);
+          setTransferCbu(d.transfer_cbu || '');
+          setTransferAlias(d.transfer_alias || '');
+          setTransferBank(d.transfer_bank || '');
+          setTransferHolder(d.transfer_holder || '');
+        }
+      })
+      .catch(() => {})
+      .finally(() => setPaymentLoading(false));
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -112,6 +184,80 @@ export default function AdminSettingsPage() {
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) { setError(err.message); }
     finally { setSaving(false); }
+  }
+
+  function handleStoreAddressChange(value) {
+    setStoreAddress(value);
+    setStoreLat(null);
+    setStoreLng(null);
+    clearTimeout(addressDebounceRef.current);
+    if (value.length < 3) { setStoreAddressSugg([]); return; }
+    addressDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(value)}`);
+        const data = await res.json();
+        setStoreAddressSugg(Array.isArray(data) ? data.slice(0, 5) : []);
+        setShowAddressSugg(true);
+      } catch { setStoreAddressSugg([]); }
+    }, 500);
+  }
+
+  function handleSelectStoreAddress(s) {
+    setStoreAddress(s.display_name);
+    setStoreLat(parseFloat(s.lat));
+    setStoreLng(parseFloat(s.lon));
+    setStoreAddressSugg([]);
+    setShowAddressSugg(false);
+  }
+
+  async function handleSaveDelivery() {
+    setDeliverySaving(true); setDeliveryError(''); setDeliverySuccess('');
+    try {
+      const res = await fetch('/api/admin/delivery-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          delivery_enabled:   deliveryEnabled,
+          delivery_cost:      parseFloat(deliveryCost) || 0,
+          delivery_radius_km: parseFloat(deliveryRadiusKm) || 5,
+          store_lat:          storeLat,
+          store_lng:          storeLng,
+          store_address:      storeAddress.trim(),
+          delivery_whatsapp:  deliveryWhatsapp.trim(),
+          contact_email:      contactEmail.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setDeliverySuccess('Configuración de envío guardada');
+      setTimeout(() => setDeliverySuccess(''), 3000);
+    } catch (err) { setDeliveryError(err.message); }
+    finally { setDeliverySaving(false); }
+  }
+
+  async function handleSavePayment() {
+    setPaymentSaving(true); setPaymentError(''); setPaymentSuccess('');
+    try {
+      const res = await fetch('/api/admin/payment-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mp_enabled:       mpEnabled,
+          mp_access_token:  mpAccessToken.trim() || undefined,
+          transfer_enabled: transferEnabled,
+          transfer_cbu:     transferCbu.trim(),
+          transfer_alias:   transferAlias.trim(),
+          transfer_bank:    transferBank.trim(),
+          transfer_holder:  transferHolder.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMpAccessToken('');
+      setPaymentSuccess('Métodos de pago guardados correctamente');
+      setTimeout(() => setPaymentSuccess(''), 3000);
+    } catch (err) { setPaymentError(err.message); }
+    finally { setPaymentSaving(false); }
   }
 
   if (loading) return <div style={{ padding: '3rem', color: '#6b6560' }}>Cargando...</div>;
@@ -275,6 +421,114 @@ export default function AdminSettingsPage() {
         </button>
       </form>
 
+      {/* Métodos de pago */}
+      <div style={section}>
+        <h2 style={h2s}>Métodos de pago</h2>
+        <p style={{ margin: '-12px 0 20px', color: '#6b6560', fontSize: '0.78rem' }}>
+          Configurá cómo tus clientes pueden pagarte al finalizar la compra.
+        </p>
+
+        {paymentError && <div style={{ background: '#fef2f2', border: '0.5px solid #fecaca', padding: '10px 14px', borderRadius: '4px', marginBottom: '16px', color: '#c0392b', fontSize: '0.8rem' }}>{paymentError}</div>}
+        {paymentSuccess && <div style={{ background: '#e8f5e9', border: '0.5px solid #a5d6a7', padding: '10px 14px', borderRadius: '4px', marginBottom: '16px', color: '#2e7d32', fontSize: '0.8rem' }}>{paymentSuccess}</div>}
+
+        {paymentLoading ? (
+          <p style={{ color: '#6b6560', fontSize: '0.875rem' }}>Cargando...</p>
+        ) : (
+          <>
+            {/* Transferencia bancaria */}
+            <div style={{ borderBottom: '0.5px solid #e0dbd4', paddingBottom: '20px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={transferEnabled}
+                    onChange={e => setTransferEnabled(e.target.checked)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500 }}>
+                    Transferencia bancaria
+                  </span>
+                </label>
+              </div>
+
+              {transferEnabled && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={lbl}>CBU / CVU</label>
+                    <input type="text" value={transferCbu} onChange={e => setTransferCbu(e.target.value)} style={inp} placeholder="0000000000000000000000" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Alias</label>
+                    <input type="text" value={transferAlias} onChange={e => setTransferAlias(e.target.value)} style={inp} placeholder="mi.alias.mp" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Banco / Billetera</label>
+                    <input type="text" value={transferBank} onChange={e => setTransferBank(e.target.value)} style={inp} placeholder="Mercado Pago, Santander, etc." />
+                  </div>
+                  <div>
+                    <label style={lbl}>Titular de la cuenta</label>
+                    <input type="text" value={transferHolder} onChange={e => setTransferHolder(e.target.value)} style={inp} placeholder="Juan García" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Mercado Pago */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={mpEnabled}
+                    onChange={e => setMpEnabled(e.target.checked)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500 }}>
+                    Mercado Pago (tarjeta débito/crédito)
+                  </span>
+                </label>
+              </div>
+
+              {mpEnabled && (
+                systemTestMode ? (
+                  <div style={{ background: '#fffbeb', border: '0.5px solid #fcd34d', borderRadius: '6px', padding: '12px 16px', fontSize: '0.78rem', color: '#92400e' }}>
+                    <span style={{ fontWeight: 600, marginRight: '6px' }}>⚠ Modo prueba activo</span>
+                    — usando cuenta de test global. No se requieren credenciales propias.
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: '0 0 12px' }}>
+                      Para usar Mercado Pago en producción, ingresá tu Access Token de producción.
+                    </p>
+                    <label style={lbl}>Access Token de producción</label>
+                    <input
+                      type="password"
+                      value={mpAccessToken}
+                      onChange={e => setMpAccessToken(e.target.value)}
+                      style={inp}
+                      placeholder="APP_USR-..."
+                    />
+                    <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '5px 0 0' }}>
+                      Dejá en blanco para mantener el token existente.
+                    </p>
+                  </div>
+                )
+              )}
+            </div>
+
+            <div style={{ marginTop: '20px' }}>
+              <button
+                onClick={handleSavePayment}
+                disabled={paymentSaving}
+                style={{ padding: '10px 22px', background: paymentSaving ? '#ccc' : '#0f0f0f', color: '#fff', border: 'none', cursor: paymentSaving ? 'not-allowed' : 'pointer', fontSize: '0.75rem', borderRadius: '2px', letterSpacing: '0.08em' }}
+              >
+                {paymentSaving ? 'Guardando...' : 'Guardar métodos de pago'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Puntos de retiro */}
       <div style={section}>
         <h2 style={h2s}>Puntos de retiro</h2>
@@ -357,6 +611,122 @@ export default function AdminSettingsPage() {
             {addingPoint ? 'Guardando...' : 'Agregar punto'}
           </button>
         </div>
+      </div>
+
+      {/* Envío a domicilio */}
+      <div style={section}>
+        <h2 style={h2s}>Envío a domicilio</h2>
+        <p style={{ margin: '-12px 0 20px', color: '#6b6560', fontSize: '0.78rem' }}>
+          Ofrecé delivery calculando la distancia desde tu local.
+        </p>
+
+        {deliveryError && <div style={{ background: '#fef2f2', border: '0.5px solid #fecaca', padding: '10px 14px', borderRadius: '4px', marginBottom: '16px', color: '#c0392b', fontSize: '0.8rem' }}>{deliveryError}</div>}
+        {deliverySuccess && <div style={{ background: '#e8f5e9', border: '0.5px solid #a5d6a7', padding: '10px 14px', borderRadius: '4px', marginBottom: '16px', color: '#2e7d32', fontSize: '0.8rem' }}>{deliverySuccess}</div>}
+
+        {deliveryLoading ? <p style={{ color: '#6b6560', fontSize: '0.875rem' }}>Cargando...</p> : (
+          <>
+            {/* Toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={deliveryEnabled} onChange={e => setDeliveryEnabled(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500 }}>Ofrecer envío a domicilio</span>
+              </label>
+            </div>
+
+            {deliveryEnabled && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={lbl}>Costo de envío ($)</label>
+                    <input type="number" min="0" step="50" value={deliveryCost} onChange={e => setDeliveryCost(e.target.value)} style={inp} placeholder="500" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Radio de cobertura: {deliveryRadiusKm} km</label>
+                    <input
+                      type="range" min="1" max="50" step="0.5"
+                      value={deliveryRadiusKm}
+                      onChange={e => setDeliveryRadiusKm(parseFloat(e.target.value))}
+                      style={{ width: '100%', marginTop: '8px' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: '#aaa', marginTop: '2px' }}>
+                      <span>1 km</span><span>50 km</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dirección del local con autocompletado */}
+                <div style={{ marginBottom: '16px', position: 'relative' }}>
+                  <label style={lbl}>Dirección del local / depósito</label>
+                  <input
+                    type="text"
+                    value={storeAddress}
+                    onChange={e => handleStoreAddressChange(e.target.value)}
+                    onFocus={() => storeAddressSugg.length && setShowAddressSugg(true)}
+                    onBlur={() => setTimeout(() => setShowAddressSugg(false), 200)}
+                    style={inp}
+                    placeholder="Av. Corrientes 1234, Buenos Aires"
+                  />
+                  {showAddressSugg && storeAddressSugg.length > 0 && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', zIndex: 100, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                      {storeAddressSugg.map((s, i) => (
+                        <div
+                          key={i}
+                          onMouseDown={() => handleSelectStoreAddress(s)}
+                          style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '0.78rem', borderBottom: i < storeAddressSugg.length - 1 ? '0.5px solid #f0ede8' : 'none' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f5f3f0'}
+                          onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                        >
+                          {s.display_name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {storeLat && storeLng && (
+                    <div style={{ marginTop: '10px', borderRadius: '6px', overflow: 'hidden', border: '0.5px solid #e0dbd4' }}>
+                      <MapWithRadius
+                        storeLat={storeLat}
+                        storeLng={storeLng}
+                        radiusKm={parseFloat(deliveryRadiusKm) || 5}
+                        height={220}
+                      />
+                      <p style={{ fontSize: '0.62rem', color: '#6b6560', padding: '6px 10px', background: '#f5f3f0', margin: 0 }}>
+                        El círculo muestra la zona de cobertura de {deliveryRadiusKm} km
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={lbl}>WhatsApp para comprobantes</label>
+                    <input type="text" value={deliveryWhatsapp} onChange={e => setDeliveryWhatsapp(e.target.value)} style={inp} placeholder="5491112345678" />
+                    <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Puede ser distinto al WhatsApp del local</p>
+                  </div>
+                  <div>
+                    <label style={lbl}>Email del local (para notificaciones)</label>
+                    <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} style={inp} placeholder="ventas@tienda.com" />
+                    <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Recibís los resúmenes de venta aquí</p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {!deliveryEnabled && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={lbl}>Email del local (para notificaciones de pedidos)</label>
+                <input type="email" value={contactEmail} onChange={e => setContactEmail(e.target.value)} style={inp} placeholder="ventas@tienda.com" />
+              </div>
+            )}
+
+            <button
+              onClick={handleSaveDelivery}
+              disabled={deliverySaving}
+              style={{ padding: '10px 22px', background: deliverySaving ? '#ccc' : '#0f0f0f', color: '#fff', border: 'none', cursor: deliverySaving ? 'not-allowed' : 'pointer', fontSize: '0.75rem', borderRadius: '2px', letterSpacing: '0.08em' }}
+            >
+              {deliverySaving ? 'Guardando...' : 'Guardar configuración de envío'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

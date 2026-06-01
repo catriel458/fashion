@@ -4,13 +4,18 @@ import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
 import { createNotification } from '@/lib/notify';
 import { sendMail } from '@/lib/mailer';
-import { orderConfirmed } from '@/lib/email-templates';
+import { orderConfirmedBuyer, orderNotificationStore } from '@/lib/email-templates';
 
-// Auto-migración de columnas de pickup si no existen
-async function ensurePickupColumns() {
+async function ensureColumns() {
   await Promise.all([
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_point_id INTEGER`.catch(() => {}),
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_point_name VARCHAR(200)`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_method VARCHAR(20) DEFAULT 'pickup'`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lat DECIMAL(10,7)`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lng DECIMAL(10,7)`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_cost DECIMAL(10,2) DEFAULT 0`.catch(() => {}),
     sql`
       CREATE TABLE IF NOT EXISTS pickup_points (
         id SERIAL PRIMARY KEY,
@@ -25,14 +30,19 @@ async function ensurePickupColumns() {
   ]);
 }
 
+function formatOrderNumber(id, createdAt) {
+  const year = new Date(createdAt).getFullYear();
+  return `ORD-${year}-${String(id).padStart(5, '0')}`;
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   try {
     const orders = await sql`
-      SELECT o.id, o.status, o.total, o.created_at, s.name AS store_name,
-        COUNT(oi.id)::int AS item_count
+      SELECT o.id, o.status, o.total, o.created_at, o.payment_method, o.delivery_method,
+             s.name AS store_name, COUNT(oi.id)::int AS item_count
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN stores s ON o.store_id = s.id
@@ -40,7 +50,10 @@ export async function GET() {
       GROUP BY o.id, s.name
       ORDER BY o.created_at DESC
     `;
-    return NextResponse.json(orders);
+    return NextResponse.json(orders.map(o => ({
+      ...o,
+      order_number: formatOrderNumber(o.id, o.created_at),
+    })));
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -51,9 +64,15 @@ export async function POST(req) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   try {
-    await ensurePickupColumns();
+    await ensureColumns();
 
-    const { session_id, coupon_id, pickup_point_id } = await req.json();
+    const {
+      session_id, coupon_id, pickup_point_id,
+      payment_method, delivery_method,
+      delivery_address, delivery_lat, delivery_lng, delivery_cost,
+      save_address, comprobante_url,
+    } = await req.json();
+
     if (!session_id) return NextResponse.json({ error: 'session_id requerido' }, { status: 400 });
 
     const cartItems = await sql`
@@ -62,26 +81,25 @@ export async function POST(req) {
       JOIN products p ON p.id = ci.product_id
       WHERE ci.session_id = ${session_id}
     `;
-    if (cartItems.length === 0) {
-      return NextResponse.json({ error: 'El carrito está vacío' }, { status: 400 });
-    }
+    if (cartItems.length === 0) return NextResponse.json({ error: 'El carrito está vacío' }, { status: 400 });
 
-    let total = cartItems.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
+    let subtotal = cartItems.reduce((sum, i) => sum + parseFloat(i.price) * i.quantity, 0);
     const storeId = cartItems[0].store_id || null;
+    const extraDeliveryCost = parseFloat(delivery_cost) || 0;
 
     let appliedCoupon = null;
     if (coupon_id) {
       const coupons = await sql`
-        SELECT * FROM coupons
-        WHERE id = ${coupon_id} AND user_id = ${session.user.id} AND used = false AND expires_at > NOW()
+        SELECT * FROM coupons WHERE id = ${coupon_id} AND user_id = ${session.user.id} AND used = false AND expires_at > NOW()
       `;
       if (coupons.length > 0) {
         appliedCoupon = coupons[0];
-        total = total * (1 - appliedCoupon.discount_percentage / 100);
+        subtotal = subtotal * (1 - appliedCoupon.discount_percentage / 100);
       }
     }
 
-    // Validar y guardar punto de retiro
+    const total = subtotal + extraDeliveryCost;
+
     let pickupPointId = null;
     let pickupPointName = null;
     if (pickup_point_id && storeId) {
@@ -89,15 +107,29 @@ export async function POST(req) {
       if (pp) { pickupPointId = pp.id; pickupPointName = pp.name; }
     }
 
+    const effectiveDeliveryMethod = delivery_method || 'pickup';
+
     const [order] = await sql`
+      INSERT INTO orders (
+        user_id, session_id, status, total, store_id,
+        pickup_point_id, pickup_point_name,
+        payment_method, delivery_method, delivery_address,
+        delivery_lat, delivery_lng, delivery_cost
+      )
+      VALUES (
+        ${session.user.id}, ${session_id}, 'pending', ${total}, ${storeId},
+        ${pickupPointId}, ${pickupPointName},
+        ${payment_method || null}, ${effectiveDeliveryMethod}, ${delivery_address || null},
+        ${delivery_lat || null}, ${delivery_lng || null}, ${extraDeliveryCost}
+      )
+      RETURNING *
+    `.catch(() => sql`
       INSERT INTO orders (user_id, session_id, status, total, store_id, pickup_point_id, pickup_point_name)
       VALUES (${session.user.id}, ${session_id}, 'pending', ${total}, ${storeId}, ${pickupPointId}, ${pickupPointName})
       RETURNING *
-    `.catch(() => sql`
-      INSERT INTO orders (user_id, session_id, status, total, store_id)
-      VALUES (${session.user.id}, ${session_id}, 'pending', ${total}, ${storeId})
-      RETURNING *
     `);
+
+    const orderNumber = formatOrderNumber(order.id, order.created_at);
 
     for (const item of cartItems) {
       await sql`
@@ -112,17 +144,28 @@ export async function POST(req) {
       await sql`UPDATE coupons SET used = true WHERE id = ${appliedCoupon.id}`;
     }
 
+    if (save_address && effectiveDeliveryMethod === 'delivery' && delivery_address) {
+      await sql`DELETE FROM user_addresses WHERE user_id = ${session.user.id}`.catch(() => {});
+      await sql`
+        INSERT INTO user_addresses (user_id, full_address, lat, lng, is_default)
+        VALUES (${session.user.id}, ${delivery_address}, ${delivery_lat || null}, ${delivery_lng || null}, true)
+      `.catch(() => {});
+    }
+
     const [user] = await sql`SELECT email, username, first_name, last_name FROM users WHERE id = ${session.user.id}`;
     const [store] = storeId
-      ? await sql`SELECT id, name, whatsapp_number, whatsapp_message_template, address, pickup_info FROM stores WHERE id = ${storeId}`
+      ? await sql`SELECT id, name, whatsapp_number, whatsapp_message_template, address, pickup_info, contact_email FROM stores WHERE id = ${storeId}`
       : [null];
     const storeName = store?.name || 'CnB';
+    const buyerName = user.first_name
+      ? `${user.first_name} ${user.last_name || ''}`.trim()
+      : user.username;
 
     await createNotification({
       userId:  session.user.id,
       storeId: storeId,
       type:    'order_pending',
-      title:   `Tu pedido #${order.id} fue recibido`,
+      title:   `Tu pedido ${orderNumber} fue recibido`,
       message: `${cartItems.length} producto(s) · Total $${parseFloat(total).toFixed(2)} en ${storeName}`,
       link:    '/profile/orders',
     });
@@ -134,37 +177,69 @@ export async function POST(req) {
           userId:  admin.id,
           storeId: storeId,
           type:    'new_order',
-          title:   `Nuevo pedido #${order.id}`,
-          message: `${user.username} · ${cartItems.length} producto(s) · $${parseFloat(total).toFixed(2)}`,
+          title:   `Nuevo pedido ${orderNumber}`,
+          message: `${buyerName} · ${cartItems.length} producto(s) · $${parseFloat(total).toFixed(2)}`,
           link:    '/admin/orders',
         });
       }
     }
 
+    // Emails de confirmación (soft-fail)
     try {
-      const { subject, html } = orderConfirmed({
-        username:       user.username,
-        orderId:        order.id,
+      const attachments = comprobante_url ? [{ filename: 'comprobante.pdf', path: comprobante_url }] : [];
+
+      const buyerEmail = orderConfirmedBuyer({
+        username: buyerName,
+        orderId: order.id,
+        orderNumber,
         storeName,
-        items:          cartItems,
+        storePhone: store?.whatsapp_number || null,
+        storeAddress: store?.address || null,
+        items: cartItems,
+        subtotal,
+        deliveryCost: extraDeliveryCost,
         total,
-        pickupPointName: pickupPointName || null,
+        deliveryMethod: effectiveDeliveryMethod,
+        pickupPointName,
+        deliveryAddress: delivery_address || null,
+        paymentMethod: payment_method || 'transfer',
       });
-      await sendMail({ to: user.email, subject, html });
-    } catch {
-      // No bloquear si falla el mail
-    }
+
+      const promises = [sendMail({ to: user.email, subject: buyerEmail.subject, html: buyerEmail.html, attachments })];
+
+      if (store?.contact_email) {
+        const storeEmail = orderNotificationStore({
+          orderId: order.id,
+          orderNumber,
+          storeName,
+          buyerName,
+          buyerEmail: user.email,
+          items: cartItems,
+          subtotal,
+          deliveryCost: extraDeliveryCost,
+          total,
+          deliveryMethod: effectiveDeliveryMethod,
+          pickupPointName,
+          deliveryAddress: delivery_address || null,
+          paymentMethod: payment_method || 'transfer',
+        });
+        promises.push(sendMail({ to: store.contact_email, subject: storeEmail.subject, html: storeEmail.html, attachments }));
+      }
+
+      await Promise.all(promises);
+    } catch { /* no bloquear si falla el mail */ }
 
     return NextResponse.json({
       ...order,
-      pickup_point_name: pickupPointName,
-      items: cartItems,
+      order_number:       orderNumber,
+      pickup_point_name:  pickupPointName,
+      items:              cartItems,
       store: store ? {
-        name:                       store.name,
-        whatsapp_number:            store.whatsapp_number || null,
-        whatsapp_message_template:  store.whatsapp_message_template || null,
-        address:                    store.address || null,
-        pickup_info:                store.pickup_info || null,
+        name:                      store.name,
+        whatsapp_number:           store.whatsapp_number           || null,
+        whatsapp_message_template: store.whatsapp_message_template || null,
+        address:                   store.address                   || null,
+        pickup_info:               store.pickup_info               || null,
       } : null,
     }, { status: 201 });
   } catch (error) {

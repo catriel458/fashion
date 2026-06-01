@@ -61,8 +61,16 @@ export default function ProfilePage() {
   const [bodyPhotoUrl,       setBodyPhotoUrl]       = useState(null);
   const [bodyPhotoPreview,   setBodyPhotoPreview]   = useState(null);
   const [uploadingBodyPhoto, setUploadingBodyPhoto] = useState(false);
+  const [savedAddress,       setSavedAddress]       = useState(null);
+  const [addressInput,       setAddressInput]       = useState('');
+  const [addressLat,         setAddressLat]         = useState(null);
+  const [addressLng,         setAddressLng]         = useState(null);
+  const [addressSugg,        setAddressSugg]        = useState([]);
+  const [showAddrSugg,       setShowAddrSugg]       = useState(false);
+  const [savingAddress,      setSavingAddress]      = useState(false);
   const avatarInputRef    = useRef(null);
   const bodyPhotoInputRef = useRef(null);
+  const addrDebounceRef   = useRef(null);
 
   useEffect(() => {
     if (verifyCooldown <= 0) return;
@@ -95,6 +103,21 @@ export default function ProfilePage() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   }
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/profile/address')
+      .then(r => r.json())
+      .then(d => {
+        if (d && !d.error) {
+          setSavedAddress(d);
+          setAddressInput(d.full_address || '');
+          setAddressLat(d.lat ?? null);
+          setAddressLng(d.lng ?? null);
+        }
+      })
+      .catch(() => {});
+  }, [session]);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -200,6 +223,51 @@ export default function ProfilePage() {
       showToast(err.message, 'error');
     } finally {
       setUploadingBodyPhoto(false);
+    }
+  }
+
+  function handleAddressInputChange(value) {
+    setAddressInput(value);
+    setAddressLat(null);
+    setAddressLng(null);
+    clearTimeout(addrDebounceRef.current);
+    if (value.length < 3) { setAddressSugg([]); return; }
+    addrDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(value)}`);
+        const data = await res.json();
+        setAddressSugg(Array.isArray(data) ? data.slice(0, 5) : []);
+        setShowAddrSugg(true);
+      } catch { setAddressSugg([]); }
+    }, 500);
+  }
+
+  function handleSelectAddress(s) {
+    setAddressInput(s.display_name);
+    setAddressLat(parseFloat(s.lat));
+    setAddressLng(parseFloat(s.lon));
+    setAddressSugg([]);
+    setShowAddrSugg(false);
+  }
+
+  async function handleSaveAddress(e) {
+    e.preventDefault();
+    if (!addressInput.trim()) return;
+    setSavingAddress(true);
+    try {
+      const res = await fetch('/api/profile/address', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_address: addressInput.trim(), lat: addressLat, lng: addressLng }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSavedAddress(data);
+      showToast('Domicilio guardado correctamente');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setSavingAddress(false);
     }
   }
 
@@ -453,6 +521,58 @@ export default function ProfilePage() {
             </div>
           </Section>
         )}
+
+        {/* Mi domicilio */}
+        <Section title="Mi domicilio">
+          <p style={{ fontSize: '0.78rem', color: '#6b6560', margin: '0 0 16px', lineHeight: 1.5 }}>
+            Tu dirección de envío se usará al comprar en locales que ofrezcan delivery.
+          </p>
+          <form onSubmit={handleSaveAddress}>
+            <div style={{ position: 'relative', marginBottom: '12px' }}>
+              <label style={labelStyle}>Dirección</label>
+              <input
+                type="text"
+                value={addressInput}
+                onChange={e => handleAddressInputChange(e.target.value)}
+                onFocus={() => addressSugg.length && setShowAddrSugg(true)}
+                onBlur={() => setTimeout(() => setShowAddrSugg(false), 200)}
+                placeholder="Ej: Av. Corrientes 1234, CABA"
+                style={inputStyle}
+              />
+              {showAddrSugg && addressSugg.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', zIndex: 100, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                  {addressSugg.map((s, i) => (
+                    <div
+                      key={i}
+                      onMouseDown={() => handleSelectAddress(s)}
+                      style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '0.78rem', borderBottom: i < addressSugg.length - 1 ? '0.5px solid #f0ede8' : 'none' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f5f3f0'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                    >
+                      {s.display_name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {savedAddress?.full_address && !addressLat && addressInput === savedAddress.full_address && (
+              <p style={{ fontSize: '0.72rem', color: '#2e7d32', margin: '0 0 12px' }}>
+                ✓ Domicilio guardado
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={savingAddress || !addressInput.trim()}
+              style={{
+                padding: '9px 20px', background: savingAddress ? '#ccc' : '#0f0f0f', color: '#fff',
+                border: 'none', cursor: savingAddress || !addressInput.trim() ? 'not-allowed' : 'pointer',
+                fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.08em', fontFamily: 'var(--font-sans)',
+              }}
+            >
+              {savingAddress ? 'Guardando...' : 'Guardar domicilio'}
+            </button>
+          </form>
+        </Section>
 
         {/* Danger zone */}
         <Section title="Zona peligrosa">

@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useCart } from './CartContext';
+
+const MapWithRadius = dynamic(() => import('./MapWithRadius'), { ssr: false });
 
 const DEFAULT_WA_TEMPLATE = 'Hola! Quiero realizar el pedido #{{order_id}}\n\nProductos:\n{{productos}}\n\nTotal: ${{total}}\n\nMis datos:\nNombre: {{nombre_cliente}}\nEmail: {{email_cliente}}\nPunto de retiro: {{punto_retiro}}';
 
@@ -22,37 +25,198 @@ function buildWhatsAppMessage(template, { order_id, items, total, nombre_cliente
     .replace(/\{\{punto_retiro\}\}/g, punto_retiro || 'No especificado');
 }
 
-export default function CartSidebar() {
+const modalOverlay = {
+  position: 'fixed', inset: 0,
+  background: 'rgba(0,0,0,0.55)',
+  zIndex: 1100,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: '16px',
+};
+
+const modalBox = {
+  background: '#fafaf8',
+  borderRadius: '8px',
+  width: '100%',
+  maxWidth: '460px',
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+  position: 'relative',
+};
+
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {}
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      style={{
+        marginLeft: '8px', padding: '2px 8px',
+        background: copied ? '#e8f5e9' : '#f0ede8',
+        border: `0.5px solid ${copied ? '#a5d6a7' : '#e0dbd4'}`,
+        borderRadius: '3px', cursor: 'pointer',
+        fontSize: '0.6rem', letterSpacing: '0.08em',
+        color: copied ? '#2e7d32' : '#6b6560',
+        transition: 'all 0.2s',
+      }}
+    >
+      {copied ? '✓ Copiado' : 'Copiar'}
+    </button>
+  );
+}
+
+export default function CartSidebar({ storeSlug: propSlug }) {
   const { items, isOpen, setIsOpen, removeItem, updateQuantity, total, sessionId, clearCartItems } = useCart();
   const { data: session } = useSession();
   const pathname = usePathname();
 
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  // ---- Estado existente ----
+  const [checkoutLoading,  setCheckoutLoading]  = useState(false);
   const [orderConfirmedData, setOrderConfirmedData] = useState(null);
-  const [checkoutError, setCheckoutError]     = useState('');
-  const [couponCode, setCouponCode]     = useState('');
-  const [couponLoading, setCouponLoading] = useState(false);
-  const [couponError, setCouponError]   = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [pickupPoints,  setPickupPoints]  = useState([]);
-  const [selectedPoint, setSelectedPoint] = useState('');
+  const [checkoutError,    setCheckoutError]    = useState('');
+  const [couponCode,       setCouponCode]       = useState('');
+  const [couponLoading,    setCouponLoading]    = useState(false);
+  const [couponError,      setCouponError]      = useState('');
+  const [appliedCoupon,    setAppliedCoupon]    = useState(null);
+  const [pickupPoints,     setPickupPoints]     = useState([]);
+  const [selectedPoint,    setSelectedPoint]    = useState('');
+  const [paymentSettings,  setPaymentSettings]  = useState(null);
 
-  const storeSlugMatch = pathname?.match(/\/store\/([^/]+)/);
-  const storeSlug = storeSlugMatch?.[1] || null;
+  // ---- Nuevo estado de delivery ----
+  const [deliverySettings,   setDeliverySettings]   = useState(null);
+  const [deliveryMethod,     setDeliveryMethod]     = useState('pickup'); // 'pickup' | 'delivery'
+  const [deliveryAddress,    setDeliveryAddress]    = useState('');
+  const [deliveryLat,        setDeliveryLat]        = useState(null);
+  const [deliveryLng,        setDeliveryLng]        = useState(null);
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showAddrSugg,       setShowAddrSugg]       = useState(false);
+  const [deliveryAvail,      setDeliveryAvail]      = useState(null);
+  const [checkingDelivery,   setCheckingDelivery]   = useState(false);
+  const [savedAddress,       setSavedAddress]       = useState(null);
+  const [saveAddrToProfile,  setSaveAddrToProfile]  = useState(false);
+  const [usingCustomAddr,    setUsingCustomAddr]    = useState(false);
 
-  // Cargar puntos de retiro cuando cambia la tienda
+  // ---- Modales de pago ----
+  const [showPaymentModal,   setShowPaymentModal]   = useState(false);
+  const [showTransferModal,  setShowTransferModal]  = useState(false);
+  const [transferSection,    setTransferSection]    = useState(null); // null | 'whatsapp' | 'email'
+  const [comprobante,        setComprobante]        = useState(null);
+  const [comprobanteEmail,   setComprobanteEmail]   = useState('');
+  const [sendingComp,        setSendingComp]        = useState(false);
+  const [compError,          setCompError]          = useState('');
+  const [compSuccess,        setCompSuccess]        = useState(false);
+  const comprobanteRef = useRef(null);
+
+  const addrDebounceRef = useRef(null);
+  const pathSlug = pathname?.match(/\/store\/([^/]+)/)?.[1] || null;
+  const storeSlug = propSlug || pathSlug;
+
+  // ---- Escape key ----
   useEffect(() => {
-    if (!storeSlug) { setPickupPoints([]); setSelectedPoint(''); return; }
+    function onEsc(e) {
+      if (e.key !== 'Escape') return;
+      if (showTransferModal)  { setShowTransferModal(false); return; }
+      if (showPaymentModal)   { setShowPaymentModal(false);  return; }
+      setIsOpen(false);
+    }
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [showTransferModal, showPaymentModal, setIsOpen]);
+
+  // ---- Cargar datos del store ----
+  useEffect(() => {
+    if (!storeSlug) {
+      setPickupPoints([]); setSelectedPoint(''); setPaymentSettings(null); setDeliverySettings(null);
+      return;
+    }
     fetch(`/api/stores/${storeSlug}/pickup-points`)
-      .then(r => r.json())
-      .then(d => { if (Array.isArray(d)) setPickupPoints(d); })
-      .catch(() => {});
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) setPickupPoints(d); }).catch(() => {});
+    fetch(`/api/stores/${storeSlug}/payment-settings`)
+      .then(r => r.json()).then(d => setPaymentSettings(d)).catch(() => {});
+    fetch(`/api/stores/${storeSlug}/delivery-settings`)
+      .then(r => r.json()).then(d => setDeliverySettings(d)).catch(() => {});
   }, [storeSlug]);
 
+  // ---- Auto-check cobertura cuando se selecciona delivery con domicilio guardado ----
+  useEffect(() => {
+    if (deliveryMethod !== 'delivery') return;
+    if (!savedAddress?.lat || !savedAddress?.lng || !storeSlug) return;
+    if (deliveryAvail) return;
+    setCheckingDelivery(true);
+    fetch(`/api/delivery/check?storeSlug=${storeSlug}&lat=${savedAddress.lat}&lng=${savedAddress.lng}`)
+      .then(r => r.json())
+      .then(d => setDeliveryAvail(d))
+      .catch(() => setDeliveryAvail({ available: false, message: 'Error al verificar' }))
+      .finally(() => setCheckingDelivery(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deliveryMethod]);
+
+  // ---- Cargar domicilio guardado ----
+  useEffect(() => {
+    if (!session) return;
+    fetch('/api/profile/address')
+      .then(r => r.json())
+      .then(d => { if (d && !d.error) setSavedAddress(d); })
+      .catch(() => {});
+  }, [session]);
+
+  // ---- Precargar email del comprobante ----
+  useEffect(() => {
+    if (session?.user?.email) setComprobanteEmail(session.user.email);
+  }, [session]);
+
+  // ---- Totales ----
   const discountedTotal = appliedCoupon
     ? total * (1 - appliedCoupon.discount_percentage / 100)
     : total;
 
+  const deliveryCost = (deliveryMethod === 'delivery' && deliveryAvail?.available)
+    ? (deliveryAvail.cost || 0)
+    : 0;
+
+  const finalTotal = discountedTotal + deliveryCost;
+
+  // ---- Autocomplete dirección ----
+  function handleAddressChange(value) {
+    setDeliveryAddress(value);
+    setDeliveryLat(null); setDeliveryLng(null);
+    setDeliveryAvail(null);
+    clearTimeout(addrDebounceRef.current);
+    if (value.length < 3) { setAddressSuggestions([]); return; }
+    addrDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(value)}`);
+        const data = await res.json();
+        setAddressSuggestions(Array.isArray(data) ? data.slice(0, 5) : []);
+        setShowAddrSugg(true);
+      } catch { setAddressSuggestions([]); }
+    }, 500);
+  }
+
+  async function handleSelectAddress(s) {
+    const lat = parseFloat(s.lat);
+    const lng = parseFloat(s.lon);
+    setDeliveryAddress(s.display_name);
+    setDeliveryLat(lat); setDeliveryLng(lng);
+    setAddressSuggestions([]); setShowAddrSugg(false);
+    if (storeSlug) {
+      setCheckingDelivery(true);
+      try {
+        const res = await fetch(`/api/delivery/check?storeSlug=${storeSlug}&lat=${lat}&lng=${lng}`);
+        const data = await res.json();
+        setDeliveryAvail(data);
+      } catch { setDeliveryAvail({ available: false, message: 'Error al verificar disponibilidad' }); }
+      finally { setCheckingDelivery(false); }
+    }
+  }
+
+  // ---- Coupon ----
   async function handleApplyCoupon(e) {
     e.preventDefault();
     if (!couponCode.trim() || !storeSlug) return;
@@ -65,55 +229,107 @@ export default function CartSidebar() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setAppliedCoupon(data);
-      setCouponCode('');
-    } catch (err) {
-      setCouponError(err.message);
-    } finally {
-      setCouponLoading(false);
-    }
+      setAppliedCoupon(data); setCouponCode('');
+    } catch (err) { setCouponError(err.message); }
+    finally { setCouponLoading(false); }
   }
 
-  async function doCheckout() {
-    if (!sessionId) return;
-    setCheckoutLoading(true);
+  // ---- Crear orden ----
+  async function createOrder(method, extraFields = {}) {
+    const effectiveAddress = usingCustomAddr ? deliveryAddress : (savedAddress?.full_address || deliveryAddress);
+    const effectiveLat     = usingCustomAddr ? deliveryLat     : (savedAddress?.lat !== undefined ? savedAddress.lat : deliveryLat);
+    const effectiveLng     = usingCustomAddr ? deliveryLng     : (savedAddress?.lng !== undefined ? savedAddress.lng : deliveryLng);
+
+    const res = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id:       sessionId,
+        coupon_id:        appliedCoupon?.coupon_id || null,
+        pickup_point_id:  deliveryMethod === 'pickup' && selectedPoint ? parseInt(selectedPoint) : null,
+        payment_method:   method,
+        delivery_method:  deliveryMethod,
+        delivery_address: deliveryMethod === 'delivery' ? effectiveAddress : null,
+        delivery_lat:     deliveryMethod === 'delivery' ? effectiveLat     : null,
+        delivery_lng:     deliveryMethod === 'delivery' ? effectiveLng     : null,
+        delivery_cost:    deliveryCost,
+        save_address:     deliveryMethod === 'delivery' && saveAddrToProfile,
+        ...extraFields,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al procesar la compra');
+    return data;
+  }
+
+  // ---- Validación antes de abrir modal de pago ----
+  function handlePagarClick() {
     setCheckoutError('');
+    if (!session) return;
+    if (deliveryMethod === 'pickup' && pickupPoints.length > 0 && !selectedPoint) {
+      setCheckoutError('Seleccioná un punto de retiro para continuar');
+      return;
+    }
+    if (deliveryMethod === 'delivery') {
+      const addr = usingCustomAddr ? deliveryAddress : savedAddress?.full_address;
+      if (!addr) { setCheckoutError('Ingresá tu dirección de envío para continuar'); return; }
+      if (deliveryAvail && !deliveryAvail.available) {
+        setCheckoutError('Tu dirección está fuera de la zona de cobertura');
+        return;
+      }
+    }
+    setShowPaymentModal(true);
+  }
+
+  // ---- Flujo Mercado Pago ----
+  async function handlePayWithMP() {
+    setCheckoutLoading(true); setCheckoutError('');
     try {
-      const res = await fetch('/api/orders', {
+      const order = await createOrder('mp');
+      clearCartItems();
+      const mpRes = await fetch('/api/checkout/mp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          session_id:      sessionId,
-          coupon_id:       appliedCoupon?.coupon_id || null,
-          pickup_point_id: selectedPoint ? parseInt(selectedPoint) : null,
+          orderId:      order.id,
+          storeId:      order.store_id,
+          cartItems:    (order.items || items).map(i => ({
+            title:      i.name,
+            quantity:   i.quantity,
+            unit_price: parseFloat(i.price || i.price_at_purchase),
+          })),
+          customerData: { email: session?.user?.email || '' },
+          successUrl:   `${window.location.origin}/profile/orders?payment=success`,
+          failureUrl:   `${window.location.origin}${window.location.pathname}?payment=failure`,
+          pendingUrl:   `${window.location.origin}/profile/orders?payment=pending`,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al procesar la compra');
+      const mpData = await mpRes.json();
+      if (!mpRes.ok) throw new Error(mpData.error || 'Error al iniciar Mercado Pago');
+      window.location.href = mpData.checkoutUrl;
+    } catch (err) {
+      setCheckoutError(err.message);
+      setCheckoutLoading(false);
+    }
+  }
 
-      clearCartItems();
-
-      // Abrir WhatsApp si la tienda tiene número configurado
-      if (data.store?.whatsapp_number) {
-        const nombre = session?.user?.first_name && session?.user?.last_name
-          ? `${session.user.first_name} ${session.user.last_name}`
-          : session?.user?.username || 'Cliente';
-
-        const selectedPointData = pickupPoints.find(p => String(p.id) === selectedPoint);
-        const message = buildWhatsAppMessage(data.store.whatsapp_message_template, {
-          order_id:       data.id,
-          items:          data.items || items,
-          total:          data.total,
-          nombre_cliente: nombre,
-          email_cliente:  session?.user?.email || '',
-          punto_retiro:   selectedPointData?.name || data.pickup_point_name || '',
-        });
-
-        const waUrl = `https://wa.me/${data.store.whatsapp_number}?text=${encodeURIComponent(message)}`;
-        window.open(waUrl, '_blank');
+  // ---- Confirmar transferencia ----
+  async function handleConfirmTransfer() {
+    setCheckoutLoading(true); setCheckoutError('');
+    try {
+      let comprobanteUrl = null;
+      if (comprobante) {
+        const fd = new FormData();
+        fd.append('file', comprobante);
+        const uploadRes = await fetch('/api/upload-comprobante', { method: 'POST', body: fd });
+        const uploadData = await uploadRes.json();
+        if (uploadData.url) comprobanteUrl = uploadData.url;
       }
-
-      setOrderConfirmedData(data);
+      const order = await createOrder('transfer', comprobanteUrl ? { comprobante_url: comprobanteUrl } : {});
+      clearCartItems();
+      setShowTransferModal(false);
+      setShowPaymentModal(false);
+      setOrderConfirmedData({ ...order, payment_method: 'transfer' });
     } catch (err) {
       setCheckoutError(err.message);
     } finally {
@@ -121,24 +337,48 @@ export default function CartSidebar() {
     }
   }
 
+  // ---- Enviar comprobante por mail ----
+  async function handleSendComprobanteByEmail() {
+    if (!comprobante) { setCompError('Adjuntá el comprobante primero'); return; }
+    setSendingComp(true); setCompError(''); setCompSuccess(false);
+    try {
+      const fd = new FormData();
+      fd.append('comprobante', comprobante);
+      fd.append('buyerEmail', comprobanteEmail || session?.user?.email || '');
+      fd.append('storeSlug',  storeSlug || '');
+      fd.append('amount',     finalTotal.toFixed(2));
+      const res = await fetch('/api/send-comprobante', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setCompSuccess(true);
+    } catch (err) { setCompError(err.message); }
+    finally { setSendingComp(false); }
+  }
+
   function handleClose() {
     setIsOpen(false);
     if (orderConfirmedData) setTimeout(() => setOrderConfirmedData(null), 400);
   }
 
+  // ---- Render helpers ----
+  const hasPaymentMethods = paymentSettings && !paymentSettings.not_configured &&
+    (paymentSettings.transfer_enabled || paymentSettings.mp_enabled);
+
+  const showDeliveryOption = deliverySettings?.delivery_enabled;
+  const currentDeliveryAddress = usingCustomAddr ? deliveryAddress : (savedAddress?.full_address || '');
+  const currentDeliveryAvail = (usingCustomAddr && deliveryLat) ? deliveryAvail : (savedAddress ? { available: true, cost: deliverySettings?.delivery_cost || 0 } : null);
+
   return (
     <>
+      {/* Backdrop del sidebar */}
       {isOpen && (
         <div
           onClick={handleClose}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.35)', zIndex: 999,
-            backdropFilter: 'blur(2px)',
-          }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 999, backdropFilter: 'blur(2px)' }}
         />
       )}
 
+      {/* Sidebar panel */}
       <div style={{
         position: 'fixed', top: 0, right: 0, height: '100vh',
         width: isOpen ? '380px' : '0', maxWidth: '100vw',
@@ -147,140 +387,72 @@ export default function CartSidebar() {
         borderLeft: '0.5px solid rgba(128,128,128,0.2)',
         color: 'var(--store-panel-text, #0f0f0f)',
       }}>
-        <div style={{
-          width: '380px', maxWidth: '100vw', height: '100%',
-          display: 'flex', flexDirection: 'column',
-          padding: '24px', boxSizing: 'border-box',
-        }}>
+        <div style={{ width: '380px', maxWidth: '100vw', height: '100%', display: 'flex', flexDirection: 'column', padding: '24px', boxSizing: 'border-box' }}>
 
           {/* Header */}
-          <div style={{
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            marginBottom: '24px', paddingBottom: '16px',
-            borderBottom: '0.5px solid rgba(128,128,128,0.2)',
-          }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '0.5px solid rgba(128,128,128,0.2)' }}>
             <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.5rem', margin: 0, letterSpacing: '0.04em', color: 'var(--store-panel-text, #0f0f0f)' }}>
-              {orderConfirmedData ? 'Pedido enviado' : 'Carrito'}
+              {orderConfirmedData ? '¡Pedido recibido!' : 'Carrito'}
             </h2>
-            <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--store-panel-text, #6b6560)', padding: '4px', lineHeight: 1, opacity: 0.6 }}>
-              ✕
-            </button>
+            <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--store-panel-text, #6b6560)', padding: '4px', lineHeight: 1, opacity: 0.6 }}>✕</button>
           </div>
 
-          {/* Pantalla de confirmación post-compra */}
+          {/* ---- PANTALLA DE CONFIRMACIÓN ---- */}
           {orderConfirmedData ? (
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px', color: '#2e7d32' }}>✓</div>
-                <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.3rem', margin: '0 0 6px' }}>
-                  ¡Pedido #{orderConfirmedData.id} creado!
+                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#e8f5e9', border: '2px solid #a5d6a7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '1.6rem', color: '#2e7d32' }}>✓</div>
+                <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.2rem', margin: '0 0 6px' }}>
+                  ¡Recibimos tu pedido!
                 </h3>
-                {orderConfirmedData.store?.whatsapp_number ? (
-                  <p style={{ color: '#6b6560', fontSize: '0.82rem', lineHeight: 1.6, margin: '0 0 4px' }}>
-                    Te redirigimos a WhatsApp para coordinar con <strong>{orderConfirmedData.store.name}</strong>
-                  </p>
-                ) : (
-                  <p style={{ color: '#6b6560', fontSize: '0.82rem', lineHeight: 1.6, margin: '0 0 4px' }}>
-                    El local se pondrá en contacto contigo a la brevedad
-                  </p>
-                )}
-                <p style={{ color: '#6b6560', fontSize: '0.78rem', margin: 0 }}>
-                  Total: <strong>${parseFloat(orderConfirmedData.total).toFixed(2)}</strong>
-                </p>
+                <p style={{ color: '#6b6560', fontSize: '0.8rem', margin: '0 0 2px' }}>Estamos preparando tu compra</p>
               </div>
 
-              {/* Botón WhatsApp */}
-              {orderConfirmedData.store?.whatsapp_number && (
-                <div style={{ background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px' }}>
-                  <p style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#166534', margin: '0 0 8px' }}>
-                    Si no se abrió WhatsApp automáticamente:
-                  </p>
-                  <a
-                    href={`https://wa.me/${orderConfirmedData.store.whatsapp_number}?text=${encodeURIComponent(buildWhatsAppMessage(orderConfirmedData.store.whatsapp_message_template, {
-                      order_id:       orderConfirmedData.id,
-                      items:          orderConfirmedData.items || [],
-                      total:          orderConfirmedData.total,
-                      nombre_cliente: session?.user?.first_name && session?.user?.last_name
-                        ? `${session.user.first_name} ${session.user.last_name}`
-                        : session?.user?.username || 'Cliente',
-                      email_cliente:  session?.user?.email || '',
-                      punto_retiro:   orderConfirmedData.pickup_point_name || '',
-                    }))}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'block', width: '100%', background: '#25d366', color: '#fff',
-                      padding: '11px', borderRadius: '4px', textDecoration: 'none',
-                      fontFamily: 'var(--font-sans)', fontSize: '0.78rem',
-                      letterSpacing: '0.1em', textTransform: 'uppercase',
-                      textAlign: 'center', boxSizing: 'border-box',
-                    }}
-                  >
-                    Abrir WhatsApp
-                  </a>
-                  <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '6px 0 0', textAlign: 'center' }}>
-                    {orderConfirmedData.store.whatsapp_number}
-                  </p>
+              {/* Resumen de la orden */}
+              <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '14px 16px', fontSize: '0.78rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#6b6560' }}>Número de orden</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, letterSpacing: '0.05em' }}>
+                    {orderConfirmedData.order_number || `#${orderConfirmedData.id}`}
+                  </span>
                 </div>
-              )}
-
-              {/* Punto de retiro seleccionado */}
-              {orderConfirmedData.pickup_point_name && (
-                <div style={{ background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '6px', padding: '12px 14px' }}>
-                  <span style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#166534' }}>Punto de retiro</span>
-                  <p style={{ fontSize: '0.82rem', fontWeight: 500, margin: '3px 0 0' }}>{orderConfirmedData.pickup_point_name}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#6b6560' }}>Método de pago</span>
+                  <span>{orderConfirmedData.payment_method === 'mp' ? 'Mercado Pago' : 'Transferencia'}</span>
                 </div>
-              )}
-
-              {/* Datos de retiro */}
-              {(orderConfirmedData.store?.address || orderConfirmedData.store?.pickup_info) && (
-                <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '12px 14px' }}>
-                  {orderConfirmedData.store.address && (
-                    <div style={{ marginBottom: '6px' }}>
-                      <span style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560' }}>Dirección</span>
-                      <p style={{ fontSize: '0.8rem', margin: '2px 0 0', color: '#0f0f0f' }}>{orderConfirmedData.store.address}</p>
-                    </div>
-                  )}
-                  {orderConfirmedData.store.pickup_info && (
-                    <div>
-                      <span style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560' }}>Retiro</span>
-                      <p style={{ fontSize: '0.8rem', margin: '2px 0 0', color: '#0f0f0f' }}>{orderConfirmedData.store.pickup_info}</p>
-                    </div>
-                  )}
+                {orderConfirmedData.pickup_point_name && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: '#6b6560' }}>Retiro en</span>
+                    <span style={{ textAlign: 'right', maxWidth: '55%' }}>{orderConfirmedData.pickup_point_name}</span>
+                  </div>
+                )}
+                {orderConfirmedData.delivery_address && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: '#6b6560' }}>Envío a</span>
+                    <span style={{ textAlign: 'right', maxWidth: '55%', fontSize: '0.72rem' }}>{orderConfirmedData.delivery_address}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '0.5px solid #e0dbd4', fontWeight: 600 }}>
+                  <span>Total</span>
+                  <span>${parseFloat(orderConfirmedData.total).toFixed(2)}</span>
                 </div>
-              )}
+              </div>
 
-              {/* Acciones */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '8px' }}>
-                <Link
-                  href="/profile/orders"
-                  onClick={handleClose}
-                  style={{
-                    display: 'block', width: '100%', background: '#0f0f0f', color: '#fafaf8',
-                    padding: '13px', borderRadius: '2px', textDecoration: 'none',
-                    fontFamily: 'var(--font-sans)', fontSize: '0.72rem',
-                    letterSpacing: '0.14em', textTransform: 'uppercase', textAlign: 'center',
-                    boxSizing: 'border-box',
-                  }}
-                >
+                <Link href="/profile/orders" onClick={handleClose}
+                  style={{ display: 'block', width: '100%', background: '#0f0f0f', color: '#fafaf8', padding: '13px', borderRadius: '2px', textDecoration: 'none', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', textAlign: 'center', boxSizing: 'border-box' }}>
                   Ver mis pedidos →
                 </Link>
-                <button
-                  onClick={handleClose}
-                  style={{
-                    width: '100%', background: 'none', color: '#6b6560',
-                    border: '0.5px solid #e0dbd4', padding: '11px', borderRadius: '2px', cursor: 'pointer',
-                    fontFamily: 'var(--font-sans)', fontSize: '0.72rem',
-                    letterSpacing: '0.14em', textTransform: 'uppercase',
-                  }}
-                >
+                <button onClick={handleClose}
+                  style={{ width: '100%', background: 'none', color: '#6b6560', border: '0.5px solid #e0dbd4', padding: '11px', borderRadius: '2px', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
                   Seguir comprando
                 </button>
               </div>
             </div>
+
           ) : (
             <>
-              {/* Items */}
+              {/* ---- ITEMS ---- */}
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {checkoutError && (
                   <div style={{ background: '#fef2f2', border: '0.5px solid #fecaca', padding: '10px 14px', borderRadius: '4px', marginBottom: '12px', color: '#c0392b', fontSize: '0.8rem' }}>
@@ -303,28 +475,13 @@ export default function CartSidebar() {
                         }
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--store-panel-text, #0f0f0f)' }}>
-                          {item.name}
-                        </p>
-                        <p style={{ margin: '0 0 12px', color: 'var(--store-panel-text, #6b6560)', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', opacity: 0.7 }}>
-                          ${parseFloat(item.price).toFixed(2)}
-                        </p>
+                        <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--store-panel-text, #0f0f0f)' }}>{item.name}</p>
+                        <p style={{ margin: '0 0 12px', color: 'var(--store-panel-text, #6b6560)', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', opacity: 0.7 }}>${parseFloat(item.price).toFixed(2)}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                            style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>
-                            −
-                          </button>
-                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', minWidth: '20px', textAlign: 'center', color: 'var(--store-panel-text, #0f0f0f)' }}>
-                            {item.quantity}
-                          </span>
-                          <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                            style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>
-                            +
-                          </button>
-                          <button onClick={() => removeItem(item.product_id)}
-                            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.75rem', fontFamily: 'var(--font-sans)' }}>
-                            Eliminar
-                          </button>
+                          <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)} style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>−</button>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', minWidth: '20px', textAlign: 'center', color: 'var(--store-panel-text, #0f0f0f)' }}>{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>+</button>
+                          <button onClick={() => removeItem(item.product_id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.75rem', fontFamily: 'var(--font-sans)' }}>Eliminar</button>
                         </div>
                       </div>
                     </div>
@@ -332,22 +489,19 @@ export default function CartSidebar() {
                 )}
               </div>
 
-              {/* Footer */}
+              {/* ---- FOOTER ---- */}
               {items.length > 0 && (
                 <div style={{ paddingTop: '16px', borderTop: '0.5px solid rgba(128,128,128,0.2)' }}>
 
+                  {/* Cupón */}
                   {session && storeSlug && !appliedCoupon && (
                     <form onSubmit={handleApplyCoupon} style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '6px' }}>
-                        ¿Tenés un cupón?
-                      </div>
+                      <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '6px' }}>¿Tenés un cupón?</div>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <input
-                          value={couponCode} onChange={e => setCouponCode(e.target.value)}
-                          placeholder="Código de cupón"
-                          style={{ flex: 1, padding: '7px 10px', border: '0.5px solid #e0dbd4', background: '#fafaf8', fontSize: '0.78rem', outline: 'none', borderRadius: '2px', fontFamily: 'monospace', letterSpacing: '0.08em' }}
-                        />
-                        <button type="submit" disabled={couponLoading || !couponCode.trim()} style={{ padding: '7px 12px', background: '#0f0f0f', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '2px', fontSize: '0.65rem', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+                        <input value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Código de cupón"
+                          style={{ flex: 1, padding: '7px 10px', border: '0.5px solid #e0dbd4', background: '#fafaf8', fontSize: '0.78rem', outline: 'none', borderRadius: '2px', fontFamily: 'monospace', letterSpacing: '0.08em' }} />
+                        <button type="submit" disabled={couponLoading || !couponCode.trim()}
+                          style={{ padding: '7px 12px', background: '#0f0f0f', color: '#fff', border: 'none', cursor: 'pointer', borderRadius: '2px', fontSize: '0.65rem', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
                           {couponLoading ? '...' : 'Aplicar'}
                         </button>
                       </div>
@@ -357,45 +511,53 @@ export default function CartSidebar() {
 
                   {appliedCoupon && (
                     <div style={{ marginBottom: '12px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '4px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem' }}>
-                      <span style={{ color: '#166534' }}>✓ Cupón aplicado: -{appliedCoupon.discount_percentage}%</span>
+                      <span style={{ color: '#166534' }}>✓ Cupón: -{appliedCoupon.discount_percentage}%</span>
                       <button onClick={() => setAppliedCoupon(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', fontSize: '0.7rem', padding: 0 }}>✕</button>
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: appliedCoupon ? '4px' : '16px' }}>
-                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: 'var(--store-panel-text, #6b6560)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7 }}>
-                      Total
-                    </span>
+                  {/* Totales */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: appliedCoupon ? '4px' : '14px' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: 'var(--store-panel-text, #6b6560)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7 }}>Total</span>
                     <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: 'var(--store-panel-text, #0f0f0f)', textDecoration: appliedCoupon ? 'line-through' : 'none', opacity: appliedCoupon ? 0.5 : 1 }}>
                       ${total.toFixed(2)}
                     </span>
                   </div>
                   {appliedCoupon && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#166534', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                        Con descuento
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, color: '#166534' }}>
-                        ${discountedTotal.toFixed(2)}
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#166534', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Con descuento</span>
+                      <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: '#166534' }}>${discountedTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {deliveryCost > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.78rem', color: '#6b6560', letterSpacing: '0.06em' }}>+ Envío</span>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.9rem', color: '#6b6560' }}>${deliveryCost.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {(appliedCoupon || deliveryCost > 0) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingTop: '6px', borderTop: '0.5px solid #e0dbd4' }}>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Total final</span>
+                      <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, color: '#0f0f0f' }}>${finalTotal.toFixed(2)}</span>
                     </div>
                   )}
 
-                  {/* Selector de punto de retiro */}
-                  {pickupPoints.length > 0 && (
+                  {/* ---- ENTREGA ---- */}
+                  {session && (pickupPoints.length > 0 || showDeliveryOption) && (
                     <div style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '8px' }}>
-                        Punto de retiro
+                      <div style={{ fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '8px' }}>
+                        ¿Cómo querés recibir tu pedido?
                       </div>
+
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+
+                        {/* Puntos de retiro */}
                         {pickupPoints.map(p => (
                           <label key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', padding: '9px 11px', border: `0.5px solid ${selectedPoint === String(p.id) ? '#0f0f0f' : '#e0dbd4'}`, borderRadius: '3px', background: selectedPoint === String(p.id) ? '#f5f3f0' : '#fafaf8' }}>
                             <input
-                              type="radio"
-                              name="pickup_point"
-                              value={String(p.id)}
+                              type="radio" name="delivery_option" value={String(p.id)}
                               checked={selectedPoint === String(p.id)}
-                              onChange={e => setSelectedPoint(e.target.value)}
+                              onChange={() => { setSelectedPoint(String(p.id)); setDeliveryMethod('pickup'); setDeliveryAvail(null); setCheckoutError(''); }}
                               style={{ marginTop: '2px', flexShrink: 0 }}
                             />
                             <div>
@@ -405,40 +567,171 @@ export default function CartSidebar() {
                             </div>
                           </label>
                         ))}
+
+                        {/* Separador antes de la opción de delivery */}
+                        {showDeliveryOption && pickupPoints.length > 0 && (
+                          <div style={{ borderTop: '0.5px solid #e0dbd4', margin: '2px 0' }} />
+                        )}
+
+                        {/* Opción: Envío a domicilio */}
+                        {showDeliveryOption && (
+                          <>
+                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', padding: '9px 11px', border: `0.5px solid ${deliveryMethod === 'delivery' ? '#0f0f0f' : '#e0dbd4'}`, borderRadius: '3px', background: deliveryMethod === 'delivery' ? '#f5f3f0' : '#fafaf8' }}>
+                              <input
+                                type="radio" name="delivery_option" value="delivery"
+                                checked={deliveryMethod === 'delivery'}
+                                onChange={() => { setSelectedPoint(''); setDeliveryMethod('delivery'); setDeliveryAvail(null); setCheckoutError(''); }}
+                                style={{ marginTop: '2px', flexShrink: 0 }}
+                              />
+                              <div>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--store-panel-text, #0f0f0f)' }}>
+                                  Envío a domicilio
+                                  {deliverySettings?.delivery_cost > 0 && (
+                                    <span style={{ fontWeight: 400, color: '#6b6560', fontSize: '0.72rem', marginLeft: '6px' }}>
+                                      +${parseFloat(deliverySettings.delivery_cost).toFixed(0)}
+                                    </span>
+                                  )}
+                                </div>
+                                {deliveryMethod !== 'delivery' && (
+                                  <div style={{ fontSize: '0.68rem', color: '#6b6560', marginTop: '1px' }}>
+                                    Ingresá tu dirección para ver si llegamos
+                                  </div>
+                                )}
+                              </div>
+                            </label>
+
+                            {/* Sección expandible de delivery */}
+                            {deliveryMethod === 'delivery' && (
+                              <div style={{ paddingLeft: '10px', paddingRight: '2px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+
+                                {/* Domicilio guardado */}
+                                {savedAddress?.full_address && !usingCustomAddr ? (
+                                  <div>
+                                    <div style={{ padding: '9px 11px', background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '3px', fontSize: '0.78rem', marginBottom: '4px' }}>
+                                      <div style={{ color: '#6b6560', fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '3px' }}>Tu domicilio</div>
+                                      <div style={{ color: '#0f0f0f', lineHeight: 1.4 }}>{savedAddress.full_address}</div>
+                                    </div>
+                                    <button onClick={() => { setUsingCustomAddr(true); setDeliveryAvail(null); }}
+                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', fontSize: '0.65rem', textDecoration: 'underline', padding: 0 }}>
+                                      Usar otra dirección
+                                    </button>
+                                  </div>
+                                ) : (
+                                  /* Input autocomplete */
+                                  <div style={{ position: 'relative' }}>
+                                    <input
+                                      type="text"
+                                      value={deliveryAddress}
+                                      onChange={e => handleAddressChange(e.target.value)}
+                                      onFocus={() => addressSuggestions.length && setShowAddrSugg(true)}
+                                      onBlur={() => setTimeout(() => setShowAddrSugg(false), 200)}
+                                      placeholder="Ej: Av. 44 463, La Plata"
+                                      style={{ width: '100%', padding: '9px 11px', border: '0.5px solid #e0dbd4', background: '#fafaf8', fontSize: '0.78rem', outline: 'none', borderRadius: '2px', boxSizing: 'border-box', fontFamily: 'var(--font-sans)' }}
+                                    />
+                                    {showAddrSugg && addressSuggestions.length > 0 && (
+                                      <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxHeight: '180px', overflowY: 'auto' }}>
+                                        {addressSuggestions.map((s, i) => (
+                                          <div key={i} onMouseDown={() => handleSelectAddress(s)}
+                                            style={{ padding: '9px 12px', cursor: 'pointer', fontSize: '0.72rem', borderBottom: i < addressSuggestions.length - 1 ? '0.5px solid #f0ede8' : 'none', lineHeight: 1.4 }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#f5f3f0'}
+                                            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+                                          >
+                                            {s.display_name}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Estado de cobertura */}
+                                {checkingDelivery && (
+                                  <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: 0 }}>Verificando cobertura...</p>
+                                )}
+                                {deliveryAvail && !checkingDelivery && (
+                                  <div style={{
+                                    padding: '8px 12px', borderRadius: '4px', fontSize: '0.75rem',
+                                    background: deliveryAvail.available ? '#f0fdf4' : '#fef2f2',
+                                    border: `0.5px solid ${deliveryAvail.available ? '#bbf7d0' : '#fecaca'}`,
+                                    color: deliveryAvail.available ? '#166534' : '#c0392b',
+                                  }}>
+                                    {deliveryAvail.available ? '✓' : '✗'} {deliveryAvail.message}
+                                  </div>
+                                )}
+
+                                {/* Mapa con radio de cobertura */}
+                                {deliverySettings?.store_lat && deliverySettings?.store_lng && deliveryAvail && !checkingDelivery && (
+                                  <div style={{ borderRadius: '6px', overflow: 'hidden', border: '0.5px solid #e0dbd4' }}>
+                                    <MapWithRadius
+                                      storeLat={deliverySettings.store_lat}
+                                      storeLng={deliverySettings.store_lng}
+                                      radiusKm={deliverySettings.delivery_radius_km || 5}
+                                      userLat={usingCustomAddr ? deliveryLat : (savedAddress?.lat || null)}
+                                      userLng={usingCustomAddr ? deliveryLng : (savedAddress?.lng || null)}
+                                      height={180}
+                                    />
+                                    <p style={{ fontSize: '0.6rem', color: '#6b6560', padding: '5px 10px', background: '#f5f3f0', margin: 0 }}>
+                                      Radio de cobertura: {deliverySettings.delivery_radius_km || 5} km
+                                      {deliveryAvail.distance != null && ` · Tu dirección: ${deliveryAvail.distance} km`}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Guardar dirección en perfil */}
+                                {usingCustomAddr && deliveryLat && deliveryAvail?.available && (
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.72rem', color: '#6b6560' }}>
+                                    <input type="checkbox" checked={saveAddrToProfile} onChange={e => setSaveAddrToProfile(e.target.checked)} />
+                                    Guardar esta dirección en mi perfil
+                                  </label>
+                                )}
+
+                                {usingCustomAddr && savedAddress && (
+                                  <button onClick={() => { setUsingCustomAddr(false); setDeliveryAddress(''); setDeliveryAvail(null); setDeliveryLat(null); setDeliveryLng(null); }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', fontSize: '0.65rem', textDecoration: 'underline', padding: 0 }}>
+                                    ← Usar mi domicilio guardado
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
 
+                  {/* Sin métodos de pago */}
+                  {session && paymentSettings && !paymentSettings.not_configured && !paymentSettings.transfer_enabled && !paymentSettings.mp_enabled && (
+                    <div style={{ background: '#fafaf8', border: '0.5px solid #e0dbd4', borderRadius: '4px', padding: '12px 14px', fontSize: '0.78rem', color: '#6b6560', textAlign: 'center', marginBottom: '8px' }}>
+                      Este local aún no tiene métodos de pago configurados.
+                    </div>
+                  )}
+
+                  {/* Botón PAGAR */}
                   {session ? (
-                    <button
-                      onClick={doCheckout}
-                      disabled={checkoutLoading}
-                      style={{
-                        width: '100%', background: checkoutLoading ? '#888' : '#0f0f0f', color: '#fafaf8',
-                        border: 'none', padding: '14px', borderRadius: '2px',
-                        fontFamily: 'var(--font-sans)', fontSize: '0.75rem',
-                        letterSpacing: '0.16em', textTransform: 'uppercase',
-                        cursor: checkoutLoading ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      {checkoutLoading ? 'Procesando...' : 'Finalizar compra'}
-                    </button>
+                    hasPaymentMethods && (
+                      <button
+                        onClick={handlePagarClick}
+                        disabled={checkoutLoading}
+                        style={{
+                          width: '100%', padding: '15px', borderRadius: '4px',
+                          background: checkoutLoading ? '#888' : '#0f0f0f',
+                          color: '#fafaf8', border: 'none',
+                          fontFamily: 'var(--font-sans)', fontSize: '0.9rem',
+                          fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
+                          cursor: checkoutLoading ? 'not-allowed' : 'pointer',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        {checkoutLoading ? 'Procesando...' : `PAGAR $${finalTotal.toFixed(2)}`}
+                      </button>
+                    )
                   ) : (
                     <div style={{ textAlign: 'center' }}>
                       <p style={{ fontSize: '0.78rem', color: '#6b6560', margin: '0 0 12px', lineHeight: 1.5 }}>
                         Para finalizar tu compra necesitás iniciar sesión
                       </p>
-                      <Link
-                        href={`/login?callbackUrl=${typeof window !== 'undefined' ? window.location.pathname : '/'}`}
-                        onClick={handleClose}
-                        style={{
-                          display: 'block', width: '100%', background: '#0f0f0f', color: '#fafaf8',
-                          padding: '14px', borderRadius: '2px', textDecoration: 'none',
-                          fontFamily: 'var(--font-sans)', fontSize: '0.75rem',
-                          letterSpacing: '0.16em', textTransform: 'uppercase',
-                          textAlign: 'center', boxSizing: 'border-box',
-                        }}
-                      >
+                      <Link href={`/login?callbackUrl=${typeof window !== 'undefined' ? window.location.pathname : '/'}`} onClick={handleClose}
+                        style={{ display: 'block', width: '100%', background: '#0f0f0f', color: '#fafaf8', padding: '14px', borderRadius: '2px', textDecoration: 'none', fontFamily: 'var(--font-sans)', fontSize: '0.75rem', letterSpacing: '0.16em', textTransform: 'uppercase', textAlign: 'center', boxSizing: 'border-box' }}>
                         Ingresar para comprar
                       </Link>
                     </div>
@@ -449,6 +742,246 @@ export default function CartSidebar() {
           )}
         </div>
       </div>
+
+      {/* ========== MODAL: Selección de método de pago ========== */}
+      {showPaymentModal && (
+        <div style={modalOverlay} onClick={e => e.target === e.currentTarget && setShowPaymentModal(false)}>
+          <div style={modalBox}>
+            <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.3rem', margin: 0 }}>¿Cómo querés pagar?</h3>
+              <button onClick={() => setShowPaymentModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b6560', padding: '4px', lineHeight: 1, opacity: 0.6 }}>✕</button>
+            </div>
+            <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+              {/* Card: Transferencia */}
+              {paymentSettings?.transfer_enabled && (
+                <button
+                  onClick={() => { setShowPaymentModal(false); setShowTransferModal(true); setTransferSection(null); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    padding: '18px 20px', border: '1.5px solid #e0dbd4', borderRadius: '8px',
+                    background: '#fafaf8', cursor: 'pointer', textAlign: 'left',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#0f0f0f'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dbd4'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <div style={{ fontSize: '2rem', lineHeight: 1, flexShrink: 0 }}>🏦</div>
+                  <div>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.9rem', fontWeight: 600, color: '#0f0f0f', marginBottom: '3px' }}>Transferencia bancaria</div>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.75rem', color: '#6b6560' }}>Acreditación en minutos</div>
+                  </div>
+                  <div style={{ marginLeft: 'auto', color: '#6b6560', fontSize: '1.1rem' }}>›</div>
+                </button>
+              )}
+
+              {/* Card: Mercado Pago */}
+              {paymentSettings?.mp_enabled && (
+                <button
+                  onClick={() => { setShowPaymentModal(false); handlePayWithMP(); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    padding: '18px 20px', border: '1.5px solid #e0dbd4', borderRadius: '8px',
+                    background: '#fafaf8', cursor: 'pointer', textAlign: 'left',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#009ee3'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,158,227,0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0dbd4'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <div style={{ fontSize: '2rem', lineHeight: 1, flexShrink: 0 }}>💳</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.9rem', fontWeight: 600, color: '#0f0f0f', marginBottom: '3px' }}>Tarjeta de débito, crédito, efectivo y más</div>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.75rem', color: '#6b6560', marginBottom: '6px' }}>Pagá con Mercado Pago</div>
+                    <div style={{ display: 'inline-block', background: '#009ee3', color: '#fff', padding: '2px 8px', borderRadius: '20px', fontSize: '0.58rem', letterSpacing: '0.06em' }}>
+                      Visa · Mastercard · Amex y más
+                    </div>
+                  </div>
+                  <div style={{ color: '#6b6560', fontSize: '1.1rem', flexShrink: 0 }}>›</div>
+                </button>
+              )}
+
+              <p style={{ fontSize: '0.68rem', color: '#aaa', textAlign: 'center', margin: '4px 0 0' }}>
+                Total a pagar: <strong style={{ color: '#0f0f0f' }}>${finalTotal.toFixed(2)}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== MODAL: Datos de transferencia ========== */}
+      {showTransferModal && paymentSettings?.transfer_enabled && (
+        <div style={modalOverlay} onClick={e => e.target === e.currentTarget && setShowTransferModal(false)}>
+          <div style={modalBox}>
+            <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.2rem', margin: 0 }}>Datos para transferir</h3>
+              <button onClick={() => { setShowTransferModal(false); setTransferSection(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b6560', padding: '4px', lineHeight: 1, opacity: 0.6 }}>✕</button>
+            </div>
+
+            <div style={{ padding: '16px 24px 24px' }}>
+
+              {/* Datos bancarios */}
+              <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+                {paymentSettings.transfer_holder && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560' }}>Titular</span>
+                    <p style={{ fontSize: '0.9rem', fontWeight: 600, margin: '2px 0 0', color: '#0f0f0f' }}>{paymentSettings.transfer_holder}</p>
+                  </div>
+                )}
+                {paymentSettings.transfer_bank && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560' }}>Banco / Billetera</span>
+                    <p style={{ fontSize: '0.85rem', margin: '2px 0 0', color: '#0f0f0f' }}>{paymentSettings.transfer_bank}</p>
+                  </div>
+                )}
+                {paymentSettings.transfer_cbu && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560' }}>CBU</span>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '2px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#0f0f0f', letterSpacing: '0.04em' }}>{paymentSettings.transfer_cbu}</span>
+                      <CopyButton text={paymentSettings.transfer_cbu} />
+                    </div>
+                  </div>
+                )}
+                {paymentSettings.transfer_alias && (
+                  <div>
+                    <span style={{ fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560' }}>Alias</span>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '2px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: '#0f0f0f', letterSpacing: '0.04em' }}>{paymentSettings.transfer_alias}</span>
+                      <CopyButton text={paymentSettings.transfer_alias} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Total */}
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <p style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', margin: '0 0 4px' }}>Monto a transferir</p>
+                <p style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, margin: 0, color: '#0f0f0f' }}>${finalTotal.toFixed(2)}</p>
+              </div>
+
+              {/* Comprobante */}
+              <div style={{ borderTop: '0.5px solid #e0dbd4', paddingTop: '16px', marginBottom: '16px' }}>
+                <p style={{ fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560', margin: '0 0 10px' }}>Enviá tu comprobante</p>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <button
+                    onClick={() => { setTransferSection(transferSection === 'whatsapp' ? null : 'whatsapp'); setCompError(''); setCompSuccess(false); }}
+                    style={{
+                      flex: 1, padding: '10px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem',
+                      fontFamily: 'var(--font-sans)', letterSpacing: '0.06em',
+                      border: `0.5px solid ${transferSection === 'whatsapp' ? '#25d366' : '#e0dbd4'}`,
+                      background: transferSection === 'whatsapp' ? '#f0fdf4' : '#fafaf8',
+                      color: transferSection === 'whatsapp' ? '#166534' : '#6b6560',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    📱 WhatsApp
+                  </button>
+                  <button
+                    onClick={() => { setTransferSection(transferSection === 'email' ? null : 'email'); setCompError(''); setCompSuccess(false); }}
+                    style={{
+                      flex: 1, padding: '10px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem',
+                      fontFamily: 'var(--font-sans)', letterSpacing: '0.06em',
+                      border: `0.5px solid ${transferSection === 'email' ? '#0f0f0f' : '#e0dbd4'}`,
+                      background: transferSection === 'email' ? '#f5f3f0' : '#fafaf8',
+                      color: transferSection === 'email' ? '#0f0f0f' : '#6b6560',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    ✉️ Email
+                  </button>
+                </div>
+
+                {/* Sección WhatsApp */}
+                {transferSection === 'whatsapp' && (
+                  <div style={{ background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '6px', padding: '14px', marginBottom: '10px' }}>
+                    <p style={{ fontSize: '0.72rem', color: '#166534', margin: '0 0 10px', lineHeight: 1.5 }}>
+                      Adjuntá la imagen del comprobante en el chat de WhatsApp que se va a abrir.
+                    </p>
+                    <input
+                      type="file" accept="image/*,application/pdf"
+                      onChange={e => setComprobante(e.target.files[0])}
+                      ref={comprobanteRef}
+                      style={{ display: 'none' }}
+                    />
+                    <button onClick={() => comprobanteRef.current?.click()}
+                      style={{ display: 'block', width: '100%', padding: '8px', border: '0.5px dashed #bbf7d0', background: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', color: '#166534', marginBottom: '8px' }}>
+                      {comprobante ? `📎 ${comprobante.name}` : '+ Seleccionar imagen o PDF'}
+                    </button>
+                    {deliverySettings?.whatsapp || paymentSettings?.transfer_holder ? (
+                      <a
+                        href={`https://wa.me/${deliverySettings?.whatsapp || ''}?text=${encodeURIComponent(`Hola! Te envío mi comprobante de transferencia por $${finalTotal.toFixed(2)}.`)}`}
+                        target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'block', width: '100%', background: '#25d366', color: '#fff', padding: '10px', borderRadius: '4px', textDecoration: 'none', fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', boxSizing: 'border-box' }}
+                      >
+                        Abrir WhatsApp
+                      </a>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Sección Email */}
+                {transferSection === 'email' && (
+                  <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '14px', marginBottom: '10px' }}>
+                    {compError && <p style={{ fontSize: '0.72rem', color: '#c0392b', margin: '0 0 8px' }}>{compError}</p>}
+                    {compSuccess && <p style={{ fontSize: '0.72rem', color: '#2e7d32', margin: '0 0 8px' }}>✓ Comprobante enviado</p>}
+                    <div style={{ marginBottom: '8px' }}>
+                      <label style={{ display: 'block', fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '4px' }}>Tu email</label>
+                      <input
+                        type="email" value={comprobanteEmail}
+                        onChange={e => setComprobanteEmail(e.target.value)}
+                        style={{ width: '100%', padding: '8px 10px', border: '0.5px solid #e0dbd4', background: '#fff', fontSize: '0.78rem', borderRadius: '2px', outline: 'none', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <input
+                      type="file" accept="image/*,application/pdf"
+                      onChange={e => setComprobante(e.target.files[0])}
+                      ref={comprobanteRef}
+                      style={{ display: 'none' }}
+                    />
+                    <button onClick={() => comprobanteRef.current?.click()}
+                      style={{ display: 'block', width: '100%', padding: '8px', border: '0.5px dashed #e0dbd4', background: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', color: '#6b6560', marginBottom: '10px' }}>
+                      {comprobante ? `📎 ${comprobante.name}` : '+ Adjuntar imagen o PDF'}
+                    </button>
+                    <button
+                      onClick={handleSendComprobanteByEmail}
+                      disabled={sendingComp || !comprobante}
+                      style={{ width: '100%', background: sendingComp ? '#ccc' : '#0f0f0f', color: '#fff', border: 'none', borderRadius: '2px', padding: '10px', cursor: sendingComp || !comprobante ? 'not-allowed' : 'pointer', fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}
+                    >
+                      {sendingComp ? 'Enviando...' : 'Enviar comprobante'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Error */}
+              {checkoutError && (
+                <div style={{ background: '#fef2f2', border: '0.5px solid #fecaca', padding: '10px 12px', borderRadius: '4px', marginBottom: '12px', color: '#c0392b', fontSize: '0.78rem' }}>
+                  {checkoutError}
+                </div>
+              )}
+
+              {/* Confirmar */}
+              <button
+                onClick={handleConfirmTransfer}
+                disabled={checkoutLoading}
+                style={{
+                  width: '100%', padding: '15px', borderRadius: '4px',
+                  background: checkoutLoading ? '#888' : '#0f0f0f',
+                  color: '#fafaf8', border: 'none',
+                  fontFamily: 'var(--font-sans)', fontSize: '0.85rem',
+                  fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+                  cursor: checkoutLoading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {checkoutLoading ? 'Procesando...' : 'Confirmar pedido — Transferencia'}
+              </button>
+              <p style={{ fontSize: '0.65rem', color: '#aaa', textAlign: 'center', margin: '8px 0 0' }}>
+                Al confirmar, generamos tu pedido en el sistema
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
