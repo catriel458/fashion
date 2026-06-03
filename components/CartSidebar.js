@@ -249,7 +249,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
       return;
     }
     if (deliveryMethod === 'delivery') {
-      const addr = usingCustomAddr ? deliveryAddress : savedAddress?.full_address;
+      const addr = usingCustomAddr ? deliveryAddress : (savedAddress?.full_address || deliveryAddress);
       if (!addr) { setCheckoutError('Ingresá tu dirección de envío para continuar'); return; }
       if (deliveryAvail && !deliveryAvail.available) {
         setCheckoutError('Tu dirección está fuera de la zona de cobertura');

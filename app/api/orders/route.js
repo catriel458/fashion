@@ -49,7 +49,7 @@ export async function GET() {
       FROM orders o
       LEFT JOIN order_items oi ON oi.order_id = o.id
       LEFT JOIN stores s ON o.store_id = s.id
-      WHERE o.user_id = ${session.user.id}
+      WHERE o.user_id = ${parseInt(session.user.id, 10)}
       GROUP BY o.id, s.name
       ORDER BY o.created_at DESC
     `;
@@ -66,8 +66,19 @@ export async function POST(req) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+  const userId = parseInt(session.user.id, 10);
+  if (!userId || isNaN(userId)) {
+    return NextResponse.json({ error: 'Sesión inválida. Por favor cerrá sesión y volvé a entrar.' }, { status: 401 });
+  }
+
   try {
     await ensureColumns();
+
+    // Verificar que el usuario existe en la DB (sesiones viejas pueden tener IDs que ya no existen)
+    const [dbUser] = await sql`SELECT id FROM users WHERE id = ${userId}`;
+    if (!dbUser) {
+      return NextResponse.json({ error: 'Tu sesión expiró. Por favor cerrá sesión y volvé a entrar.' }, { status: 401 });
+    }
 
     const {
       session_id, coupon_id, pickup_point_id,
@@ -93,7 +104,7 @@ export async function POST(req) {
     let appliedCoupon = null;
     if (coupon_id) {
       const coupons = await sql`
-        SELECT * FROM coupons WHERE id = ${coupon_id} AND user_id = ${session.user.id} AND used = false AND expires_at > NOW()
+        SELECT * FROM coupons WHERE id = ${coupon_id} AND user_id = ${userId} AND used = false AND expires_at > NOW()
       `;
       if (coupons.length > 0) {
         appliedCoupon = coupons[0];
@@ -121,7 +132,7 @@ export async function POST(req) {
         delivery_lat, delivery_lng, delivery_cost
       )
       VALUES (
-        ${session.user.id}, ${session_id}, ${initialStatus}, ${total}, ${storeId},
+        ${userId}, ${session_id}, ${initialStatus}, ${total}, ${storeId},
         ${pickupPointId}, ${pickupPointName},
         ${payment_method || null}, ${effectiveDeliveryMethod}, ${delivery_address || null},
         ${delivery_lat || null}, ${delivery_lng || null}, ${extraDeliveryCost}
@@ -129,7 +140,7 @@ export async function POST(req) {
       RETURNING *
     `.catch(() => sql`
       INSERT INTO orders (user_id, session_id, status, total, store_id, pickup_point_id, pickup_point_name)
-      VALUES (${session.user.id}, ${session_id}, ${initialStatus}, ${total}, ${storeId}, ${pickupPointId}, ${pickupPointName})
+      VALUES (${userId}, ${session_id}, ${initialStatus}, ${total}, ${storeId}, ${pickupPointId}, ${pickupPointName})
       RETURNING *
     `);
 
@@ -149,14 +160,14 @@ export async function POST(req) {
     }
 
     if (save_address && effectiveDeliveryMethod === 'delivery' && delivery_address) {
-      await sql`DELETE FROM user_addresses WHERE user_id = ${session.user.id}`.catch(() => {});
+      await sql`DELETE FROM user_addresses WHERE user_id = ${userId}`.catch(() => {});
       await sql`
         INSERT INTO user_addresses (user_id, full_address, lat, lng, is_default)
-        VALUES (${session.user.id}, ${delivery_address}, ${delivery_lat || null}, ${delivery_lng || null}, true)
+        VALUES (${userId}, ${delivery_address}, ${delivery_lat || null}, ${delivery_lng || null}, true)
       `.catch(() => {});
     }
 
-    const [user] = await sql`SELECT email, username, first_name, last_name FROM users WHERE id = ${session.user.id}`;
+    const [user] = await sql`SELECT email, username, first_name, last_name FROM users WHERE id = ${userId}`;
     const [store] = storeId
       ? await sql`SELECT id, name, whatsapp_number, whatsapp_message_template, address, pickup_info, contact_email FROM stores WHERE id = ${storeId}`
       : [null];
@@ -166,7 +177,7 @@ export async function POST(req) {
       : user.username;
 
     await createNotification({
-      userId:  session.user.id,
+      userId:  userId,
       storeId: storeId,
       type:    'order_pending',
       title:   `Tu pedido ${orderNumber} fue recibido`,
