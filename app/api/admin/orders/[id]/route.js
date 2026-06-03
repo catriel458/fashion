@@ -25,7 +25,8 @@ export async function GET(req, { params }) {
   try {
     const { id } = params;
     const [order] = await sql`
-      SELECT o.*, u.username, u.email, u.first_name, u.last_name
+      SELECT o.*, u.username, u.email, u.first_name, u.last_name,
+             u.whatsapp_number AS buyer_whatsapp
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
       WHERE o.id = ${id} AND o.store_id = ${storeId}

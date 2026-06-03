@@ -50,8 +50,6 @@ export default function AdminSettingsPage() {
 
   const [whatsappNumber, setWhatsappNumber]     = useState('');
   const [template,       setTemplate]           = useState(DEFAULT_TEMPLATE);
-  const [address,        setAddress]            = useState('');
-  const [pickupInfo,     setPickupInfo]         = useState('');
   const [hours,          setHours]              = useState(DEFAULT_HOURS);
   const [pickupPoints,   setPickupPoints]       = useState([]);
   const [newPoint,       setNewPoint]           = useState({ name: '', address: '', description: '' });
@@ -133,8 +131,6 @@ export default function AdminSettingsPage() {
       if (data.error) { setError(data.error); return; }
       setWhatsappNumber(data.whatsapp_number || '');
       setTemplate(data.whatsapp_message_template || DEFAULT_TEMPLATE);
-      setAddress(data.address || '');
-      setPickupInfo(data.pickup_info || '');
       if (data.hours?.length === 7) {
         setHours(data.hours.map(h => ({
           day_of_week: h.day_of_week,
@@ -171,10 +167,8 @@ export default function AdminSettingsPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          whatsapp_number:            whatsappNumber.trim(),
-          whatsapp_message_template:  template,
-          address:                    address.trim(),
-          pickup_info:                pickupInfo.trim(),
+          whatsapp_number:           whatsappNumber.trim(),
+          whatsapp_message_template: template,
           hours,
         }),
       });
@@ -322,31 +316,6 @@ export default function AdminSettingsPage() {
             <pre style={{ fontSize: '0.78rem', whiteSpace: 'pre-wrap', margin: 0, color: '#0f0f0f', fontFamily: 'var(--font-sans)', lineHeight: 1.6 }}>
               {buildPreview(template)}
             </pre>
-          </div>
-        </div>
-
-        {/* Dirección y retiro */}
-        <div style={section}>
-          <h2 style={h2s}>Dirección y retiro</h2>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={lbl}>Dirección del local</label>
-            <textarea
-              value={address}
-              onChange={e => setAddress(e.target.value)}
-              rows={2}
-              style={{ ...inp, resize: 'vertical' }}
-              placeholder="Av. Corrientes 1234, CABA"
-            />
-          </div>
-          <div>
-            <label style={lbl}>Información de retiro</label>
-            <textarea
-              value={pickupInfo}
-              onChange={e => setPickupInfo(e.target.value)}
-              rows={3}
-              style={{ ...inp, resize: 'vertical' }}
-              placeholder="Retiro en local de Lunes a Viernes. Coordinar pago por WhatsApp."
-            />
           </div>
         </div>
 

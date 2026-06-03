@@ -3,17 +3,63 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
 const STATUS_LABEL = {
+  pendiente_pago:        'Pendiente de pago',
+  comprobante_pendiente: 'Comprobante pendiente',
+  comprobante_enviado:   'Comprobante enviado',
+  pago_recibido:         'Pago recibido',
+  preparando_pedido:     'Preparando pedido',
+  en_camino:             'En camino',
+  listo_para_retirar:    'Listo para retirar',
+  entregado:             'Entregado',
+  cancelado:             'Cancelado',
+  // Legacy
   pending:   'Pendiente',
   confirmed: 'Confirmado',
-  delivered: 'Vendido',
+  ready:     'Listo para retirar',
+  delivered: 'Entregado',
   cancelled: 'Cancelado',
 };
+
 const STATUS_COLOR = {
+  pendiente_pago:        { bg: '#fff8e1', color: '#e67e22' },
+  comprobante_pendiente: { bg: '#fef3c7', color: '#d97706' },
+  comprobante_enviado:   { bg: '#fef9c3', color: '#ca8a04' },
+  pago_recibido:         { bg: '#dcfce7', color: '#16a34a' },
+  preparando_pedido:     { bg: '#e3f2fd', color: '#1565c0' },
+  en_camino:             { bg: '#ede9fe', color: '#7c3aed' },
+  listo_para_retirar:    { bg: '#d1fae5', color: '#065f46' },
+  entregado:             { bg: '#e8f5e9', color: '#1b5e20' },
+  cancelado:             { bg: '#fef2f2', color: '#c0392b' },
+  // Legacy
   pending:   { bg: '#fff8e1', color: '#e67e22' },
   confirmed: { bg: '#e3f2fd', color: '#1565c0' },
+  ready:     { bg: '#e8f5e9', color: '#2e7d32' },
   delivered: { bg: '#e8f5e9', color: '#1b5e20' },
   cancelled: { bg: '#fef2f2', color: '#c0392b' },
 };
+
+// Returns valid next statuses for admin to advance to
+function getNextStatuses(currentStatus, deliveryMethod) {
+  const isDelivery = deliveryMethod === 'delivery';
+  const map = {
+    pendiente_pago:        ['pago_recibido', 'cancelado'],
+    comprobante_pendiente: ['pago_recibido', 'cancelado'],
+    comprobante_enviado:   ['pago_recibido', 'cancelado'],
+    pago_recibido:         ['preparando_pedido', 'cancelado'],
+    preparando_pedido:     [isDelivery ? 'en_camino' : 'listo_para_retirar', 'cancelado'],
+    en_camino:             ['entregado', 'cancelado'],
+    listo_para_retirar:    ['entregado', 'cancelado'],
+    entregado:             [],
+    cancelado:             [],
+    // Legacy fallbacks
+    pending:    ['pago_recibido', 'cancelado'],
+    confirmed:  ['preparando_pedido', 'cancelado'],
+    ready:      ['entregado', 'cancelado'],
+    delivered:  [],
+    cancelled:  [],
+  };
+  return map[currentStatus] ?? [];
+}
 
 const inp = { padding: '8px 11px', border: '0.5px solid #e0dbd4', background: '#fafaf8', fontFamily: 'var(--font-sans)', fontSize: '0.8rem', outline: 'none', borderRadius: '2px', color: '#0f0f0f' };
 
@@ -28,17 +74,18 @@ function StatusBadge({ status }) {
 
 export default function AdminOrdersPage() {
   const { data: session } = useSession();
-  const [orders,     setOrders]     = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [search,     setSearch]     = useState('');
-  const [selected,   setSelected]   = useState(null);
-  const [detail,     setDetail]     = useState(null);
+  const [orders,        setOrders]        = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState('');
+  const [statusFilter,  setStatusFilter]  = useState('');
+  const [search,        setSearch]        = useState('');
+  const [selected,      setSelected]      = useState(null);
+  const [detail,        setDetail]        = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [saving,     setSaving]     = useState(false);
-  const [saveOk,     setSaveOk]     = useState('');
-  const [sendingMail, setSendingMail] = useState(false);
+  const [saving,        setSaving]        = useState(false);
+  const [saveOk,        setSaveOk]        = useState('');
+  const [sendingMail,   setSendingMail]   = useState(false);
+  const [waPhone,       setWaPhone]       = useState('');
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -60,11 +107,13 @@ export default function AdminOrdersPage() {
     setSelected(orderId);
     setDetail(null);
     setDetailLoading(true);
+    setWaPhone('');
     try {
       const res  = await fetch(`/api/admin/orders/${orderId}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setDetail(data);
+      setWaPhone(data.buyer_whatsapp || '');
     } catch (e) { setError(e.message); }
     finally { setDetailLoading(false); }
   }
@@ -121,7 +170,59 @@ export default function AdminOrdersPage() {
     finally { setSaving(false); }
   }
 
+  function handleNotifyWhatsApp() {
+    if (!detail) return;
+    const phone = waPhone.replace(/\D/g, '');
+    if (!phone) return;
+
+    const buyerName = detail.first_name && detail.last_name
+      ? `${detail.first_name} ${detail.last_name}`
+      : detail.username || 'Cliente';
+
+    const itemsStr = (detail.items || [])
+      .map(i => `• ${i.quantity}x ${i.name} — $${(parseFloat(i.price_at_purchase) * i.quantity).toFixed(2)}`)
+      .join('\n');
+
+    const paymentLabel = detail.payment_method === 'mp' ? 'Mercado Pago' : 'Transferencia bancaria';
+
+    let deliveryInfo = '';
+    if (detail.delivery_method === 'delivery' && detail.delivery_address) {
+      deliveryInfo = `📍 Envío a: ${detail.delivery_address}`;
+    } else if (detail.pickup_point_name) {
+      deliveryInfo = `📍 Retiro en: ${detail.pickup_point_name}`;
+    }
+
+    const statusMsg = {
+      pago_recibido:      'Recibimos tu pago. Tu pedido está siendo procesado.',
+      preparando_pedido:  'Estamos preparando tu pedido.',
+      en_camino:          'Tu pedido está en camino hacia vos.',
+      listo_para_retirar: 'Tu pedido está listo para retirar.',
+      entregado:          '¡Tu pedido fue entregado! Gracias por tu compra.',
+      comprobante_enviado:'Recibimos tu comprobante. Lo estamos verificando.',
+    }[detail.status] || 'Tu pedido está siendo procesado.';
+
+    const msg = [
+      `Hola ${buyerName}! 👋`,
+      '',
+      `Te confirmamos tu pedido #${detail.id}.`,
+      '',
+      `📦 Productos:`,
+      itemsStr,
+      '',
+      `💰 Total: $${parseFloat(detail.total).toFixed(2)}`,
+      `💳 Pago: ${paymentLabel}`,
+      deliveryInfo,
+      '',
+      statusMsg,
+    ].filter(l => l !== undefined).join('\n').replace(/\n{3,}/g, '\n\n');
+
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
   const containerStyle = { padding: 'clamp(2rem, 4vw, 3rem) clamp(1.2rem, 4vw, 2.5rem)', fontFamily: 'var(--font-sans)' };
+
+  const allStatuses = Object.entries(STATUS_LABEL)
+    .filter(([k]) => !['pending','confirmed','ready','delivered','cancelled'].includes(k));
 
   return (
     <div style={containerStyle}>
@@ -138,13 +239,15 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* Filtros */}
+      {/* Filters */}
       <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', padding: '16px 20px', marginBottom: '20px', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...inp, minWidth: '160px' }}>
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...inp, minWidth: '200px' }}>
           <option value="">Todos los estados</option>
-          {Object.entries(STATUS_LABEL).map(([val, label]) => (
+          {allStatuses.map(([val, label]) => (
             <option key={val} value={val}>{label}</option>
           ))}
+          <option value="pending">Pendiente (legacy)</option>
+          <option value="confirmed">Confirmado (legacy)</option>
         </select>
         <input
           type="text"
@@ -155,10 +258,10 @@ export default function AdminOrdersPage() {
         />
       </div>
 
-      {/* Layout: lista + detalle */}
-      <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 400px' : '1fr', gap: '20px', alignItems: 'start' }}>
+      {/* Layout: list + detail */}
+      <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 420px' : '1fr', gap: '20px', alignItems: 'start' }}>
 
-        {/* Lista de pedidos */}
+        {/* Orders list */}
         <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
@@ -206,9 +309,9 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        {/* Panel de detalle */}
+        {/* Detail panel */}
         {selected && (
-          <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', padding: '20px', position: 'sticky', top: '20px' }}>
+          <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', padding: '20px', position: 'sticky', top: '20px', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.1rem', margin: 0 }}>
                 Pedido #{selected}
@@ -222,7 +325,7 @@ export default function AdminOrdersPage() {
               <>
                 {saveOk && <div style={{ background: '#e8f5e9', border: '0.5px solid #a5d6a7', padding: '8px 12px', borderRadius: '3px', marginBottom: '12px', color: '#2e7d32', fontSize: '0.75rem' }}>{saveOk}</div>}
 
-                {/* Comprador */}
+                {/* Buyer info */}
                 <div style={{ marginBottom: '14px', padding: '12px', background: '#f5f3f0', borderRadius: '4px', fontSize: '0.8rem' }}>
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>
                     {detail.first_name && detail.last_name ? `${detail.first_name} ${detail.last_name}` : detail.username || 'Cliente'}
@@ -231,7 +334,44 @@ export default function AdminOrdersPage() {
                   <div style={{ marginTop: '6px' }}><StatusBadge status={detail.status} /></div>
                 </div>
 
-                {/* Productos */}
+                {/* Comprobante de pago — solo para órdenes de transferencia */}
+                {detail.payment_method === 'transfer' && (
+                  <div style={{ marginBottom: '14px' }}>
+                    <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '6px' }}>
+                      Comprobante de pago
+                    </div>
+                    {detail.comprobante_url ? (
+                      <div style={{ padding: '10px 12px', background: '#fffbeb', border: '0.5px solid #fcd34d', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
+                        <span style={{ color: '#92400e', fontWeight: 500 }}>✓ Comprobante recibido</span>
+                        <a
+                          href={detail.comprobante_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ padding: '4px 12px', background: '#92400e', color: '#fff', borderRadius: '3px', textDecoration: 'none', fontSize: '0.7rem', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}
+                        >
+                          Ver comprobante
+                        </a>
+                      </div>
+                    ) : (
+                      <div style={{ padding: '10px 12px', background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '4px', fontSize: '0.78rem', color: '#6b6560' }}>
+                        Sin comprobante aún
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Factura link */}
+                {detail.factura_url && (
+                  <div style={{ marginBottom: '14px', padding: '10px 12px', background: '#e8f5e9', border: '0.5px solid #a5d6a7', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
+                    <span style={{ color: '#2e7d32' }}>Factura generada</span>
+                    <a href={detail.factura_url} target="_blank" rel="noopener noreferrer"
+                      style={{ color: '#2e7d32', fontSize: '0.72rem', textDecoration: 'underline' }}>
+                      Ver factura
+                    </a>
+                  </div>
+                )}
+
+                {/* Products */}
                 <div style={{ marginBottom: '14px' }}>
                   <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '8px' }}>Productos</div>
                   {(detail.items || []).map((item, i) => (
@@ -255,24 +395,54 @@ export default function AdminOrdersPage() {
                   </div>
                 </div>
 
-                {/* Cambiar estado */}
+                {/* Pickup point */}
+                {detail.pickup_point_name && (
+                  <div style={{ marginBottom: '14px', padding: '10px 12px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '4px' }}>
+                    <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#166534', marginBottom: '3px' }}>Punto de retiro</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 500 }}>{detail.pickup_point_name}</div>
+                  </div>
+                )}
+
+                {/* Status change — forward-only */}
                 <div style={{ marginBottom: '14px' }}>
                   <label style={{ display: 'block', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '6px' }}>
-                    Estado
+                    Avanzar estado
                   </label>
-                  <select
-                    value={detail.status}
-                    onChange={e => handleStatusChange(detail.id, e.target.value)}
-                    disabled={saving}
-                    style={{ ...inp, width: '100%' }}
-                  >
-                    {Object.entries(STATUS_LABEL).map(([val, label]) => (
-                      <option key={val} value={val}>{label}</option>
-                    ))}
-                  </select>
+                  {(() => {
+                    const nexts = getNextStatuses(detail.status, detail.delivery_method);
+                    if (nexts.length === 0) {
+                      return (
+                        <p style={{ fontSize: '0.75rem', color: '#6b6560', margin: 0 }}>
+                          Estado final — sin más cambios posibles.
+                        </p>
+                      );
+                    }
+                    return (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {nexts.map(s => (
+                          <button
+                            key={s}
+                            onClick={() => handleStatusChange(detail.id, s)}
+                            disabled={saving}
+                            style={{
+                              padding: '6px 14px',
+                              background: s === 'cancelado' ? '#fef2f2' : '#f5f3f0',
+                              border: `0.5px solid ${s === 'cancelado' ? '#fecaca' : '#e0dbd4'}`,
+                              color: s === 'cancelado' ? '#c0392b' : '#0f0f0f',
+                              borderRadius: '3px', cursor: saving ? 'not-allowed' : 'pointer',
+                              fontSize: '0.72rem', fontFamily: 'var(--font-sans)',
+                              letterSpacing: '0.06em',
+                            }}
+                          >
+                            {STATUS_LABEL[s] || s}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                {/* Notas del admin */}
+                {/* Admin notes */}
                 <div style={{ marginBottom: '14px' }}>
                   <label style={{ display: 'block', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '6px' }}>
                     Notas internas
@@ -293,15 +463,37 @@ export default function AdminOrdersPage() {
                   </button>
                 </div>
 
-                {/* Punto de retiro */}
-                {detail.pickup_point_name && (
-                  <div style={{ marginBottom: '14px', padding: '10px 12px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '4px' }}>
-                    <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#166534', marginBottom: '3px' }}>Punto de retiro</div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 500 }}>{detail.pickup_point_name}</div>
+                {/* Notify via WhatsApp (P2) */}
+                <div style={{ marginBottom: '14px', padding: '14px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#166534', marginBottom: '8px' }}>
+                    Notificar por WhatsApp
                   </div>
-                )}
+                  <input
+                    type="tel"
+                    value={waPhone}
+                    onChange={e => setWaPhone(e.target.value)}
+                    placeholder="Ej: 5491112345678"
+                    style={{ ...inp, width: '100%', marginBottom: '8px', boxSizing: 'border-box' }}
+                  />
+                  <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '0 0 8px' }}>
+                    Código de país + número sin espacios ni +
+                  </p>
+                  <button
+                    onClick={handleNotifyWhatsApp}
+                    disabled={!waPhone.replace(/\D/g, '')}
+                    style={{
+                      width: '100%', padding: '10px', background: !waPhone.replace(/\D/g, '') ? '#ccc' : '#25d366',
+                      color: '#fff', border: 'none', borderRadius: '3px',
+                      cursor: !waPhone.replace(/\D/g, '') ? 'not-allowed' : 'pointer',
+                      fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase',
+                      fontFamily: 'var(--font-sans)',
+                    }}
+                  >
+                    Abrir WhatsApp con mensaje
+                  </button>
+                </div>
 
-                {/* Botón mandar mail */}
+                {/* Send mail button */}
                 <button
                   onClick={handleSendMail}
                   disabled={sendingMail}

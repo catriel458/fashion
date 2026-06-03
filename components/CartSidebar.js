@@ -9,22 +9,6 @@ import { useCart } from './CartContext';
 
 const MapWithRadius = dynamic(() => import('./MapWithRadius'), { ssr: false });
 
-const DEFAULT_WA_TEMPLATE = 'Hola! Quiero realizar el pedido #{{order_id}}\n\nProductos:\n{{productos}}\n\nTotal: ${{total}}\n\nMis datos:\nNombre: {{nombre_cliente}}\nEmail: {{email_cliente}}\nPunto de retiro: {{punto_retiro}}';
-
-function buildWhatsAppMessage(template, { order_id, items, total, nombre_cliente, email_cliente, punto_retiro }) {
-  const tpl = template || DEFAULT_WA_TEMPLATE;
-  const productosStr = (items || [])
-    .map(i => `${i.quantity}x ${i.name} - $${parseFloat(i.price || i.price_at_purchase).toFixed(2)}`)
-    .join('\n');
-  return tpl
-    .replace(/\{\{order_id\}\}/g, order_id)
-    .replace(/\{\{productos\}\}/g, productosStr)
-    .replace(/\{\{total\}\}/g, parseFloat(total).toFixed(2))
-    .replace(/\{\{nombre_cliente\}\}/g, nombre_cliente || 'Cliente')
-    .replace(/\{\{email_cliente\}\}/g, email_cliente || '')
-    .replace(/\{\{punto_retiro\}\}/g, punto_retiro || 'No especificado');
-}
-
 const modalOverlay = {
   position: 'fixed', inset: 0,
   background: 'rgba(0,0,0,0.55)',
@@ -76,21 +60,20 @@ export default function CartSidebar({ storeSlug: propSlug }) {
   const { data: session } = useSession();
   const pathname = usePathname();
 
-  // ---- Estado existente ----
-  const [checkoutLoading,  setCheckoutLoading]  = useState(false);
+  const [checkoutLoading,    setCheckoutLoading]    = useState(false);
   const [orderConfirmedData, setOrderConfirmedData] = useState(null);
-  const [checkoutError,    setCheckoutError]    = useState('');
-  const [couponCode,       setCouponCode]       = useState('');
-  const [couponLoading,    setCouponLoading]    = useState(false);
-  const [couponError,      setCouponError]      = useState('');
-  const [appliedCoupon,    setAppliedCoupon]    = useState(null);
-  const [pickupPoints,     setPickupPoints]     = useState([]);
-  const [selectedPoint,    setSelectedPoint]    = useState('');
-  const [paymentSettings,  setPaymentSettings]  = useState(null);
+  const [checkoutError,      setCheckoutError]      = useState('');
+  const [couponCode,         setCouponCode]         = useState('');
+  const [couponLoading,      setCouponLoading]      = useState(false);
+  const [couponError,        setCouponError]        = useState('');
+  const [appliedCoupon,      setAppliedCoupon]      = useState(null);
+  const [pickupPoints,       setPickupPoints]       = useState([]);
+  const [selectedPoint,      setSelectedPoint]      = useState('');
+  const [paymentSettings,    setPaymentSettings]    = useState(null);
 
-  // ---- Nuevo estado de delivery ----
+  // Delivery
   const [deliverySettings,   setDeliverySettings]   = useState(null);
-  const [deliveryMethod,     setDeliveryMethod]     = useState('pickup'); // 'pickup' | 'delivery'
+  const [deliveryMethod,     setDeliveryMethod]     = useState('pickup');
   const [deliveryAddress,    setDeliveryAddress]    = useState('');
   const [deliveryLat,        setDeliveryLat]        = useState(null);
   const [deliveryLng,        setDeliveryLng]        = useState(null);
@@ -102,22 +85,22 @@ export default function CartSidebar({ storeSlug: propSlug }) {
   const [saveAddrToProfile,  setSaveAddrToProfile]  = useState(false);
   const [usingCustomAddr,    setUsingCustomAddr]    = useState(false);
 
-  // ---- Modales de pago ----
+  // Payment modals
   const [showPaymentModal,   setShowPaymentModal]   = useState(false);
   const [showTransferModal,  setShowTransferModal]  = useState(false);
-  const [transferSection,    setTransferSection]    = useState(null); // null | 'whatsapp' | 'email'
-  const [comprobante,        setComprobante]        = useState(null);
-  const [comprobanteEmail,   setComprobanteEmail]   = useState('');
-  const [sendingComp,        setSendingComp]        = useState(false);
-  const [compError,          setCompError]          = useState('');
-  const [compSuccess,        setCompSuccess]        = useState(false);
-  const comprobanteRef = useRef(null);
+
+  // Post-confirmation comprobante upload (P3)
+  const [compFile,           setCompFile]           = useState(null);
+  const [uploadingComp,      setUploadingComp]      = useState(false);
+  const [uploadCompDone,     setUploadCompDone]     = useState(false);
+  const [uploadCompError,    setUploadCompError]    = useState('');
+  const postCompRef = useRef(null);
 
   const addrDebounceRef = useRef(null);
   const pathSlug = pathname?.match(/\/store\/([^/]+)/)?.[1] || null;
   const storeSlug = propSlug || pathSlug;
 
-  // ---- Escape key ----
+  // Escape key
   useEffect(() => {
     function onEsc(e) {
       if (e.key !== 'Escape') return;
@@ -129,7 +112,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
     return () => document.removeEventListener('keydown', onEsc);
   }, [showTransferModal, showPaymentModal, setIsOpen]);
 
-  // ---- Cargar datos del store ----
+  // Load store data
   useEffect(() => {
     if (!storeSlug) {
       setPickupPoints([]); setSelectedPoint(''); setPaymentSettings(null); setDeliverySettings(null);
@@ -143,7 +126,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
       .then(r => r.json()).then(d => setDeliverySettings(d)).catch(() => {});
   }, [storeSlug]);
 
-  // ---- Auto-check cobertura cuando se selecciona delivery con domicilio guardado ----
+  // Auto-check coverage when switching to delivery with saved address
   useEffect(() => {
     if (deliveryMethod !== 'delivery') return;
     if (!savedAddress?.lat || !savedAddress?.lng || !storeSlug) return;
@@ -157,7 +140,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deliveryMethod]);
 
-  // ---- Cargar domicilio guardado ----
+  // Load saved address
   useEffect(() => {
     if (!session) return;
     fetch('/api/profile/address')
@@ -166,12 +149,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
       .catch(() => {});
   }, [session]);
 
-  // ---- Precargar email del comprobante ----
-  useEffect(() => {
-    if (session?.user?.email) setComprobanteEmail(session.user.email);
-  }, [session]);
-
-  // ---- Totales ----
+  // Totals
   const discountedTotal = appliedCoupon
     ? total * (1 - appliedCoupon.discount_percentage / 100)
     : total;
@@ -182,7 +160,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
 
   const finalTotal = discountedTotal + deliveryCost;
 
-  // ---- Autocomplete dirección ----
+  // Address autocomplete
   function handleAddressChange(value) {
     setDeliveryAddress(value);
     setDeliveryLat(null); setDeliveryLng(null);
@@ -216,7 +194,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
     }
   }
 
-  // ---- Coupon ----
+  // Coupon
   async function handleApplyCoupon(e) {
     e.preventDefault();
     if (!couponCode.trim() || !storeSlug) return;
@@ -234,7 +212,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
     finally { setCouponLoading(false); }
   }
 
-  // ---- Crear orden ----
+  // Create order
   async function createOrder(method, extraFields = {}) {
     const effectiveAddress = usingCustomAddr ? deliveryAddress : (savedAddress?.full_address || deliveryAddress);
     const effectiveLat     = usingCustomAddr ? deliveryLat     : (savedAddress?.lat !== undefined ? savedAddress.lat : deliveryLat);
@@ -262,7 +240,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
     return data;
   }
 
-  // ---- Validación antes de abrir modal de pago ----
+  // Validate before opening payment modal
   function handlePagarClick() {
     setCheckoutError('');
     if (!session) return;
@@ -281,7 +259,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
     setShowPaymentModal(true);
   }
 
-  // ---- Flujo Mercado Pago ----
+  // Mercado Pago flow
   async function handlePayWithMP() {
     setCheckoutLoading(true); setCheckoutError('');
     try {
@@ -313,19 +291,11 @@ export default function CartSidebar({ storeSlug: propSlug }) {
     }
   }
 
-  // ---- Confirmar transferencia ----
+  // Confirm transfer (no comprobante upload here — happens on confirmation screen)
   async function handleConfirmTransfer() {
     setCheckoutLoading(true); setCheckoutError('');
     try {
-      let comprobanteUrl = null;
-      if (comprobante) {
-        const fd = new FormData();
-        fd.append('file', comprobante);
-        const uploadRes = await fetch('/api/upload-comprobante', { method: 'POST', body: fd });
-        const uploadData = await uploadRes.json();
-        if (uploadData.url) comprobanteUrl = uploadData.url;
-      }
-      const order = await createOrder('transfer', comprobanteUrl ? { comprobante_url: comprobanteUrl } : {});
+      const order = await createOrder('transfer');
       clearCartItems();
       setShowTransferModal(false);
       setShowPaymentModal(false);
@@ -337,40 +307,42 @@ export default function CartSidebar({ storeSlug: propSlug }) {
     }
   }
 
-  // ---- Enviar comprobante por mail ----
-  async function handleSendComprobanteByEmail() {
-    if (!comprobante) { setCompError('Adjuntá el comprobante primero'); return; }
-    setSendingComp(true); setCompError(''); setCompSuccess(false);
+  // Upload comprobante after order confirmation (P3)
+  async function handleUploadComp(orderId) {
+    if (!compFile) return;
+    setUploadingComp(true); setUploadCompError('');
     try {
       const fd = new FormData();
-      fd.append('comprobante', comprobante);
-      fd.append('buyerEmail', comprobanteEmail || session?.user?.email || '');
-      fd.append('storeSlug',  storeSlug || '');
-      fd.append('amount',     finalTotal.toFixed(2));
-      const res = await fetch('/api/send-comprobante', { method: 'POST', body: fd });
+      fd.append('file', compFile);
+      const res = await fetch(`/api/orders/${orderId}/comprobante`, { method: 'POST', body: fd });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setCompSuccess(true);
-    } catch (err) { setCompError(err.message); }
-    finally { setSendingComp(false); }
+      if (!res.ok) throw new Error(data.error || 'Error al subir el comprobante');
+      setUploadCompDone(true);
+      setCompFile(null);
+    } catch (err) {
+      setUploadCompError(err.message);
+    } finally {
+      setUploadingComp(false);
+    }
   }
 
   function handleClose() {
     setIsOpen(false);
-    if (orderConfirmedData) setTimeout(() => setOrderConfirmedData(null), 400);
+    if (orderConfirmedData) setTimeout(() => {
+      setOrderConfirmedData(null);
+      setUploadCompDone(false);
+      setCompFile(null);
+    }, 400);
   }
 
-  // ---- Render helpers ----
   const hasPaymentMethods = paymentSettings && !paymentSettings.not_configured &&
     (paymentSettings.transfer_enabled || paymentSettings.mp_enabled);
 
   const showDeliveryOption = deliverySettings?.delivery_enabled;
-  const currentDeliveryAddress = usingCustomAddr ? deliveryAddress : (savedAddress?.full_address || '');
-  const currentDeliveryAvail = (usingCustomAddr && deliveryLat) ? deliveryAvail : (savedAddress ? { available: true, cost: deliverySettings?.delivery_cost || 0 } : null);
 
   return (
     <>
-      {/* Backdrop del sidebar */}
+      {/* Backdrop */}
       {isOpen && (
         <div
           onClick={handleClose}
@@ -389,15 +361,15 @@ export default function CartSidebar({ storeSlug: propSlug }) {
       }}>
         <div style={{ width: '380px', maxWidth: '100vw', height: '100%', display: 'flex', flexDirection: 'column', padding: '24px', boxSizing: 'border-box' }}>
 
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '0.5px solid rgba(128,128,128,0.2)' }}>
+          {/* Header — fixed */}
+          <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '0.5px solid rgba(128,128,128,0.2)' }}>
             <h2 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.5rem', margin: 0, letterSpacing: '0.04em', color: 'var(--store-panel-text, #0f0f0f)' }}>
               {orderConfirmedData ? '¡Pedido recibido!' : 'Carrito'}
             </h2>
             <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: 'var(--store-panel-text, #6b6560)', padding: '4px', lineHeight: 1, opacity: 0.6 }}>✕</button>
           </div>
 
-          {/* ---- PANTALLA DE CONFIRMACIÓN ---- */}
+          {/* ---- CONFIRMATION SCREEN ---- */}
           {orderConfirmedData ? (
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
@@ -408,7 +380,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                 <p style={{ color: '#6b6560', fontSize: '0.8rem', margin: '0 0 2px' }}>Estamos preparando tu compra</p>
               </div>
 
-              {/* Resumen de la orden */}
+              {/* Order summary */}
               <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '14px 16px', fontSize: '0.78rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <span style={{ color: '#6b6560' }}>Número de orden</span>
@@ -438,6 +410,47 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                 </div>
               </div>
 
+              {/* Comprobante upload — transfer only (P3) */}
+              {orderConfirmedData.payment_method === 'transfer' && !uploadCompDone && (
+                <div style={{ background: '#fffbeb', border: '0.5px solid #fcd34d', borderRadius: '6px', padding: '14px' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px', color: '#92400e' }}>
+                    Subí tu comprobante de pago
+                  </div>
+                  <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: '0 0 10px', lineHeight: 1.5 }}>
+                    Adjuntá el comprobante para agilizar la confirmación de tu pedido.
+                  </p>
+                  {uploadCompError && (
+                    <p style={{ fontSize: '0.72rem', color: '#c0392b', margin: '0 0 8px' }}>{uploadCompError}</p>
+                  )}
+                  <input
+                    type="file" accept="image/*,application/pdf"
+                    ref={postCompRef}
+                    onChange={e => setCompFile(e.target.files[0])}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    onClick={() => postCompRef.current?.click()}
+                    style={{ display: 'block', width: '100%', padding: '8px', border: '0.5px dashed #fcd34d', background: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', color: '#92400e', marginBottom: '8px', boxSizing: 'border-box' }}
+                  >
+                    {compFile ? `📎 ${compFile.name}` : '+ Seleccionar imagen o PDF'}
+                  </button>
+                  {compFile && (
+                    <button
+                      onClick={() => handleUploadComp(orderConfirmedData.id)}
+                      disabled={uploadingComp}
+                      style={{ width: '100%', background: uploadingComp ? '#ccc' : '#92400e', color: '#fff', border: 'none', borderRadius: '2px', padding: '10px', cursor: uploadingComp ? 'not-allowed' : 'pointer', fontSize: '0.72rem', letterSpacing: '0.08em', textTransform: 'uppercase', boxSizing: 'border-box' }}
+                    >
+                      {uploadingComp ? 'Subiendo...' : 'Subir comprobante'}
+                    </button>
+                  )}
+                </div>
+              )}
+              {uploadCompDone && (
+                <div style={{ background: '#e8f5e9', border: '0.5px solid #a5d6a7', borderRadius: '4px', padding: '10px 14px', color: '#2e7d32', fontSize: '0.78rem' }}>
+                  ✓ Comprobante enviado correctamente
+                </div>
+              )}
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingBottom: '8px' }}>
                 <Link href="/profile/orders" onClick={handleClose}
                   style={{ display: 'block', width: '100%', background: '#0f0f0f', color: '#fafaf8', padding: '13px', borderRadius: '2px', textDecoration: 'none', fontFamily: 'var(--font-sans)', fontSize: '0.72rem', letterSpacing: '0.14em', textTransform: 'uppercase', textAlign: 'center', boxSizing: 'border-box' }}>
@@ -451,9 +464,9 @@ export default function CartSidebar({ storeSlug: propSlug }) {
             </div>
 
           ) : (
-            <>
-              {/* ---- ITEMS ---- */}
-              <div style={{ flex: 1, overflowY: 'auto' }}>
+            /* ---- ITEMS + FOOTER — single scrollable area (P1) ---- */
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <div>
                 {checkoutError && (
                   <div style={{ background: '#fef2f2', border: '0.5px solid #fecaca', padding: '10px 14px', borderRadius: '4px', marginBottom: '12px', color: '#c0392b', fontSize: '0.8rem' }}>
                     {checkoutError}
@@ -493,7 +506,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
               {items.length > 0 && (
                 <div style={{ paddingTop: '16px', borderTop: '0.5px solid rgba(128,128,128,0.2)' }}>
 
-                  {/* Cupón */}
+                  {/* Coupon */}
                   {session && storeSlug && !appliedCoupon && (
                     <form onSubmit={handleApplyCoupon} style={{ marginBottom: '14px' }}>
                       <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '6px' }}>¿Tenés un cupón?</div>
@@ -516,7 +529,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                     </div>
                   )}
 
-                  {/* Totales */}
+                  {/* Totals */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: appliedCoupon ? '4px' : '14px' }}>
                     <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: 'var(--store-panel-text, #6b6560)', letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.7 }}>Total</span>
                     <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 400, color: 'var(--store-panel-text, #0f0f0f)', textDecoration: appliedCoupon ? 'line-through' : 'none', opacity: appliedCoupon ? 0.5 : 1 }}>
@@ -542,7 +555,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                     </div>
                   )}
 
-                  {/* ---- ENTREGA ---- */}
+                  {/* ---- DELIVERY OPTIONS ---- */}
                   {session && (pickupPoints.length > 0 || showDeliveryOption) && (
                     <div style={{ marginBottom: '14px' }}>
                       <div style={{ fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '8px' }}>
@@ -551,7 +564,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
 
-                        {/* Puntos de retiro */}
+                        {/* Pickup points */}
                         {pickupPoints.map(p => (
                           <label key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', padding: '9px 11px', border: `0.5px solid ${selectedPoint === String(p.id) ? '#0f0f0f' : '#e0dbd4'}`, borderRadius: '3px', background: selectedPoint === String(p.id) ? '#f5f3f0' : '#fafaf8' }}>
                             <input
@@ -568,12 +581,11 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                           </label>
                         ))}
 
-                        {/* Separador antes de la opción de delivery */}
                         {showDeliveryOption && pickupPoints.length > 0 && (
                           <div style={{ borderTop: '0.5px solid #e0dbd4', margin: '2px 0' }} />
                         )}
 
-                        {/* Opción: Envío a domicilio */}
+                        {/* Home delivery */}
                         {showDeliveryOption && (
                           <>
                             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', padding: '9px 11px', border: `0.5px solid ${deliveryMethod === 'delivery' ? '#0f0f0f' : '#e0dbd4'}`, borderRadius: '3px', background: deliveryMethod === 'delivery' ? '#f5f3f0' : '#fafaf8' }}>
@@ -600,11 +612,10 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                               </div>
                             </label>
 
-                            {/* Sección expandible de delivery */}
+                            {/* Delivery form (expandable) */}
                             {deliveryMethod === 'delivery' && (
                               <div style={{ paddingLeft: '10px', paddingRight: '2px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
 
-                                {/* Domicilio guardado */}
                                 {savedAddress?.full_address && !usingCustomAddr ? (
                                   <div>
                                     <div style={{ padding: '9px 11px', background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '3px', fontSize: '0.78rem', marginBottom: '4px' }}>
@@ -617,7 +628,6 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                                     </button>
                                   </div>
                                 ) : (
-                                  /* Input autocomplete */
                                   <div style={{ position: 'relative' }}>
                                     <input
                                       type="text"
@@ -644,7 +654,6 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                                   </div>
                                 )}
 
-                                {/* Estado de cobertura */}
                                 {checkingDelivery && (
                                   <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: 0 }}>Verificando cobertura...</p>
                                 )}
@@ -659,7 +668,6 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                                   </div>
                                 )}
 
-                                {/* Mapa con radio de cobertura */}
                                 {deliverySettings?.store_lat && deliverySettings?.store_lng && deliveryAvail && !checkingDelivery && (
                                   <div style={{ borderRadius: '6px', overflow: 'hidden', border: '0.5px solid #e0dbd4' }}>
                                     <MapWithRadius
@@ -677,7 +685,6 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                                   </div>
                                 )}
 
-                                {/* Guardar dirección en perfil */}
                                 {usingCustomAddr && deliveryLat && deliveryAvail?.available && (
                                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.72rem', color: '#6b6560' }}>
                                     <input type="checkbox" checked={saveAddrToProfile} onChange={e => setSaveAddrToProfile(e.target.checked)} />
@@ -699,14 +706,14 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                     </div>
                   )}
 
-                  {/* Sin métodos de pago */}
+                  {/* No payment methods */}
                   {session && paymentSettings && !paymentSettings.not_configured && !paymentSettings.transfer_enabled && !paymentSettings.mp_enabled && (
                     <div style={{ background: '#fafaf8', border: '0.5px solid #e0dbd4', borderRadius: '4px', padding: '12px 14px', fontSize: '0.78rem', color: '#6b6560', textAlign: 'center', marginBottom: '8px' }}>
                       Este local aún no tiene métodos de pago configurados.
                     </div>
                   )}
 
-                  {/* Botón PAGAR */}
+                  {/* PAGAR button */}
                   {session ? (
                     hasPaymentMethods && (
                       <button
@@ -720,6 +727,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                           fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
                           cursor: checkoutLoading ? 'not-allowed' : 'pointer',
                           transition: 'background 0.2s',
+                          marginBottom: '8px',
                         }}
                       >
                         {checkoutLoading ? 'Procesando...' : `PAGAR $${finalTotal.toFixed(2)}`}
@@ -738,7 +746,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                   )}
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -753,10 +761,9 @@ export default function CartSidebar({ storeSlug: propSlug }) {
             </div>
             <div style={{ padding: '20px 24px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-              {/* Card: Transferencia */}
               {paymentSettings?.transfer_enabled && (
                 <button
-                  onClick={() => { setShowPaymentModal(false); setShowTransferModal(true); setTransferSection(null); }}
+                  onClick={() => { setShowPaymentModal(false); setShowTransferModal(true); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '14px',
                     padding: '18px 20px', border: '1.5px solid #e0dbd4', borderRadius: '8px',
@@ -775,7 +782,6 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                 </button>
               )}
 
-              {/* Card: Mercado Pago */}
               {paymentSettings?.mp_enabled && (
                 <button
                   onClick={() => { setShowPaymentModal(false); handlePayWithMP(); }}
@@ -808,18 +814,18 @@ export default function CartSidebar({ storeSlug: propSlug }) {
         </div>
       )}
 
-      {/* ========== MODAL: Datos de transferencia ========== */}
+      {/* ========== MODAL: Transfer details ========== */}
       {showTransferModal && paymentSettings?.transfer_enabled && (
         <div style={modalOverlay} onClick={e => e.target === e.currentTarget && setShowTransferModal(false)}>
           <div style={modalBox}>
             <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.2rem', margin: 0 }}>Datos para transferir</h3>
-              <button onClick={() => { setShowTransferModal(false); setTransferSection(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b6560', padding: '4px', lineHeight: 1, opacity: 0.6 }}>✕</button>
+              <button onClick={() => setShowTransferModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', color: '#6b6560', padding: '4px', lineHeight: 1, opacity: 0.6 }}>✕</button>
             </div>
 
             <div style={{ padding: '16px 24px 24px' }}>
 
-              {/* Datos bancarios */}
+              {/* Bank details */}
               <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
                 {paymentSettings.transfer_holder && (
                   <div style={{ marginBottom: '8px' }}>
@@ -853,114 +859,18 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                 )}
               </div>
 
-              {/* Total */}
+              {/* Amount */}
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <p style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', margin: '0 0 4px' }}>Monto a transferir</p>
                 <p style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', fontWeight: 400, margin: 0, color: '#0f0f0f' }}>${finalTotal.toFixed(2)}</p>
               </div>
 
-              {/* Comprobante */}
-              <div style={{ borderTop: '0.5px solid #e0dbd4', paddingTop: '16px', marginBottom: '16px' }}>
-                <p style={{ fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560', margin: '0 0 10px' }}>Enviá tu comprobante</p>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                  <button
-                    onClick={() => { setTransferSection(transferSection === 'whatsapp' ? null : 'whatsapp'); setCompError(''); setCompSuccess(false); }}
-                    style={{
-                      flex: 1, padding: '10px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem',
-                      fontFamily: 'var(--font-sans)', letterSpacing: '0.06em',
-                      border: `0.5px solid ${transferSection === 'whatsapp' ? '#25d366' : '#e0dbd4'}`,
-                      background: transferSection === 'whatsapp' ? '#f0fdf4' : '#fafaf8',
-                      color: transferSection === 'whatsapp' ? '#166534' : '#6b6560',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    📱 WhatsApp
-                  </button>
-                  <button
-                    onClick={() => { setTransferSection(transferSection === 'email' ? null : 'email'); setCompError(''); setCompSuccess(false); }}
-                    style={{
-                      flex: 1, padding: '10px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem',
-                      fontFamily: 'var(--font-sans)', letterSpacing: '0.06em',
-                      border: `0.5px solid ${transferSection === 'email' ? '#0f0f0f' : '#e0dbd4'}`,
-                      background: transferSection === 'email' ? '#f5f3f0' : '#fafaf8',
-                      color: transferSection === 'email' ? '#0f0f0f' : '#6b6560',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    ✉️ Email
-                  </button>
-                </div>
-
-                {/* Sección WhatsApp */}
-                {transferSection === 'whatsapp' && (
-                  <div style={{ background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '6px', padding: '14px', marginBottom: '10px' }}>
-                    <p style={{ fontSize: '0.72rem', color: '#166534', margin: '0 0 10px', lineHeight: 1.5 }}>
-                      Adjuntá la imagen del comprobante en el chat de WhatsApp que se va a abrir.
-                    </p>
-                    <input
-                      type="file" accept="image/*,application/pdf"
-                      onChange={e => setComprobante(e.target.files[0])}
-                      ref={comprobanteRef}
-                      style={{ display: 'none' }}
-                    />
-                    <button onClick={() => comprobanteRef.current?.click()}
-                      style={{ display: 'block', width: '100%', padding: '8px', border: '0.5px dashed #bbf7d0', background: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', color: '#166534', marginBottom: '8px' }}>
-                      {comprobante ? `📎 ${comprobante.name}` : '+ Seleccionar imagen o PDF'}
-                    </button>
-                    {deliverySettings?.whatsapp || paymentSettings?.transfer_holder ? (
-                      <a
-                        href={`https://wa.me/${deliverySettings?.whatsapp || ''}?text=${encodeURIComponent(`Hola! Te envío mi comprobante de transferencia por $${finalTotal.toFixed(2)}.`)}`}
-                        target="_blank" rel="noopener noreferrer"
-                        style={{ display: 'block', width: '100%', background: '#25d366', color: '#fff', padding: '10px', borderRadius: '4px', textDecoration: 'none', fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', boxSizing: 'border-box' }}
-                      >
-                        Abrir WhatsApp
-                      </a>
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Sección Email */}
-                {transferSection === 'email' && (
-                  <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '14px', marginBottom: '10px' }}>
-                    {compError && <p style={{ fontSize: '0.72rem', color: '#c0392b', margin: '0 0 8px' }}>{compError}</p>}
-                    {compSuccess && <p style={{ fontSize: '0.72rem', color: '#2e7d32', margin: '0 0 8px' }}>✓ Comprobante enviado</p>}
-                    <div style={{ marginBottom: '8px' }}>
-                      <label style={{ display: 'block', fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '4px' }}>Tu email</label>
-                      <input
-                        type="email" value={comprobanteEmail}
-                        onChange={e => setComprobanteEmail(e.target.value)}
-                        style={{ width: '100%', padding: '8px 10px', border: '0.5px solid #e0dbd4', background: '#fff', fontSize: '0.78rem', borderRadius: '2px', outline: 'none', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                    <input
-                      type="file" accept="image/*,application/pdf"
-                      onChange={e => setComprobante(e.target.files[0])}
-                      ref={comprobanteRef}
-                      style={{ display: 'none' }}
-                    />
-                    <button onClick={() => comprobanteRef.current?.click()}
-                      style={{ display: 'block', width: '100%', padding: '8px', border: '0.5px dashed #e0dbd4', background: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', color: '#6b6560', marginBottom: '10px' }}>
-                      {comprobante ? `📎 ${comprobante.name}` : '+ Adjuntar imagen o PDF'}
-                    </button>
-                    <button
-                      onClick={handleSendComprobanteByEmail}
-                      disabled={sendingComp || !comprobante}
-                      style={{ width: '100%', background: sendingComp ? '#ccc' : '#0f0f0f', color: '#fff', border: 'none', borderRadius: '2px', padding: '10px', cursor: sendingComp || !comprobante ? 'not-allowed' : 'pointer', fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}
-                    >
-                      {sendingComp ? 'Enviando...' : 'Enviar comprobante'}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Error */}
               {checkoutError && (
                 <div style={{ background: '#fef2f2', border: '0.5px solid #fecaca', padding: '10px 12px', borderRadius: '4px', marginBottom: '12px', color: '#c0392b', fontSize: '0.78rem' }}>
                   {checkoutError}
                 </div>
               )}
 
-              {/* Confirmar */}
               <button
                 onClick={handleConfirmTransfer}
                 disabled={checkoutLoading}
@@ -976,7 +886,7 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                 {checkoutLoading ? 'Procesando...' : 'Confirmar pedido — Transferencia'}
               </button>
               <p style={{ fontSize: '0.65rem', color: '#aaa', textAlign: 'center', margin: '8px 0 0' }}>
-                Al confirmar, generamos tu pedido en el sistema
+                Podrás subir el comprobante en el siguiente paso
               </p>
             </div>
           </div>

@@ -16,6 +16,9 @@ async function ensureColumns() {
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lat DECIMAL(10,7)`.catch(() => {}),
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lng DECIMAL(10,7)`.catch(() => {}),
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_cost DECIMAL(10,2) DEFAULT 0`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS comprobante_url TEXT`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS factura_url TEXT`.catch(() => {}),
+    sql`ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check`.catch(() => {}),
     sql`
       CREATE TABLE IF NOT EXISTS pickup_points (
         id SERIAL PRIMARY KEY,
@@ -108,6 +111,7 @@ export async function POST(req) {
     }
 
     const effectiveDeliveryMethod = delivery_method || 'pickup';
+    const initialStatus = payment_method === 'transfer' ? 'comprobante_pendiente' : 'pendiente_pago';
 
     const [order] = await sql`
       INSERT INTO orders (
@@ -117,7 +121,7 @@ export async function POST(req) {
         delivery_lat, delivery_lng, delivery_cost
       )
       VALUES (
-        ${session.user.id}, ${session_id}, 'pending', ${total}, ${storeId},
+        ${session.user.id}, ${session_id}, ${initialStatus}, ${total}, ${storeId},
         ${pickupPointId}, ${pickupPointName},
         ${payment_method || null}, ${effectiveDeliveryMethod}, ${delivery_address || null},
         ${delivery_lat || null}, ${delivery_lng || null}, ${extraDeliveryCost}
@@ -125,7 +129,7 @@ export async function POST(req) {
       RETURNING *
     `.catch(() => sql`
       INSERT INTO orders (user_id, session_id, status, total, store_id, pickup_point_id, pickup_point_name)
-      VALUES (${session.user.id}, ${session_id}, 'pending', ${total}, ${storeId}, ${pickupPointId}, ${pickupPointName})
+      VALUES (${session.user.id}, ${session_id}, ${initialStatus}, ${total}, ${storeId}, ${pickupPointId}, ${pickupPointName})
       RETURNING *
     `);
 
