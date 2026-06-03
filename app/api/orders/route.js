@@ -10,8 +10,8 @@ async function ensureColumns() {
   await Promise.all([
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_point_id INTEGER`.catch(() => {}),
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_point_name VARCHAR(200)`.catch(() => {}),
-    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20)`.catch(() => {}),
-    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_method VARCHAR(20) DEFAULT 'pickup'`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT`.catch(() => {}),
+    sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_method TEXT DEFAULT 'pickup'`.catch(() => {}),
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT`.catch(() => {}),
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lat DECIMAL(10,7)`.catch(() => {}),
     sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_lng DECIMAL(10,7)`.catch(() => {}),
