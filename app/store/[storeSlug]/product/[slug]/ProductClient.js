@@ -60,6 +60,11 @@ export default function ProductClient({ product, storeSlug, storeId }) {
   const [sizerResult, setSizerResult] = useState(null);
   const [savedMeasurements, setSavedMeasurements] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
 
   const availableSizes = getAvailableSizes(product.category_slug);
 
@@ -168,6 +173,70 @@ export default function ProductClient({ product, storeSlug, storeId }) {
     setTimeout(() => setAddedToRoom(false), 2000);
   };
 
+  const images = (product.image_urls && product.image_urls.length > 0)
+    ? product.image_urls
+    : (product.image_url ? [product.image_url] : []);
+
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setIsZoomed(false);
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setIsZoomed(false);
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    if (diff > 50) {
+      handleNextImage(e);
+    } else if (diff < -50) {
+      handlePrevImage(e);
+    }
+    setTouchStartX(null);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isZoomed) return;
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
+  };
+
+  const handleDownloadImage = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'producto.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.download = filename || 'producto.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: '#fafaf8', paddingTop: '64px' }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: 'clamp(2rem, 4vw, 3.5rem) clamp(1.5rem, 5vw, 3rem)' }}>
@@ -182,12 +251,209 @@ export default function ProductClient({ product, storeSlug, storeId }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'clamp(2rem, 5vw, 4rem)', alignItems: 'start' }}>
 
-          {/* Imagen */}
-          <div style={{ background: '#f0ede8', borderRadius: '4px', overflow: 'hidden', aspectRatio: '3/4', border: '0.5px solid #e0dbd4' }}>
-            {product.image_url
-              ? <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: '#c8c4bc' }}>🛍️</div>
-            }
+          {/* Imagen / Carousel Container */}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {/* Main Carousel viewport */}
+            <div 
+              style={{ 
+                background: '#f0ede8', 
+                borderRadius: '4px', 
+                overflow: 'hidden', 
+                aspectRatio: '3/4', 
+                border: '0.5px solid #e0dbd4',
+                position: 'relative',
+                cursor: images.length > 0 ? 'pointer' : 'default'
+              }}
+              onClick={() => { if (images.length > 0) setIsLightboxOpen(true); }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {images.length > 0 ? (
+                <>
+                  {/* Sliding Track */}
+                  <div style={{
+                    display: 'flex',
+                    width: '100%',
+                    height: '100%',
+                    transform: `translate3d(-${currentImageIndex * 100}%, 0, 0)`,
+                    transition: 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                  }}>
+                    {images.map((imgUrl, idx) => (
+                      <div key={idx} style={{ flex: '0 0 100%', width: '100%', height: '100%', position: 'relative' }}>
+                        <img 
+                          src={imgUrl} 
+                          alt={`${product.name} - ${idx + 1}`} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none', pointerEvents: 'none' }} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Magnifying overlay button */}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setIsLightboxOpen(true); }}
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      right: '12px',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      backdropFilter: 'blur(4px)',
+                      border: '0.5px solid #e0dbd4',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                      transition: 'all 0.2s',
+                      zIndex: 10
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                    title="Ver en pantalla completa"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                      <line x1="11" y1="8" x2="11" y2="14"></line>
+                      <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                  </button>
+
+                  {/* Left / Right navigation overlays */}
+                  {images.length > 1 && (
+                    <>
+                      <button 
+                        onClick={handlePrevImage}
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '12px',
+                          transform: 'translateY(-50%)',
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.9)',
+                          backdropFilter: 'blur(4px)',
+                          border: '0.5px solid #e0dbd4',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                          transition: 'all 0.2s',
+                          zIndex: 10,
+                          fontSize: '1.2rem',
+                          color: '#0f0f0f'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1)'}
+                        title="Anterior"
+                      >
+                        ‹
+                      </button>
+                      <button 
+                        onClick={handleNextImage}
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          right: '12px',
+                          transform: 'translateY(-50%)',
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.9)',
+                          backdropFilter: 'blur(4px)',
+                          border: '0.5px solid #e0dbd4',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                          transition: 'all 0.2s',
+                          zIndex: 10,
+                          fontSize: '1.2rem',
+                          color: '#0f0f0f'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1)'}
+                        title="Siguiente"
+                      >
+                        ›
+                      </button>
+
+                      {/* Dots indicators */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '12px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        gap: '6px',
+                        zIndex: 10
+                      }}>
+                        {images.map((_, idx) => (
+                          <div 
+                            key={idx}
+                            style={{
+                              width: currentImageIndex === idx ? '16px' : '6px',
+                              height: '6px',
+                              borderRadius: '3px',
+                              background: currentImageIndex === idx ? '#0f0f0f' : 'rgba(15, 15, 15, 0.25)',
+                              transition: 'all 0.3s ease'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '5rem', color: '#c8c4bc' }}>🛍️</div>
+              )}
+            </div>
+
+            {/* Thumbnails Row */}
+            {images.length > 1 && (
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                marginTop: '12px',
+                overflowX: 'auto',
+                paddingBottom: '6px',
+                scrollbarWidth: 'thin'
+              }}>
+                {images.map((imgUrl, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    style={{
+                      width: '60px',
+                      height: '80px',
+                      flexShrink: 0,
+                      borderRadius: '2px',
+                      overflow: 'hidden',
+                      padding: 0,
+                      border: currentImageIndex === idx ? '1.5px solid #0f0f0f' : '0.5px solid #e0dbd4',
+                      background: 'none',
+                      cursor: 'pointer',
+                      opacity: currentImageIndex === idx ? 1 : 0.65,
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={e => {
+                      if (currentImageIndex !== idx) e.currentTarget.style.opacity = '1';
+                    }}
+                    onMouseLeave={e => {
+                      if (currentImageIndex !== idx) e.currentTarget.style.opacity = '0.65';
+                    }}
+                  >
+                    <img src={imgUrl} alt={`Miniatura ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Detalles */}
@@ -492,6 +758,198 @@ export default function ProductClient({ product, storeSlug, storeId }) {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Lightbox / Zoom / Download Modal */}
+      {isLightboxOpen && images.length > 0 && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15,15,15,0.95)', backdropFilter: 'blur(10px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 5000, padding: '20px', animation: 'sizerFadeIn 0.2s ease-out'
+        }}
+        onClick={() => { setIsLightboxOpen(false); setIsZoomed(false); }}
+        >
+          {/* Header Controls */}
+          <div style={{
+            position: 'absolute', top: '20px', left: 0, right: 0,
+            display: 'flex', justifyContent: 'space-between', padding: '0 24px',
+            zIndex: 5100, pointerEvents: 'none'
+          }}>
+            {/* Info / Title */}
+            <div style={{ color: '#fafaf8', fontFamily: 'var(--font-sans)', fontSize: '0.78rem', letterSpacing: '0.1em', pointerEvents: 'auto' }}>
+              <span style={{ fontWeight: 600 }}>{product.name}</span>
+              <span style={{ color: '#888', marginLeft: '8px' }}>({currentImageIndex + 1} de {images.length})</span>
+            </div>
+
+            {/* Actions: Zoom, Download, Close */}
+            <div style={{ display: 'flex', gap: '16px', pointerEvents: 'auto' }}>
+              {/* Zoom Button */}
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsZoomed(!isZoomed); }}
+                style={{
+                  background: 'none', border: 'none', color: '#fafaf8', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)',
+                  fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase'
+                }}
+                title={isZoomed ? "Reducir" : "Ampliar"}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  {isZoomed ? (
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                  ) : (
+                    <>
+                      <line x1="11" y1="8" x2="11" y2="14"></line>
+                      <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </>
+                  )}
+                </svg>
+                {isZoomed ? "Ajustar" : "Zoom"}
+              </button>
+
+              {/* Download Button */}
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  handleDownloadImage(images[currentImageIndex], `${product.slug}-${currentImageIndex + 1}.jpg`);
+                }}
+                style={{
+                  background: 'none', border: 'none', color: '#fafaf8', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-sans)',
+                  fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase'
+                }}
+                title="Descargar imagen"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Descargar
+              </button>
+
+              {/* Close Button */}
+              <button 
+                onClick={() => { setIsLightboxOpen(false); setIsZoomed(false); }}
+                style={{
+                  background: 'none', border: 'none', color: '#fafaf8', cursor: 'pointer',
+                  fontSize: '1.2rem', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center'
+                }}
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Main Image Viewport */}
+          <div 
+            style={{
+              width: '100%',
+              height: '80vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Left Nav Arrow inside lightbox */}
+            {images.length > 1 && !isZoomed && (
+              <button 
+                onClick={handlePrevImage}
+                style={{
+                  position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+                  width: '44px', height: '44px', borderRadius: '50%', cursor: 'pointer',
+                  fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 5200, transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              >
+                ‹
+              </button>
+            )}
+
+            {/* Right Nav Arrow inside lightbox */}
+            {images.length > 1 && !isZoomed && (
+              <button 
+                onClick={handleNextImage}
+                style={{
+                  position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff',
+                  width: '44px', height: '44px', borderRadius: '50%', cursor: 'pointer',
+                  fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  zIndex: 5200, transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+              >
+                ›
+              </button>
+            )}
+
+            {/* Zoomable Image Wrapper */}
+            <div 
+              style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: isZoomed ? 'hidden' : 'visible',
+                position: 'relative'
+              }}
+              onClick={() => setIsZoomed(!isZoomed)}
+              onMouseMove={handleMouseMove}
+            >
+              <img 
+                src={images[currentImageIndex]} 
+                alt={`${product.name} - ampliada`}
+                style={{
+                  maxWidth: isZoomed ? 'none' : '90%',
+                  maxHeight: isZoomed ? 'none' : '90%',
+                  width: isZoomed ? 'auto' : 'auto',
+                  height: isZoomed ? 'auto' : 'auto',
+                  objectFit: 'contain',
+                  transformOrigin: isZoomed ? `${zoomPos.x}% ${zoomPos.y}%` : 'center center',
+                  transform: isZoomed ? 'scale(2.2)' : 'scale(1)',
+                  cursor: isZoomed ? 'zoom-out' : 'zoom-in',
+                  transition: isZoomed ? 'none' : 'transform 0.2s ease',
+                  userSelect: 'none'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Dots inside lightbox */}
+          {images.length > 1 && !isZoomed && (
+            <div style={{
+              position: 'absolute', bottom: '30px',
+              display: 'flex', gap: '8px', zIndex: 5200
+            }}>
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: currentImageIndex === idx ? '#fff' : 'rgba(255,255,255,0.3)',
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'background 0.2s'
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

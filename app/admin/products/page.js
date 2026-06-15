@@ -27,7 +27,8 @@ export default function AdminProductsPage() {
   const [showForm,       setShowForm]       = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [form,           setForm]           = useState(EMPTY_FORM);
-  const [imageFile,      setImageFile]      = useState(null);
+  const [retainedImages,    setRetainedImages]    = useState([]);
+  const [selectedNewFiles,  setSelectedNewFiles]  = useState([]);
   const [saving,         setSaving]         = useState(false);
   const [filterCategory, setFilterCategory] = useState('');
   const [search,         setSearch]         = useState('');
@@ -67,7 +68,8 @@ export default function AdminProductsPage() {
   function openCreate() {
     setEditingProduct(null);
     setForm(EMPTY_FORM);
-    setImageFile(null);
+    setRetainedImages([]);
+    setSelectedNewFiles([]);
     setError('');
     setShowForm(true);
   }
@@ -82,7 +84,8 @@ export default function AdminProductsPage() {
       stock:       String(product.stock),
       active:      product.active,
     });
-    setImageFile(null);
+    setRetainedImages(product.image_urls || (product.image_url ? [product.image_url] : []));
+    setSelectedNewFiles([]);
     setError('');
     setShowForm(true);
   }
@@ -99,7 +102,11 @@ export default function AdminProductsPage() {
       fd.append('price',       form.price);
       fd.append('stock',       form.stock);
       fd.append('active',      form.active ? 'true' : 'false');
-      if (imageFile) fd.append('image', imageFile);
+      
+      fd.append('retained_images', JSON.stringify(retainedImages));
+      selectedNewFiles.forEach(file => {
+        fd.append('images', file);
+      });
 
       const url    = editingProduct ? `/api/admin/products/${editingProduct.id}` : '/api/admin/products';
       const method = editingProduct ? 'PUT' : 'POST';
@@ -360,18 +367,81 @@ export default function AdminProductsPage() {
                   style={{ ...inputStyle, resize: 'vertical' }} />
               </div>
 
-              {/* Image */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={labelStyle}>Imagen</label>
-                {editingProduct?.image_url && (
-                  <div style={{ marginBottom: '10px' }}>
-                    <img src={editingProduct.image_url} alt="" style={{ width: '72px', height: '80px', objectFit: 'cover', borderRadius: '2px', border: '0.5px solid #e0dbd4' }} />
-                    <p style={{ fontSize: '0.7rem', color: '#6b6560', margin: '4px 0 0' }}>Imagen actual</p>
-                  </div>
-                )}
-                <input type="file" accept="image/*"
-                  onChange={e => setImageFile(e.target.files[0])}
-                  style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', color: '#6b6560', cursor: 'pointer' }} />
+              {/* Images Manager */}
+              <div style={{ marginBottom: '20px', padding: '14px', background: '#fcfcfb', border: '0.5px solid #e0dbd4', borderRadius: '4px' }}>
+                <label style={{ ...labelStyle, marginBottom: '8px', fontWeight: 600 }}>Imágenes del producto (Máx. 5)</label>
+                
+                {/* Images grid */}
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                  {/* Retained images */}
+                  {retainedImages.map((url, idx) => (
+                    <div key={`ret-${idx}`} style={{ position: 'relative', width: '72px', height: '84px', borderRadius: '4px', overflow: 'hidden', border: '0.5px solid #e0dbd4', background: '#f5f3f0' }}>
+                      <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button
+                        type="button"
+                        onClick={() => setRetainedImages(prev => prev.filter((_, i) => i !== idx))}
+                        style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(15,15,15,0.75)', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                      >
+                        ✕
+                      </button>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '0.55rem', textAlign: 'center', padding: '1px 0' }}>
+                        {idx === 0 ? 'Portada' : `Foto ${idx + 1}`}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Selected new files previews */}
+                  {selectedNewFiles.map((file, idx) => {
+                    const objectUrl = URL.createObjectURL(file);
+                    return (
+                      <div key={`new-${idx}`} style={{ position: 'relative', width: '72px', height: '84px', borderRadius: '4px', overflow: 'hidden', border: '0.5px dashed #009aae', background: '#f5f3f0' }}>
+                        <img src={objectUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <button
+                          type="button"
+                          onClick={() => setSelectedNewFiles(prev => prev.filter((_, i) => i !== idx))}
+                          style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(15,15,15,0.75)', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+                        >
+                          ✕
+                        </button>
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#009aae', color: '#fff', fontSize: '0.55rem', textAlign: 'center', padding: '1px 0', fontWeight: 500 }}>
+                          Subiendo
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Add Image placeholder/button */}
+                  {retainedImages.length + selectedNewFiles.length < 5 && (
+                    <label style={{
+                      width: '72px', height: '84px', border: '0.5px dashed #d4cfc8', borderRadius: '4px',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      background: '#fff', cursor: 'pointer', transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#0f0f0f'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#d4cfc8'}
+                    >
+                      <span style={{ fontSize: '1.2rem', color: '#6b6560', fontWeight: 300 }}>+</span>
+                      <span style={{ fontSize: '0.58rem', color: '#6b6560', marginTop: '2px', textAlign: 'center' }}>Cargar</span>
+                      <input
+                        type="file" accept="image/*" multiple
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const files = Array.from(e.target.files || []);
+                          const limit = 5 - (retainedImages.length + selectedNewFiles.length);
+                          const sliced = files.slice(0, limit);
+                          if (files.length > limit) {
+                            alert(`Solo puedes cargar hasta 5 fotos en total. Se omitieron las restantes.`);
+                          }
+                          setSelectedNewFiles(prev => [...prev, ...sliced]);
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+                
+                <p style={{ margin: 0, fontSize: '0.62rem', color: '#888', lineHeight: 1.4 }}>
+                  * La primera foto se usará como imagen de portada del producto.
+                </p>
               </div>
 
               {/* Active */}

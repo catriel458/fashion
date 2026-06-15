@@ -54,27 +54,40 @@ export async function POST(request) {
     const description = formData.get('description') || null;
     const price       = formData.get('price');
     const stock       = parseInt(formData.get('stock') || '0');
-    const imageFile   = formData.get('image');
 
     if (!name || !price) {
       return NextResponse.json({ error: 'name y price son requeridos' }, { status: 400 });
     }
 
-    let imageUrl = null;
-    if (imageFile && imageFile.size > 0) {
-      const blob = await put(`products/${Date.now()}-${imageFile.name}`, imageFile, {
+    const imageUrls = [];
+    const imageFiles = formData.getAll('images');
+    for (const file of imageFiles) {
+      if (file && file.size > 0) {
+        const blob = await put(`products/${Date.now()}-${file.name}`, file, {
+          access: 'public',
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        imageUrls.push(blob.url);
+      }
+    }
+
+    // Fallback for single image field
+    const legacyImage = formData.get('image');
+    if (imageUrls.length === 0 && legacyImage && legacyImage.size > 0) {
+      const blob = await put(`products/${Date.now()}-${legacyImage.name}`, legacyImage, {
         access: 'public',
         token: process.env.BLOB_READ_WRITE_TOKEN,
       });
-      imageUrl = blob.url;
+      imageUrls.push(blob.url);
     }
 
+    const primaryImageUrl = imageUrls[0] || null;
     const slug = slugify(name) + '-' + Date.now();
     const finalCategoryId = categoryId === '' ? null : categoryId;
     const storeId = session.user.role === 'admin' ? await getAdminStoreId(session) : (formData.get('store_id') || null);
 
     const product = await sql`
-      INSERT INTO products (name, slug, category_id, description, price, stock, image_url, active, store_id)
+      INSERT INTO products (name, slug, category_id, description, price, stock, image_url, image_urls, active, store_id)
       VALUES (
         ${name},
         ${slug},
@@ -82,7 +95,8 @@ export async function POST(request) {
         ${description},
         ${parseFloat(price)},
         ${stock},
-        ${imageUrl},
+        ${primaryImageUrl},
+        ${imageUrls},
         true,
         ${storeId}
       )
