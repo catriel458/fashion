@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import toast from 'react-hot-toast';
 import { useFittingRoom } from './FittingRoomContext';
 import { useCart } from './CartContext';
 
@@ -15,10 +16,11 @@ const ZONE_CONFIG = [
   { category: 'accesorio',  label: 'Accesorio',  pos: { top: 148, left: 142 } },
 ];
 
-export default function FittingRoomPanel() {
+export default function FittingRoomPanel({ storeId }) {
   const { items, isPanelOpen, setIsPanelOpen, removeFromFittingRoom } = useFittingRoom();
   const { addItem, setIsOpen: openCart } = useCart();
   const { data: session } = useSession();
+  const [usageStatus, setUsageStatus] = useState(null);
 
   const [bodyPhotoUrl,    setBodyPhotoUrl]    = useState(null);
   const [bodyPhotoPreview, setBodyPhotoPreview] = useState(null);
@@ -69,6 +71,14 @@ export default function FittingRoomPanel() {
       .then(d => { if (d.body_photo_url) setBodyPhotoUrl(d.body_photo_url); })
       .catch(() => {});
   }, [session]);
+
+  useEffect(() => {
+    if (!session?.user || !storeId) return;
+    fetch(`/api/tryon/usage-status?store_id=${storeId}`)
+      .then(r => r.json())
+      .then(d => { if (!d.error) setUsageStatus(d); })
+      .catch(() => {});
+  }, [session, storeId]);
 
   const handlePhotoSelect = async (file) => {
     if (!file) return;
@@ -138,11 +148,25 @@ export default function FittingRoomPanel() {
       const fd = new FormData();
       fd.append('person',  personFile);
       fd.append('garment', collageBlob, 'collage.jpg');
+      if (storeId) fd.append('store_id', storeId);
 
       const res  = await fetch('/api/tryon', { method: 'POST', body: fd });
       const data = await res.json();
-      if (res.ok) setResult(data.image);
-      else setError(data.error || 'Error al generar');
+      if (res.ok) {
+        setResult(data.image);
+        if (storeId) {
+          fetch(`/api/tryon/usage-status?store_id=${storeId}`)
+            .then(r => r.json())
+            .then(d => { if (!d.error) setUsageStatus(d); })
+            .catch(() => {});
+        }
+      } else if (res.status === 429 && data.error === 'USER_LIMIT_REACHED') {
+        toast.error('Alcanzaste tu límite diario de probadas. Volvé mañana!', { duration: 5000 });
+      } else if (res.status === 429 && data.error === 'STORE_LIMIT_REACHED') {
+        toast.error('Esta tienda no tiene más probadas disponibles este mes.', { duration: 5000 });
+      } else {
+        setError(data.error || 'Error al generar');
+      }
     } catch (e) {
       setError('Error: ' + e.message);
     }
@@ -437,6 +461,12 @@ export default function FittingRoomPanel() {
                   )}
                   {generating ? 'Generando tu look...' : 'Probarme este outfit →'}
                 </button>
+
+                {session?.user && usageStatus && (
+                  <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', textAlign: 'center' }}>
+                    {usageStatus.daily_used} de {usageStatus.daily_limit} probadas usadas hoy
+                  </p>
+                )}
 
                 {!bodyPhotoUrl && !uploadingPhoto && (
                   <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', color: '#aaa', textAlign: 'center' }}>

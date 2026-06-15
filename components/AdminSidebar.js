@@ -12,6 +12,7 @@ const NAV_ADMIN = [
   { href: '/admin/users',     label: 'Usuarios'  },
   { href: '/admin/store',     label: 'Mi tienda' },
   { href: '/admin/settings',  label: 'Configuración' },
+  { href: '/admin/fitting-plans', label: 'Probador - Plan' },
   { href: '/admin/birthday',  label: 'Cumpleaños 🎂' },
 ];
 const NAV_SUPERADMIN = [

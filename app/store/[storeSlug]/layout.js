@@ -44,7 +44,7 @@ export default async function StoreLayout({ children, params }) {
         primaryColor={store.primary_color || '#009aae'}
       />
       <CartSidebar storeSlug={storeSlug} />
-      <FittingRoomPanel />
+      <FittingRoomPanel storeId={store.id} />
       {children}
     </CartProvider>
   );

@@ -1,10 +1,75 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import sql from '@/lib/db';
+
 export const maxDuration = 60;
 
-async function handleJsonMode(request, apiKey) {
-  let parsed;
-  try { parsed = await request.json(); }
-  catch { return Response.json({ error: 'JSON inválido' }, { status: 400 }); }
+function extractTryOnImage(data) {
+  const message = data?.choices?.[0]?.message;
+  const parts   = message?.content;
 
+  if (Array.isArray(parts)) {
+    const base64Img = parts.find(p => p.image_base64);
+    if (base64Img?.image_base64) return Response.json({ image: `data:image/png;base64,${base64Img.image_base64}` });
+    const imgUrl = parts.find(p => p.type === 'image_url');
+    if (imgUrl?.image_url?.url) return Response.json({ image: imgUrl.image_url.url });
+  }
+  if (typeof parts === 'string') {
+    if (parts.startsWith('data:image')) return Response.json({ image: parts });
+    if (parts.length > 100) return Response.json({ image: `data:image/png;base64,${parts}` });
+  }
+  const img = message?.images?.[0] || data?.images?.[0] || data?.choices?.[0]?.images?.[0];
+  if (img) {
+    const url = img?.image_url?.url || img?.url || img?.b64_json || img?.image_base64;
+    if (url) {
+      if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('data:image'))) return Response.json({ image: url });
+      if (typeof url === 'string' && url.length > 100) return Response.json({ image: `data:image/png;base64,${url}` });
+    }
+  }
+  return Response.json({ error: 'No se pudo extraer la imagen', debug: { hasMessage: !!message, hasContent: !!parts, hasImages: !!message?.images } }, { status: 422 });
+}
+
+async function checkFittingLimits(rawStoreId, userId) {
+  const storeId = Number(rawStoreId);
+  if (!storeId) return { error: Response.json({ error: 'STORE_NOT_FOUND' }, { status: 404 }) };
+
+  const stores = await sql`
+    SELECT fitting_daily_limit_per_user, fitting_monthly_limit, fitting_used_this_month, fitting_month_reset_at
+    FROM stores WHERE id = ${storeId}
+  `;
+  if (!stores.length) return { error: Response.json({ error: 'STORE_NOT_FOUND' }, { status: 404 }) };
+
+  let store = stores[0];
+
+  const resetAt = new Date(store.fitting_month_reset_at);
+  const nextReset = new Date(resetAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+  if (new Date() > nextReset) {
+    await sql`UPDATE stores SET fitting_used_this_month = 0, fitting_month_reset_at = NOW() WHERE id = ${storeId}`;
+    store = { ...store, fitting_used_this_month: 0 };
+  }
+
+  const [{ count }] = await sql`
+    SELECT COUNT(*) as count FROM fitting_room_usage
+    WHERE user_id = ${userId} AND store_id = ${storeId} AND used_at > NOW() - INTERVAL '1 day'
+  `;
+
+  if (Number(count) >= store.fitting_daily_limit_per_user) {
+    return { error: Response.json({ error: 'USER_LIMIT_REACHED', message: 'Alcanzaste tu límite diario de probadas. Volvé mañana!' }, { status: 429 }) };
+  }
+
+  if (store.fitting_used_this_month >= store.fitting_monthly_limit) {
+    return { error: Response.json({ error: 'STORE_LIMIT_REACHED', message: 'Esta tienda no tiene más probadas disponibles este mes.' }, { status: 429 }) };
+  }
+
+  return { ok: true, storeId };
+}
+
+async function registerFittingUsage(storeId, userId) {
+  await sql`INSERT INTO fitting_room_usage (store_id, user_id) VALUES (${storeId}, ${userId})`;
+  await sql`UPDATE stores SET fitting_used_this_month = fitting_used_this_month + 1 WHERE id = ${storeId}`;
+}
+
+async function handleJsonMode(parsed, apiKey) {
   const { personImage, clothingImages } = parsed;
   if (!personImage || !Array.isArray(clothingImages) || clothingImages.length === 0) {
     return Response.json({ error: 'Faltan personImage o clothingImages' }, { status: 400 });
@@ -102,28 +167,7 @@ The output must be a single full-body photo of the person dressed, standing in a
 
   if (!res.ok) return Response.json({ error: data?.error?.message || `Error HTTP ${res.status}` }, { status: res.status });
 
-  const message = data?.choices?.[0]?.message;
-  const parts   = message?.content;
-
-  if (Array.isArray(parts)) {
-    const base64Img = parts.find(p => p.image_base64);
-    if (base64Img?.image_base64) return Response.json({ image: `data:image/png;base64,${base64Img.image_base64}` });
-    const imgUrl = parts.find(p => p.type === 'image_url');
-    if (imgUrl?.image_url?.url) return Response.json({ image: imgUrl.image_url.url });
-  }
-  if (typeof parts === 'string') {
-    if (parts.startsWith('data:image')) return Response.json({ image: parts });
-    if (parts.length > 100) return Response.json({ image: `data:image/png;base64,${parts}` });
-  }
-  const img = message?.images?.[0] || data?.images?.[0] || data?.choices?.[0]?.images?.[0];
-  if (img) {
-    const url = img?.image_url?.url || img?.url || img?.b64_json || img?.image_base64;
-    if (url) {
-      if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('data:image'))) return Response.json({ image: url });
-      if (typeof url === 'string' && url.length > 100) return Response.json({ image: `data:image/png;base64,${url}` });
-    }
-  }
-  return Response.json({ error: 'No se pudo extraer la imagen', debug: { hasMessage: !!message, hasContent: !!parts, hasImages: !!message?.images } }, { status: 422 });
+  return extractTryOnImage(data);
 }
 
 export async function POST(request) {
@@ -136,10 +180,25 @@ export async function POST(request) {
     );
   }
 
-  // Modo JSON: acepta { personImage: URL, clothingImages: [URLs] }
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return Response.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+  }
+  const userId = Number(session.user.id);
+
+  // Modo JSON: acepta { personImage: URL, clothingImages: [URLs], store_id }
   const ct = request.headers.get('content-type') || '';
   if (ct.includes('application/json')) {
-    return handleJsonMode(request, apiKey);
+    let parsed;
+    try { parsed = await request.json(); }
+    catch { return Response.json({ error: 'JSON inválido' }, { status: 400 }); }
+
+    const limitCheck = await checkFittingLimits(parsed.store_id, userId);
+    if (limitCheck.error) return limitCheck.error;
+
+    const result = await handleJsonMode(parsed, apiKey);
+    if (result.status === 200) await registerFittingUsage(limitCheck.storeId, userId);
+    return result;
   }
 
   // 📥 Leer form
@@ -152,6 +211,9 @@ export async function POST(request) {
       { status: 400 }
     );
   }
+
+  const limitCheck = await checkFittingLimits(formData.get('store_id'), userId);
+  if (limitCheck.error) return limitCheck.error;
 
   const personFile = formData.get('person');
   const garmentFile = formData.get('garment');
@@ -293,88 +355,7 @@ The output must be a single full-body photo of the person dressed, standing in a
     );
   }
 
-  // 🧪 DEBUG (activar si necesitás)
-  // console.log("FULL RESPONSE:", JSON.stringify(data, null, 2));
-
-  const message = data?.choices?.[0]?.message;
-  const parts = message?.content;
-
-  // =========================
-  // 🟢 CASO 1: image_base64
-  // =========================
-  if (Array.isArray(parts)) {
-    const base64Img = parts.find(p => p.image_base64);
-    if (base64Img?.image_base64) {
-      return Response.json({
-        image: `data:image/png;base64,${base64Img.image_base64}`
-      });
-    }
-
-    const imgUrl = parts.find(p => p.type === 'image_url');
-    if (imgUrl?.image_url?.url) {
-      return Response.json({ image: imgUrl.image_url.url });
-    }
-  }
-
-  // =========================
-  // 🟢 CASO 2: string directo
-  // =========================
-  if (typeof parts === 'string') {
-    if (parts.startsWith('data:image')) {
-      return Response.json({ image: parts });
-    }
-
-    if (parts.length > 100) {
-      return Response.json({
-        image: `data:image/png;base64,${parts}`
-      });
-    }
-  }
-
-  // =========================
-  // 🟢 CASO 3: images (TU CASO)
-  // =========================
-  const img =
-    message?.images?.[0] ||
-    data?.images?.[0] ||
-    data?.choices?.[0]?.images?.[0];
-
-  if (img) {
-    const url =
-      img?.image_url?.url ||
-      img?.url ||
-      img?.b64_json ||
-      img?.image_base64;
-
-    if (url) {
-      // URL directa
-      if (typeof url === 'string' &&
-        (url.startsWith('http') || url.startsWith('data:image'))
-      ) {
-        return Response.json({ image: url });
-      }
-
-      // base64 puro
-      if (typeof url === 'string' && url.length > 100) {
-        return Response.json({
-          image: `data:image/png;base64,${url}`
-        });
-      }
-    }
-  }
-
-  // =========================
-  // 🔴 ERROR FINAL
-  // =========================
-  return Response.json(
-    {
-      error: 'No se pudo extraer la imagen',
-      debug: {
-        hasMessage: !!message,
-        hasContent: !!parts,
-        hasImages: !!message?.images
-      }
-    },
-    { status: 422 }
-  );
+  const result = extractTryOnImage(data);
+  if (result.status === 200) await registerFittingUsage(limitCheck.storeId, userId);
+  return result;
 }
