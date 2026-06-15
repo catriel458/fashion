@@ -1,72 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-
-const WHATSAPP_NUMBER = '5491100000000';
+import { PLANS_LIST as PLANS, PLAN_COLORS } from '@/lib/fitting-plans';
 
 const MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-
-const PLANS = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 9,
-    description: 'Para tiendas que recién arrancan con el probador virtual.',
-    accent: '#64748b',
-    badge: null,
-    dailyLimit: 5,
-    features: [
-      '100 probadas por mes',
-      'Hasta 5 por usuario por día (configurable)',
-      'Soporte por email',
-    ],
-  },
-  {
-    id: 'growth',
-    name: 'Growth',
-    price: 25,
-    description: 'Más probadas y soporte prioritario para tiendas activas.',
-    accent: '#7c3aed',
-    badge: 'MAS POPULAR',
-    dailyLimit: 10,
-    features: [
-      '300 probadas por mes',
-      'Hasta 10 por usuario por día (configurable)',
-      'Soporte prioritario',
-      'El más elegido por tiendas activas',
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 59,
-    description: 'Para tiendas en crecimiento que quieren ver sus métricas.',
-    accent: '#d97706',
-    badge: 'PARA CRECER',
-    dailyLimit: 20,
-    features: [
-      '800 probadas por mes',
-      'Hasta 20 por usuario por día (configurable)',
-      'Panel de métricas de uso',
-    ],
-  },
-  {
-    id: 'scale',
-    name: 'Scale',
-    price: 139,
-    description: 'Alto volumen, sin límites diarios y soporte dedicado.',
-    accent: '#059669',
-    badge: 'ALTO VOLUMEN',
-    dailyLimit: 999,
-    features: [
-      '2000 probadas por mes',
-      'Sin límite diario',
-      'SLA + soporte dedicado',
-    ],
-  },
-];
-
-const PLAN_COLORS = { starter: '#64748b', growth: '#7c3aed', pro: '#d97706', scale: '#059669' };
 
 function formatDateEs(date) {
   const d = new Date(date);
@@ -92,7 +29,15 @@ export default function FittingPlansPage() {
   const [loading, setLoading] = useState(true);
   const [dailyLimit, setDailyLimit] = useState(5);
   const [saving, setSaving] = useState(false);
-  const [modalPlan, setModalPlan] = useState(null);
+
+  const [storeId, setStoreId] = useState(null);
+  const [paymentConfig, setPaymentConfig] = useState({ mp_enabled: false, transfer_enabled: false });
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [modalView, setModalView] = useState('select');
+  const [transferData, setTransferData] = useState(null);
+  const [mpData, setMpData] = useState(null);
+  const [uploadingComprobante, setUploadingComprobante] = useState(false);
+  const [comprobanteSent, setComprobanteSent] = useState(false);
 
   useEffect(() => {
     fetch('/api/admin/fitting-config')
@@ -101,9 +46,113 @@ export default function FittingPlansPage() {
         if (d.error) return;
         setConfig(d);
         setDailyLimit(d.daily_limit_per_user);
+        setStoreId(d.store_id);
       })
       .finally(() => setLoading(false));
+
+    fetch('/api/superadmin/payment-config')
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) return;
+        setPaymentConfig({ mp_enabled: d.mp_enabled ?? false, transfer_enabled: d.transfer_enabled ?? false });
+      })
+      .catch(() => {});
   }, []);
+
+  function closePaymentModal() {
+    setSelectedPlan(null);
+    setModalView('select');
+    setTransferData(null);
+    setMpData(null);
+  }
+
+  function reloadConfig() {
+    fetch('/api/admin/fitting-config')
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) return;
+        setConfig(d);
+        setDailyLimit(d.daily_limit_per_user);
+      });
+  }
+
+  async function handleChooseTransfer() {
+    try {
+      const res = await fetch('/api/plan-checkout/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planKey: selectedPlan.id, storeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setTransferData(data);
+      setModalView('transfer');
+    } catch (e) {
+      toast.error(e.message || 'Error al iniciar el pago');
+    }
+  }
+
+  async function handleChooseMp() {
+    try {
+      const res = await fetch('/api/plan-checkout/mp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planKey: selectedPlan.id, storeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setMpData(data);
+      setModalView('mp');
+    } catch (e) {
+      toast.error(e.message || 'Error al iniciar el pago');
+    }
+  }
+
+  async function handleUploadComprobante(e) {
+    const file = e.target.files?.[0];
+    if (!file || !transferData) return;
+    setUploadingComprobante(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('payment_id', transferData.payment_id);
+      const res = await fetch('/api/plan-checkout/upload-comprobante', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success('Comprobante enviado. Activaremos tu plan en breve.');
+      setComprobanteSent(true);
+      closePaymentModal();
+    } catch (err) {
+      toast.error(err.message || 'Error al subir el comprobante');
+    } finally {
+      setUploadingComprobante(false);
+    }
+  }
+
+  async function handleVerifyMpPayment() {
+    if (!mpData) return;
+    try {
+      const res = await fetch(`/api/plan-checkout/status?payment_id=${mpData.payment_id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (data.payment_status === 'paid') {
+        toast.success('Pago confirmado. Tu plan fue activado.');
+        closePaymentModal();
+        reloadConfig();
+      } else if (data.payment_status === 'failed') {
+        toast.error('El pago no fue aprobado. Intenta nuevamente.');
+      } else {
+        toast('Aun no recibimos confirmación. Puede tardar unos minutos.');
+      }
+    } catch (e) {
+      toast.error(e.message || 'Error al verificar el pago');
+    }
+  }
+
+  function copyToClipboard(value) {
+    navigator.clipboard.writeText(value);
+    toast.success('Copiado');
+  }
 
   async function handleSaveDailyLimit() {
     setSaving(true);
@@ -265,7 +314,7 @@ export default function FittingPlansPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '2.2rem', fontWeight: 700 }}>${plan.price}</span>
+                  <span style={{ fontSize: '2.2rem', fontWeight: 700 }}>${plan.price_usd}</span>
                   <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>USD/mes</span>
                 </div>
 
@@ -298,7 +347,7 @@ export default function FittingPlansPage() {
                   </button>
                 ) : (
                   <button
-                    onClick={() => setModalPlan(plan)}
+                    onClick={() => { setSelectedPlan(plan); setModalView('select'); }}
                     style={{
                       width: '100%', padding: '12px', borderRadius: '6px',
                       border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)',
@@ -313,35 +362,173 @@ export default function FittingPlansPage() {
             );
           })}
         </div>
+
+        {comprobanteSent && (
+          <div style={{
+            marginTop: '20px', background: 'rgba(34,197,94,0.1)', border: '0.5px solid rgba(34,197,94,0.3)',
+            borderRadius: '8px', padding: '14px 18px', fontSize: '0.82rem', color: '#22c55e',
+          }}>
+            Comprobante recibido. Tu plan sera activado en las proximas horas.
+          </div>
+        )}
       </div>
 
-      {modalPlan && (
+      {selectedPlan && (
         <div
-          onClick={() => setModalPlan(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          onClick={closePaymentModal}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '28px', maxWidth: '360px', width: '100%' }}
+            style={{ background: '#111', border: '1px solid #333', borderRadius: '12px', padding: '32px', maxWidth: '480px', width: '100%', position: 'relative' }}
           >
-            <h3 style={{ margin: '0 0 12px', fontSize: '1.15rem', fontWeight: 600 }}>
-              Cambiar a plan {modalPlan.name}
-            </h3>
-            <p style={{ margin: '0 0 20px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
-              Para cambiar de plan escribinos y te lo activamos en minutos.
-            </p>
-            <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={closePaymentModal}
               style={{
-                display: 'block', textAlign: 'center', padding: '12px',
-                background: '#22c55e', color: '#0a0a0a', borderRadius: '6px',
-                fontSize: '0.82rem', fontWeight: 600, textDecoration: 'none', letterSpacing: '0.04em',
+                position: 'absolute', top: '16px', right: '16px',
+                background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
+                fontSize: '1.2rem', cursor: 'pointer', lineHeight: 1,
               }}
             >
-              Escribir por WhatsApp
-            </a>
+              ×
+            </button>
+
+            {modalView === 'select' && (
+              <>
+                <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 600 }}>
+                  Contratar plan {selectedPlan.name}
+                </h3>
+                <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
+                  Monto: USD {selectedPlan.price_usd}
+                </p>
+
+                {!paymentConfig.transfer_enabled && !paymentConfig.mp_enabled && (
+                  <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.85rem' }}>
+                    Medios de pago no configurados. Contacta al administrador.
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {paymentConfig.transfer_enabled && (
+                    <button
+                      onClick={handleChooseTransfer}
+                      style={{
+                        padding: '12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
+                        background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '0.85rem',
+                        fontWeight: 600, cursor: 'pointer',
+                      }}
+                    >
+                      Pagar por transferencia
+                    </button>
+                  )}
+                  {paymentConfig.mp_enabled && (
+                    <button
+                      onClick={handleChooseMp}
+                      style={{
+                        padding: '12px', borderRadius: '6px', border: 'none',
+                        background: '#22c55e', color: '#0a0a0a', fontSize: '0.85rem',
+                        fontWeight: 600, cursor: 'pointer',
+                      }}
+                    >
+                      Pagar con Mercado Pago
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+
+            {modalView === 'transfer' && transferData && (
+              <>
+                <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 600 }}>
+                  Transferencia bancaria
+                </h3>
+                <p style={{ margin: '0 0 18px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
+                  Monto: USD {transferData.amount_usd}
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                  {[
+                    { label: 'CBU', value: transferData.transfer_cbu },
+                    { label: 'Alias', value: transferData.transfer_alias },
+                    { label: 'Banco', value: transferData.transfer_bank },
+                    { label: 'Titular', value: transferData.transfer_holder },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      background: 'rgba(255,255,255,0.04)', borderRadius: '6px', padding: '10px 14px',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>{label}</div>
+                        <div style={{ fontSize: '0.85rem' }}>{value || '—'}</div>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(value || '')}
+                        style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)', background: 'none', color: '#fff', fontSize: '0.7rem', cursor: 'pointer' }}
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)' }}>
+                  Subir comprobante de pago
+                </label>
+                <input
+                  type="file"
+                  onChange={handleUploadComprobante}
+                  disabled={uploadingComprobante}
+                  style={{ width: '100%', fontSize: '0.8rem', color: '#fff', marginBottom: '20px' }}
+                />
+
+                <button
+                  onClick={() => setModalView('select')}
+                  style={{ padding: '10px 18px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'none', color: '#fff', fontSize: '0.78rem', cursor: 'pointer' }}
+                >
+                  Volver
+                </button>
+              </>
+            )}
+
+            {modalView === 'mp' && mpData && (
+              <>
+                <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 600 }}>
+                  Mercado Pago
+                </h3>
+                <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
+                  Hace clic en el boton para completar el pago en Mercado Pago
+                </p>
+
+                <button
+                  onClick={() => window.open(mpData.init_point, '_blank')}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '6px', border: 'none',
+                    background: '#22c55e', color: '#0a0a0a', fontSize: '0.85rem', fontWeight: 600,
+                    cursor: 'pointer', marginBottom: '10px',
+                  }}
+                >
+                  Ir a Mercado Pago
+                </button>
+
+                <button
+                  onClick={handleVerifyMpPayment}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
+                    background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+                    cursor: 'pointer', marginBottom: '16px',
+                  }}
+                >
+                  Ya pague, verificar
+                </button>
+
+                <button
+                  onClick={() => setModalView('select')}
+                  style={{ padding: '10px 18px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)', background: 'none', color: '#fff', fontSize: '0.78rem', cursor: 'pointer' }}
+                >
+                  Volver
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

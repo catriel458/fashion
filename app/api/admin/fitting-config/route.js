@@ -26,6 +26,7 @@ export async function GET() {
   if (!store) return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 });
 
   return NextResponse.json({
+    store_id: storeId,
     plan: store.fitting_plan,
     monthly_limit: store.fitting_monthly_limit,
     used_this_month: store.fitting_used_this_month,

@@ -9,6 +9,8 @@ const NAV = [
   { href: '/superadmin/stores/new', label: '+ Crear tienda' },
   { href: '/superadmin/products',   label: 'Productos'     },
   { href: '/superadmin/users',      label: 'Usuarios'      },
+  { href: '/superadmin/fitting-monitor', label: 'Monitor Probador' },
+  { href: '/superadmin/settings',   label: 'Configuración' },
 ];
 
 export default function SuperadminSidebar() {

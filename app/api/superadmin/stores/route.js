@@ -55,7 +55,8 @@ export async function POST(req) {
         social_instagram, social_whatsapp, social_facebook, contact_email, contact_phone,
         header_color, footer_color,
         header_font, header_font_size, header_text_color,
-        footer_font, footer_font_size, footer_text_color
+        footer_font, footer_font_size, footer_text_color,
+        fitting_plan, fitting_monthly_limit, fitting_daily_limit_per_user, fitting_month_reset_at, plan_status
       )
       VALUES (
         ${name.trim()},
@@ -83,7 +84,12 @@ export async function POST(req) {
         ${header_text_color || null},
         ${footer_font || null},
         ${footer_font_size || null},
-        ${footer_text_color || null}
+        ${footer_text_color || null},
+        'free',
+        20,
+        2,
+        NOW(),
+        'active'
       )
       RETURNING *
     `;
