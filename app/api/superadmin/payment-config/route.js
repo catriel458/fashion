@@ -12,8 +12,14 @@ async function checkSuperadmin() {
   return session;
 }
 
+async function checkAdmin() {
+  const session = await getServerSession(authOptions);
+  if (!session || !['admin', 'superadmin'].includes(session.user.role)) return null;
+  return session;
+}
+
 export async function GET() {
-  if (!await checkSuperadmin()) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+  if (!await checkAdmin()) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
 
   try {
     const [config] = await sql`
