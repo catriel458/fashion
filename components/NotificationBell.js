@@ -8,6 +8,8 @@ const TYPE_ICON = {
   low_stock: '⚠️',
   new_user: '👤',
   birthday_coupon: '🎂',
+  welcome_coupon: '🎁',
+  first_tryon_coupon: '🎫',
   general: '🔔',
 };
 
@@ -21,10 +23,66 @@ function timeAgo(dateStr) {
   return `hace ${Math.floor(hrs / 24)}d`;
 }
 
+function triggerConfetti() {
+  if (typeof window === 'undefined') return;
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.inset = '0';
+  container.style.pointerEvents = 'none';
+  container.style.zIndex = '99999';
+  document.body.appendChild(container);
+
+  const colors = ['#d97706', '#7c3aed', '#059669', '#e11d48', '#3b82f6', '#fde047'];
+  
+  for (let i = 0; i < 90; i++) {
+    const p = document.createElement('div');
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const left = Math.random() * 100;
+    const delay = Math.random() * 1.8;
+    const duration = 2.5 + Math.random() * 2;
+    const size = 6 + Math.random() * 8;
+    
+    p.style.position = 'absolute';
+    p.style.top = '-20px';
+    p.style.left = `${left}%`;
+    p.style.width = `${size}px`;
+    p.style.height = `${size * (0.6 + Math.random() * 0.7)}px`;
+    p.style.background = color;
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    p.style.opacity = '0.9';
+    p.style.animation = `cnbConfettiFall ${duration}s linear ${delay}s forwards`;
+    
+    container.appendChild(p);
+  }
+
+  const style = document.createElement('style');
+  style.id = 'cnb-confetti-keyframes';
+  style.innerHTML = `
+    @keyframes cnbConfettiFall {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.9;
+      }
+      100% {
+        transform: translateY(105vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  `;
+  if (!document.getElementById('cnb-confetti-keyframes')) {
+    document.head.appendChild(style);
+  }
+
+  setTimeout(() => {
+    container.remove();
+  }, 6500);
+}
+
 export default function NotificationBell({ textColor = '#0f0f0f' }) {
   const { data: session } = useSession();
   const [open, setOpen]   = useState(false);
   const [data, setData]   = useState({ notifications: [], unread: 0 });
+  const [celebration, setCelebration] = useState(null);
   const ref               = useRef(null);
 
   useEffect(() => {
@@ -42,10 +100,50 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  useEffect(() => {
+    const handleRefresh = () => loadNotifications();
+    window.addEventListener('cnb-refresh-notifications', handleRefresh);
+    return () => window.removeEventListener('cnb-refresh-notifications', handleRefresh);
+  }, []);
+
+  useEffect(() => {
+    if (celebration) {
+      triggerConfetti();
+      const t = setTimeout(() => setCelebration(null), 8500);
+      return () => clearTimeout(t);
+    }
+  }, [celebration]);
+
   async function loadNotifications() {
     try {
       const res = await fetch('/api/notifications?page=1');
-      if (res.ok) setData(await res.json());
+      if (res.ok) {
+        const d = await res.json();
+        setData(d);
+
+        // Check for achievements to celebrate
+        if (d.notifications && d.notifications.length > 0) {
+          const celebratedIds = JSON.parse(localStorage.getItem('cnb_celebrated_notifs') || '[]');
+          const toCelebrate = d.notifications.find(n => 
+            !n.read && 
+            ['level_up', 'welcome_coupon', 'first_tryon_coupon'].includes(n.type) &&
+            !celebratedIds.includes(n.id)
+          );
+
+          if (toCelebrate) {
+            setCelebration({
+              id: toCelebrate.id,
+              type: toCelebrate.type,
+              title: toCelebrate.title,
+              message: toCelebrate.message,
+            });
+            celebratedIds.push(toCelebrate.id);
+            localStorage.setItem('cnb_celebrated_notifs', JSON.stringify(celebratedIds));
+            // Mark as read in backend
+            markRead(toCelebrate.id);
+          }
+        }
+      }
     } catch {}
   }
 
@@ -71,6 +169,113 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
+      {/* Celebration overlay */}
+      {celebration && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(15,15,15,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '24px',
+          animation: 'cnbFadeIn 0.3s ease-out'
+        }}>
+          <style>{`
+            @keyframes cnbFadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes cnbPopIn {
+              0% { transform: scale(0.85); opacity: 0; }
+              70% { transform: scale(1.05); }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes cnbFloat {
+              0% { transform: translateY(0px); }
+              50% { transform: translateY(-10px); }
+              100% { transform: translateY(0px); }
+            }
+          `}</style>
+          
+          <div style={{
+            background: 'linear-gradient(135deg, #ffffff, #fbfbf9)',
+            border: '1px solid #e0dbd4',
+            borderRadius: '16px',
+            padding: '36px 24px',
+            maxWidth: '400px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
+            animation: 'cnbPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+          onClick={e => e.stopPropagation()}
+          >
+            <div style={{
+              position: 'absolute', top: '-50%', left: '-50%', right: '-50%', bottom: '-50%',
+              background: 'radial-gradient(circle, rgba(217,119,6,0.08) 0%, rgba(255,255,255,0) 70%)',
+              pointerEvents: 'none', zIndex: 0
+            }} />
+
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{
+                fontSize: '3.5rem',
+                marginBottom: '16px',
+                animation: 'cnbFloat 3s ease-in-out infinite',
+                display: 'inline-block'
+              }}>
+                {celebration.type === 'level_up' ? '👑' : celebration.type === 'welcome_coupon' ? '🎁' : '🎫'}
+              </div>
+              
+              <h3 style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '1.4rem',
+                fontWeight: 400,
+                color: '#0f0f0f',
+                margin: '0 0 10px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em'
+              }}>
+                {celebration.title}
+              </h3>
+              
+              <p style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: '0.82rem',
+                color: '#6b6560',
+                lineHeight: 1.6,
+                margin: '0 0 24px'
+              }}>
+                {celebration.message}
+              </p>
+
+              <button
+                onClick={() => {
+                  setCelebration(null);
+                  triggerConfetti();
+                }}
+                style={{
+                  background: '#0f0f0f',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '12px 28px',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#222'}
+                onMouseLeave={e => e.currentTarget.style.background = '#0f0f0f'}
+              >
+                ¡Buenísimo! 🎉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <button
         onClick={() => { setOpen(o => !o); if (!open) loadNotifications(); }}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', position: 'relative', color: textColor, display: 'flex', alignItems: 'center' }}
@@ -117,7 +322,7 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
                   <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{TYPE_ICON[n.type] || '🔔'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: n.read ? 400 : 600, color: '#0f0f0f', marginBottom: '2px' }}>{n.title}</div>
-                    <div style={{ fontSize: '0.68rem', color: '#6b6560', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.message}</div>
+                    <div style={{ fontSize: '0.68rem', color: '#6b6560', lineHeight: '1.4', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: '3', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.message}</div>
                     <div style={{ fontSize: '0.62rem', color: '#aaa', marginTop: '3px' }}>{timeAgo(n.created_at)}</div>
                   </div>
                 </div>

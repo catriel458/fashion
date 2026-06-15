@@ -6,6 +6,7 @@ import { createNotification } from '@/lib/notify';
 import { sendMail } from '@/lib/mailer';
 import { orderStatusUpdate } from '@/lib/email-templates';
 import sql from '@/lib/db';
+import { addPoints } from '@/lib/points';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export async function GET(req, { params }) {
     if (!order) return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 });
 
     const items = await sql`
-      SELECT oi.quantity, oi.price_at_purchase,
+      SELECT oi.quantity, oi.price_at_purchase, oi.size,
         p.name, p.image_url, p.slug
       FROM order_items oi
       LEFT JOIN products p ON p.id = oi.product_id
@@ -80,16 +81,26 @@ export async function PUT(req, { params }) {
           RETURNING *
         `;
 
+    if (statusChanged && newStatus === 'confirmed') {
+      await addPoints(existing.user_id, storeId, 'purchase').catch(() => {});
+    }
+
     // Notificaciones y email cuando cambia el estado O se pide explícitamente
     if (statusChanged || send_email) {
       const [store] = await sql`SELECT name FROM stores WHERE id = ${storeId}`;
       const storeName = store?.name || 'La tienda';
 
       const statusMessages = {
+        pago_recibido:         `¡Pago confirmado! Tu pedido #${id} está siendo procesado en ${storeName} 🎉`,
+        preparando_pedido:     `Tu pedido #${id} está siendo preparado en ${storeName} 📦`,
+        en_camino:             `Tu pedido #${id} está en camino hacia tu domicilio 🚚`,
+        listo_para_retirar:    `Tu pedido #${id} está listo para retirar en ${storeName} 🛍️`,
+        entregado:             `Tu pedido #${id} fue entregado. ¡Gracias por tu compra! ✅`,
+        cancelado:             `Tu pedido #${id} fue cancelado por ${storeName}`,
+        // Legacy fallbacks
         confirmed: `Tu pedido #${id} fue confirmado por ${storeName} 🎉`,
         ready:     `Tu pedido #${id} está listo para retirar en ${storeName} 📦`,
         delivered: `Tu pedido #${id} fue entregado. ¡Gracias por tu compra! ✅`,
-        cancelled: `Tu pedido #${id} fue cancelado por ${storeName}`,
       };
 
       const currentStatus = newStatus;

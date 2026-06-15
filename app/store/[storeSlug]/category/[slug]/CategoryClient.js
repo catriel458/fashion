@@ -124,7 +124,17 @@ function ProductCard({ product, storeSlug, accent, radius }) {
       </Link>
       <div style={{ padding: '0 16px 8px' }}>
         <button
-          onClick={async (e) => { e.preventDefault(); await addItem(product.id); setIsOpen(true); }}
+          onClick={async (e) => {
+            e.preventDefault();
+            const category = CATEGORY_MAP[product.category_slug] || product.category_slug;
+            const hasSizes = ['remera', 'pantalon', 'abrigo', 'camisa', 'zapatillas'].includes(category);
+            if (hasSizes) {
+              window.location.href = `/store/${storeSlug}/product/${product.slug}`;
+              return;
+            }
+            await addItem(product.id);
+            setIsOpen(true);
+          }}
           style={{ width: '100%', padding: '9px', marginBottom: '6px', background: hovered ? accent : 'transparent', color: hovered ? '#fff' : '#0f0f0f', border: `0.5px solid ${hovered ? accent : '#0f0f0f'}`, fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: radius, transition: 'all 0.25s' }}
         >
           Agregar al carrito

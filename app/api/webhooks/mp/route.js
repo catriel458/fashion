@@ -3,6 +3,8 @@ import sql from '@/lib/db';
 import { put } from '@vercel/blob';
 import { sendMail } from '@/lib/mailer';
 import { orderConfirmedBuyer, orderNotificationStore } from '@/lib/email-templates';
+import { decrypt } from '@/lib/encryption';
+import { createNotification } from '@/lib/notify';
 
 function formatOrderNumber(id, createdAt) {
   const year = new Date(createdAt).getFullYear();
@@ -13,7 +15,9 @@ function generateInvoiceHtml({ order, items, orderNumber, storeName }) {
   const date = new Date(order.created_at).toLocaleDateString('es-AR');
   const itemsHtml = items.map(i => `
     <tr>
-      <td style="padding:10px 12px;border-bottom:1px solid #eee">${i.name}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #eee">
+        ${i.name} ${i.size ? `<span style="font-size:0.75rem;color:#6b6560;background:#f0ede8;padding:2px 6px;border-radius:3px;margin-left:6px">Talle: ${i.size}</span>` : ''}
+      </td>
       <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right">$${parseFloat(i.price_at_purchase).toFixed(2)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:600">$${(parseFloat(i.price_at_purchase) * i.quantity).toFixed(2)}</td>
@@ -89,18 +93,36 @@ export async function POST(req) {
     if (type !== 'payment' || !data?.id) return NextResponse.json({ ok: true });
 
     const paymentId = data.id;
-    const accessToken = process.env.MP_TEST_MODE === 'true'
-      ? process.env.MP_ACCESS_TOKEN_TEST
-      : null;
+    let payment = null;
 
-    if (!accessToken) return NextResponse.json({ ok: true });
+    if (process.env.MP_TEST_MODE === 'true') {
+      const accessToken = process.env.MP_ACCESS_TOKEN_TEST;
+      if (accessToken) {
+        const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` },
+        });
+        if (mpRes.ok) {
+          payment = await mpRes.json();
+        }
+      }
+    } else {
+      // Production: try all configured stores
+      const stores = await sql`SELECT id, mp_access_token FROM stores WHERE mp_access_token IS NOT NULL`;
+      for (const st of stores) {
+        try {
+          const token = decrypt(st.mp_access_token);
+          const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (mpRes.ok) {
+            payment = await mpRes.json();
+            break;
+          }
+        } catch {}
+      }
+    }
 
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-    });
-    if (!mpRes.ok) return NextResponse.json({ ok: true });
-
-    const payment = await mpRes.json();
+    if (!payment) return NextResponse.json({ ok: true });
 
     if (payment.status === 'approved' && payment.external_reference) {
       const parts = payment.external_reference.split('-');
@@ -124,7 +146,7 @@ export async function POST(req) {
           `.catch(() => []);
 
           const items = await sql`
-            SELECT oi.quantity, oi.price_at_purchase, p.name
+            SELECT oi.quantity, oi.price_at_purchase, oi.size, p.name
             FROM order_items oi JOIN products p ON oi.product_id = p.id
             WHERE oi.order_id = ${orderId}
           `.catch(() => []);
@@ -148,10 +170,36 @@ export async function POST(req) {
               `.catch(() => {});
             }
 
-            // Confirmation emails
+            // Confirmation emails & notifications
             const buyerName  = order.first_name
               ? `${order.first_name} ${order.last_name || ''}`.trim()
               : order.username;
+
+            // Send notification to buyer
+            await createNotification({
+              userId:  order.user_id,
+              storeId: order.store_id,
+              type:    'order_pago_recibido',
+              title:   `¡Pago confirmado! Tu pedido ${orderNumber} está siendo preparado.`,
+              message: `${items.length} producto(s) · Total $${parseFloat(order.total).toFixed(2)} en ${storeName}`,
+              link:    '/profile/orders',
+            }).catch(() => {});
+
+            // Send notification to admin
+            if (order.store_id) {
+              const [admin] = await sql`SELECT id FROM users WHERE store_id = ${order.store_id} AND role = 'admin' LIMIT 1`.catch(() => []);
+              if (admin) {
+                await createNotification({
+                  userId:  admin.id,
+                  storeId: order.store_id,
+                  type:    'order_pago_recibido',
+                  title:   `Pago aprobado para pedido ${orderNumber}`,
+                  message: `${buyerName} · $${parseFloat(order.total).toFixed(2)}`,
+                  link:    '/admin/orders',
+                }).catch(() => {});
+              }
+            }
+
             const subtotal   = parseFloat(order.total) - parseFloat(order.delivery_cost || 0);
 
             const buyerTpl = orderConfirmedBuyer({

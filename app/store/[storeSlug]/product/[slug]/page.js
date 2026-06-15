@@ -20,5 +20,5 @@ export default async function ProductPage({ params }) {
   `;
   if (!rows.length) notFound();
 
-  return <ProductClient product={rows[0]} storeSlug={storeSlug} />;
+  return <ProductClient product={rows[0]} storeSlug={storeSlug} storeId={storeId} />;
 }

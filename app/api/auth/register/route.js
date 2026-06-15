@@ -3,8 +3,9 @@ import bcrypt from 'bcryptjs';
 import sql from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { sendMail } from '@/lib/mailer';
-import { welcomeVerification } from '@/lib/email-templates';
+import { welcomeVerification, welcomeCoupon } from '@/lib/email-templates';
 import { createNotification } from '@/lib/notify';
+import { addPoints } from '@/lib/points';
 
 export async function POST(req) {
   try {
@@ -58,8 +59,54 @@ export async function POST(req) {
       }
     } catch {}
 
+    // Generar cupones de bienvenida para tiendas activas
+    try {
+      const activeStores = await sql`SELECT id, name FROM stores WHERE plan_status = 'active'`;
+      if (activeStores.length > 0) {
+        for (const store of activeStores) {
+          const couponCode = `BIENVENIDA-${user.id}-${store.id}`;
+          await sql`
+            INSERT INTO coupons (code, user_id, store_id, type, discount_percentage, expires_at)
+            VALUES (${couponCode}, ${user.id}, ${store.id}, 'welcome', 10, NOW() + INTERVAL '30 days')
+            ON CONFLICT DO NOTHING
+          `;
+        }
+
+        const primaryStore = activeStores[0];
+        const primaryCouponCode = `BIENVENIDA-${user.id}-${primaryStore.id}`;
+
+        // Crear notificación para el usuario
+        await createNotification({
+          userId: user.id,
+          storeId: primaryStore.id,
+          type: 'welcome_coupon',
+          title: 'Tenes un cupon de bienvenida!',
+          message: `Usa el codigo ${primaryCouponCode} para obtener 10% de descuento en tu primera compra. Valido por 30 dias.`,
+          link: '/profile/benefits',
+        });
+
+        // Agregar puntos de bienvenida (5 pts)
+        await addPoints(user.id, primaryStore.id, 'welcome');
+
+        // Enviar email de bienvenida con cupón
+        const emailTpl = welcomeCoupon({
+          username: user.username,
+          couponCode: primaryCouponCode,
+          storeName: primaryStore.name,
+        });
+        await sendMail({
+          to: user.email,
+          subject: emailTpl.subject,
+          html: emailTpl.html,
+        });
+      }
+    } catch (err) {
+      // No bloquear el registro si falla el flujo de cupones de bienvenida
+    }
+
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

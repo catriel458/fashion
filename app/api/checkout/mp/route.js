@@ -35,8 +35,7 @@ export async function POST(req) {
           failure: failureUrl,
           pending: pendingUrl,
         },
-        // auto_return requiere back_urls HTTPS — se omite en sandbox/localhost
-        ...(successUrl?.startsWith('https://') ? { auto_return: 'approved' } : {}),
+        auto_return: 'approved',
         external_reference:  externalReference,
         statement_descriptor: 'CnB Store',
       }),

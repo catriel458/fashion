@@ -30,29 +30,29 @@ export function CartProvider({ children }) {
     if (sessionId) fetchCart(sessionId);
   }, [sessionId, fetchCart]);
 
-  const addItem = async (productId, qty = 1) => {
+  const addItem = async (productId, qty = 1, size = null) => {
     if (!sessionId) return;
     await fetch('/api/cart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: qty }),
+      body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: qty, size }),
     });
     await fetchCart(sessionId);
   };
 
-  const updateQuantity = async (productId, qty) => {
+  const updateQuantity = async (cartItemId, qty) => {
     if (!sessionId) return;
     await fetch('/api/cart', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: qty }),
+      body: JSON.stringify({ session_id: sessionId, cart_item_id: cartItemId, quantity: qty }),
     });
     await fetchCart(sessionId);
   };
 
-  const removeItem = async (productId) => {
+  const removeItem = async (cartItemId) => {
     if (!sessionId) return;
-    await fetch(`/api/cart?session_id=${sessionId}&product_id=${productId}`, {
+    await fetch(`/api/cart?session_id=${sessionId}&cart_item_id=${cartItemId}`, {
       method: 'DELETE',
     });
     await fetchCart(sessionId);

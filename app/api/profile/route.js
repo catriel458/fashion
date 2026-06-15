@@ -3,6 +3,22 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
 
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+  try {
+    const [user] = await sql`
+      SELECT id, username, email, role, avatar_url, first_name, last_name, birth_date, email_verified, points, level
+      FROM users WHERE id = ${session.user.id}
+    `;
+    if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    return NextResponse.json(user);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function PUT(req) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });

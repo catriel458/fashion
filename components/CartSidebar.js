@@ -488,13 +488,20 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                         }
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--store-panel-text, #0f0f0f)' }}>{item.name}</p>
+                        <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--store-panel-text, #0f0f0f)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                          {item.size && (
+                            <span style={{ padding: '2px 6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.68rem', color: '#6b6560', fontWeight: 500, flexShrink: 0 }}>
+                              {item.size}
+                            </span>
+                          )}
+                        </p>
                         <p style={{ margin: '0 0 12px', color: 'var(--store-panel-text, #6b6560)', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', opacity: 0.7 }}>${parseFloat(item.price).toFixed(2)}</p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)} style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>−</button>
+                          <button onClick={() => updateQuantity(item.id, item.quantity - 1)} style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>−</button>
                           <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', minWidth: '20px', textAlign: 'center', color: 'var(--store-panel-text, #0f0f0f)' }}>{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>+</button>
-                          <button onClick={() => removeItem(item.product_id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.75rem', fontFamily: 'var(--font-sans)' }}>Eliminar</button>
+                          <button onClick={() => updateQuantity(item.id, item.quantity + 1)} style={{ width: '26px', height: '26px', border: '0.5px solid rgba(128,128,128,0.3)', background: 'none', cursor: 'pointer', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: 'var(--store-panel-text, #0f0f0f)' }}>+</button>
+                          <button onClick={() => removeItem(item.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', fontSize: '0.75rem', fontFamily: 'var(--font-sans)' }}>Eliminar</button>
                         </div>
                       </div>
                     </div>

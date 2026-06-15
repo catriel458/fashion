@@ -5,9 +5,9 @@ import Link from 'next/link';
 
 const STATUS_LABEL = {
   pendiente_pago:        'Pendiente de pago',
-  comprobante_pendiente: 'Comprobante pendiente',
-  comprobante_enviado:   'Comprobante enviado',
-  pago_recibido:         'Pago recibido',
+  comprobante_pendiente: 'Falta envío comprobante',
+  comprobante_enviado:   'El local está viendo el comprobante',
+  pago_recibido:         'Pago exitoso',
   preparando_pedido:     'Preparando pedido',
   en_camino:             'En camino',
   listo_para_retirar:    'Listo para retirar',
@@ -40,10 +40,10 @@ const STATUS_COLOR = {
 };
 
 const STATUS_DESC = {
-  pendiente_pago:        'Tu pedido fue recibido. En espera de pago.',
-  comprobante_pendiente: 'Transferencia pendiente. Subí el comprobante para continuar.',
-  comprobante_enviado:   'Comprobante recibido. Esperando confirmación del pago.',
-  pago_recibido:         'Pago confirmado. Estamos preparando tu pedido.',
+  pendiente_pago:        'Tu pedido fue recibido. Esperando aprobación del pago.',
+  comprobante_pendiente: 'Falta envío del comprobante de transferencia bancaria.',
+  comprobante_enviado:   'El local está verificando el comprobante de transferencia enviado.',
+  pago_recibido:         '¡Pago exitoso! Estamos preparando tu pedido.',
   preparando_pedido:     'Tu pedido está siendo preparado.',
   en_camino:             'Tu pedido está en camino.',
   listo_para_retirar:    'Tu pedido está listo para retirar.',
@@ -73,10 +73,41 @@ export default function OrdersPage() {
   useEffect(() => {
     if (sessionStatus === 'loading') return;
     if (!session) return;
+    
+    // First, fetch the orders
     fetch('/api/orders')
       .then(r => r.json())
       .then(d => { setOrders(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
+
+    // Fallback verification for Mercado Pago redirects (great for local environments without webhook tunnels)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const isPaymentSuccess = params.get('payment') === 'success' || params.get('status') === 'approved';
+      const paymentId = params.get('payment_id') || params.get('collection_id');
+      const extRef = params.get('external_reference');
+
+      if (isPaymentSuccess && paymentId && extRef) {
+        fetch('/api/checkout/mp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_id: paymentId, external_reference: extRef }),
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.verified) {
+              // Re-fetch orders to show updated "Pago exitoso" state
+              fetch('/api/orders')
+                .then(r => r.json())
+                .then(d => setOrders(Array.isArray(d) ? d : []));
+              
+              // Clear query parameters from the address bar for clean UX
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          })
+          .catch(() => {});
+      }
+    }
   }, [session, sessionStatus]);
 
   async function toggleOrder(id) {
@@ -197,6 +228,7 @@ export default function OrdersPage() {
             {[
               { label: 'Mi perfil', href: '/profile' },
               { label: 'Mis pedidos', href: '/profile/orders' },
+              { label: 'Mis beneficios', href: '/profile/benefits' },
             ].map(({ label, href }) => (
               <Link key={href} href={href} style={{
                 fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase',
@@ -393,7 +425,14 @@ export default function OrdersPage() {
                                 }
                               </div>
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>{item.name}</div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 500, marginBottom: '4px' }}>
+                                  {item.name}
+                                  {item.size && (
+                                    <span style={{ marginLeft: '8px', padding: '2px 6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.68rem', color: '#6b6560', fontWeight: 500 }}>
+                                      Talle: {item.size}
+                                    </span>
+                                  )}
+                                </div>
                                 <div style={{ fontSize: '0.78rem', color: '#6b6560' }}>
                                   Cantidad: {item.quantity} · ${parseFloat(item.price_at_purchase).toFixed(2)} c/u
                                 </div>

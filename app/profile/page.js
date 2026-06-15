@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 
+
 const labelStyle = {
   display: 'block', marginBottom: '6px',
   fontFamily: 'var(--font-sans)', fontSize: '0.7rem',
@@ -15,6 +16,7 @@ const inputStyle = {
   outline: 'none', borderRadius: '2px',
   boxSizing: 'border-box', color: '#0f0f0f',
 };
+
 
 function Section({ title, children }) {
   return (
@@ -72,6 +74,11 @@ export default function ProfilePage() {
   const bodyPhotoInputRef = useRef(null);
   const addrDebounceRef   = useRef(null);
 
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [savedTryons, setSavedTryons] = useState([]);
+  const [loadingWishlistId, setLoadingWishlistId] = useState(null);
+  const [selectedLook, setSelectedLook] = useState(null);
+
   useEffect(() => {
     if (verifyCooldown <= 0) return;
     const t = setTimeout(() => setVerifyCooldown(c => c - 1), 1000);
@@ -103,6 +110,74 @@ export default function ProfilePage() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   }
+
+  useEffect(() => {
+    if (!session?.user) return;
+
+    fetch('/api/wishlist')
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setWishlistItems(d); })
+      .catch(() => {});
+
+    fetch('/api/tryon/saved')
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setSavedTryons(d); })
+      .catch(() => {});
+  }, [session]);
+
+  const handleDeleteWishlistItem = async (productId) => {
+    setLoadingWishlistId(productId);
+    try {
+      const res = await fetch(`/api/wishlist?product_id=${productId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setWishlistItems(prev => prev.filter(item => item.product_id !== productId));
+        showToast("Eliminado de favoritos");
+      } else {
+        showToast("Error al eliminar", "error");
+      }
+    } catch {
+      showToast("Error al eliminar", "error");
+    } finally {
+      setLoadingWishlistId(null);
+    }
+  };
+
+  const handleDeleteSavedTryon = async (id) => {
+    try {
+      const res = await fetch(`/api/tryon/saved?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSavedTryons(prev => prev.filter(item => item.id !== id));
+        showToast("Look eliminado");
+      } else {
+        showToast("Error al eliminar", "error");
+      }
+    } catch {
+      showToast("Error al eliminar", "error");
+    }
+  };
+
+  const handleDownload = async (imageUrl, filename) => {
+    try {
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'cnb-look.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch {
+      const a = document.createElement('a');
+      a.href = imageUrl;
+      a.target = '_blank';
+      a.download = filename || 'cnb-look.png';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  };
 
   useEffect(() => {
     if (!session?.user) return;
@@ -320,6 +395,7 @@ export default function ProfilePage() {
             {[
               { label: 'Mi perfil', href: '/profile' },
               ...(user.role === 'visitor' ? [{ label: 'Mis compras', href: '/profile/orders' }] : []),
+              { label: 'Mis beneficios', href: '/profile/benefits' },
               { label: 'Notificaciones', href: '/profile/notifications' },
             ].map(({ label, href }) => (
               <Link key={href} href={href} style={{
@@ -337,6 +413,135 @@ export default function ProfilePage() {
 
       {/* Content */}
       <div style={{ maxWidth: '700px', margin: '0 auto', padding: '28px clamp(1.2rem, 4vw, 2.5rem) 48px' }}>
+
+        {/* Mis favoritos */}
+        <Section title="Mis favoritos">
+          {wishlistItems.length === 0 ? (
+            <p style={{ fontSize: '0.8rem', color: '#6b6560', margin: 0 }}>
+              Aun no tenes favoritos. Hace clic en el corazón en cualquier producto para guardarlo acá.
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
+              {wishlistItems.map(item => (
+                <div key={item.id} style={{ border: '0.5px solid #e0dbd4', borderRadius: '4px', overflow: 'hidden', background: '#fafaf8', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                  <div style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden', background: '#f0ede8' }}>
+                    <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {item.stock === 0 && (
+                      <span style={{ position: 'absolute', top: 6, left: 6, background: '#c0392b', color: '#fff', fontSize: '0.6rem', padding: '2px 6px', borderRadius: 2, fontWeight: 500 }}>
+                        Sin stock
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleDeleteWishlistItem(item.product_id)}
+                      disabled={loadingWishlistId === item.product_id}
+                      style={{
+                        position: 'absolute', top: 6, right: 6,
+                        width: 26, height: 26, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.9)', border: 'none',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.1)'
+                      }}
+                      title="Eliminar de favoritos"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="#e11d48" stroke="#e11d48" strokeWidth="1.5">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div style={{ padding: '10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: '0.65rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.store_name}</p>
+                      <h4 style={{ margin: '4px 0 2px', fontSize: '0.78rem', fontWeight: 500, color: '#0f0f0f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.name}>{item.name}</h4>
+                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 600, color: '#0f0f0f' }}>${parseFloat(item.price).toFixed(2)}</p>
+                    </div>
+                    <Link
+                      href={`/store/${item.store_slug}/product/${item.slug}`}
+                      style={{
+                        display: 'block', textAlign: 'center', textDecoration: 'none',
+                        background: '#0f0f0f', color: '#fff', fontSize: '0.68rem',
+                        padding: '6px 0', borderRadius: '2px', marginTop: '10px',
+                        textTransform: 'uppercase', letterSpacing: '0.06em', transition: 'opacity 0.2s'
+                      }}
+                    >
+                      Ver producto
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+
+        {/* Mis looks */}
+        <Section title="Mis looks">
+          <style>{`
+            .look-card-img-container:hover .look-hover-overlay {
+              opacity: 1 !important;
+            }
+          `}</style>
+          {savedTryons.length === 0 ? (
+            <p style={{ fontSize: '0.8rem', color: '#6b6560', margin: 0 }}>
+              Aun no guardaste ningun look. Usa el probador virtual y guarda tus combinaciones favoritas!
+            </p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
+              {savedTryons.map(look => (
+                <div key={look.id} style={{ border: '0.5px solid #e0dbd4', borderRadius: '4px', overflow: 'hidden', background: '#fafaf8', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                  <div 
+                    onClick={() => setSelectedLook(look)}
+                    className="look-card-img-container"
+                    style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden', background: '#f0ede8', cursor: 'pointer' }}
+                  >
+                    <img src={look.result_image_url} alt="Look" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                      background: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s',
+                    }}
+                    className="look-hover-overlay"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="11" y1="8" x2="11" y2="14"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                      </svg>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteSavedTryon(look.id); }}
+                      style={{
+                        position: 'absolute', top: 6, right: 6,
+                        width: 22, height: 22, borderRadius: '50%',
+                        background: 'rgba(0,0,0,0.65)', border: 'none',
+                        color: '#fff', fontSize: '0.65rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', transition: 'background 0.2s',
+                        zIndex: 2,
+                      }}
+                      title="Eliminar look"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div style={{ padding: '10px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <p style={{ margin: 0, fontSize: '0.65rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{look.store_name}</p>
+                      <p style={{ margin: '2px 0 6px', fontSize: '0.65rem', color: '#aaa' }}>
+                        {new Date(look.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                      {look.garment_names && (
+                        <p style={{ margin: 0, fontSize: '0.68rem', color: '#6b6560', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={look.garment_names}>
+                          {look.garment_names}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
 
         {/* Datos de cuenta */}
         <Section title="Datos de cuenta">
@@ -605,6 +810,104 @@ export default function ProfilePage() {
           )}
         </Section>
       </div>
+
+      {/* Fullscreen Look Viewer & Downloader Modal */}
+      {selectedLook && (
+        <div 
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(15,15,15,0.92)', backdropFilter: 'blur(10px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 3000, padding: '20px', animation: 'fadeIn 0.2s ease-out',
+          }}
+          onClick={() => setSelectedLook(null)}
+        >
+          <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes zoomIn {
+              from { transform: scale(0.92); opacity: 0; }
+              to { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
+
+          <div 
+            style={{
+              position: 'relative', maxWidth: '440px', width: '100%',
+              background: '#fff', borderRadius: '8px', overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+              animation: 'zoomIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedLook(null)}
+              style={{
+                position: 'absolute', top: '12px', right: '12px',
+                width: '30px', height: '30px', borderRadius: '50%',
+                background: 'rgba(255,255,255,0.9)', border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', zIndex: 10, boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                fontSize: '0.9rem', color: '#0f0f0f', fontWeight: 'bold',
+                transition: 'transform 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              ✕
+            </button>
+
+            {/* Look Image */}
+            <div style={{ position: 'relative', aspectRatio: '3/4', background: '#f5f3f0', overflow: 'hidden' }}>
+              <img
+                src={selectedLook.result_image_url}
+                alt="Look Completo"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+
+            {/* Details and Actions */}
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <span style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', fontWeight: 600 }}>
+                  {selectedLook.store_name}
+                </span>
+                <p style={{ margin: '2px 0 6px', fontSize: '0.68rem', color: '#aaa' }}>
+                  Guardado el {new Date(selectedLook.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                </p>
+                {selectedLook.garment_names && (
+                  <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: '#6b6560', lineHeight: 1.5 }}>
+                    <strong>Prendas probadas:</strong> {selectedLook.garment_names}
+                  </p>
+                )}
+              </div>
+
+              {/* Download Action */}
+              <button
+                onClick={() => handleDownload(selectedLook.result_image_url, `look-${selectedLook.id}.png`)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  background: '#0f0f0f', color: '#fff', border: 'none', borderRadius: '4px',
+                  padding: '12px', fontSize: '0.75rem', letterSpacing: '0.08em', textTransform: 'uppercase',
+                  fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s, transform 0.1s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#2a2a2a'}
+                onMouseLeave={e => e.currentTarget.style.background = '#0f0f0f'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Descargar Look
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,9 +4,9 @@ import { useSession } from 'next-auth/react';
 
 const STATUS_LABEL = {
   pendiente_pago:        'Pendiente de pago',
-  comprobante_pendiente: 'Comprobante pendiente',
-  comprobante_enviado:   'Comprobante enviado',
-  pago_recibido:         'Pago recibido',
+  comprobante_pendiente: 'Falta envío comprobante',
+  comprobante_enviado:   'El local está viendo el comprobante',
+  pago_recibido:         'Pago exitoso',
   preparando_pedido:     'Preparando pedido',
   en_camino:             'En camino',
   listo_para_retirar:    'Listo para retirar',
@@ -180,7 +180,7 @@ export default function AdminOrdersPage() {
       : detail.username || 'Cliente';
 
     const itemsStr = (detail.items || [])
-      .map(i => `• ${i.quantity}x ${i.name} — $${(parseFloat(i.price_at_purchase) * i.quantity).toFixed(2)}`)
+      .map(i => `• ${i.quantity}x ${i.name}${i.size ? ` (Talle: ${i.size})` : ''} — $${(parseFloat(i.price_at_purchase) * i.quantity).toFixed(2)}`)
       .join('\n');
 
     const paymentLabel = detail.payment_method === 'mp' ? 'Mercado Pago' : 'Transferencia bancaria';
@@ -381,7 +381,14 @@ export default function AdminOrdersPage() {
                         : <div style={{ width: '40px', height: '48px', background: '#f0ede8', borderRadius: '3px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>👕</div>
                       }
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{item.name}</span>
+                          {item.size && (
+                            <span style={{ padding: '2px 5px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.62rem', color: '#6b6560', fontWeight: 500 }}>
+                              {item.size}
+                            </span>
+                          )}
+                        </div>
                         <div style={{ fontSize: '0.72rem', color: '#6b6560' }}>x{item.quantity} · ${parseFloat(item.price_at_purchase).toFixed(2)} c/u</div>
                       </div>
                       <div style={{ fontSize: '0.8rem', fontWeight: 600, flexShrink: 0 }}>

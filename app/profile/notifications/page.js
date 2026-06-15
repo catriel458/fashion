@@ -8,6 +8,8 @@ const TYPE_ICON = {
   low_stock: '⚠️',
   new_user: '👤',
   birthday_coupon: '🎂',
+  welcome_coupon: '🎁',
+  first_tryon_coupon: '🎫',
   general: '🔔',
 };
 
@@ -16,6 +18,8 @@ const TYPE_LABEL = {
   low_stock: 'Stock',
   new_user: 'Usuarios',
   birthday_coupon: 'Cumpleaños',
+  welcome_coupon: 'Bienvenida',
+  first_tryon_coupon: 'Probador',
   general: 'General',
 };
 
@@ -99,7 +103,7 @@ export default function NotificationsPage() {
       <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px clamp(1.2rem,4vw,2.5rem) 48px' }}>
         {/* Filtros */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-          {['all', 'order_confirmed', 'birthday_coupon', 'low_stock', 'new_user', 'general'].map(f => (
+          {['all', 'order_confirmed', 'birthday_coupon', 'welcome_coupon', 'first_tryon_coupon', 'low_stock', 'new_user', 'general'].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{ padding: '6px 14px', borderRadius: '999px', border: '0.5px solid', borderColor: filter === f ? '#0f0f0f' : '#e0dbd4', background: filter === f ? '#0f0f0f' : '#fff', color: filter === f ? '#fff' : '#6b6560', cursor: 'pointer', fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               {f === 'all' ? 'Todas' : (TYPE_LABEL[f] || f)}
             </button>

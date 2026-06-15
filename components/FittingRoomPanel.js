@@ -27,6 +27,8 @@ export default function FittingRoomPanel({ storeId }) {
   const [uploadingPhoto,  setUploadingPhoto]  = useState(false);
   const [generating,      setGenerating]      = useState(false);
   const [result,          setResult]          = useState(null);
+  const [savedLook,       setSavedLook]       = useState(false);
+  const [savingLook,      setSavingLook]      = useState(false);
   const [addedAll,        setAddedAll]        = useState(false);
   const [error,           setError]           = useState('');
   const [lightboxOpen,    setLightboxOpen]    = useState(false);
@@ -36,6 +38,27 @@ export default function FittingRoomPanel({ storeId }) {
   const [resendSent,      setResendSent]      = useState(false);
   const photoInputRef  = useRef(null);
   const lightboxRef    = useRef(null);
+  const [showTipBanner, setShowTipBanner] = useState(false);
+  const [tipTransition, setTipTransition] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const shown = localStorage.getItem('cnb_tryon_tip_shown');
+      if (!shown) {
+        setShowTipBanner(true);
+      }
+    }
+  }, []);
+
+  const handleCloseTipBanner = () => {
+    setTipTransition(true);
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cnb_tryon_tip_shown', 'true');
+      }
+      setShowTipBanner(false);
+    }, 300);
+  };
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -136,6 +159,7 @@ export default function FittingRoomPanel({ storeId }) {
     if (!bodyPhotoUrl || items.length === 0) return;
     setGenerating(true);
     setResult(null);
+    setSavedLook(false);
     setError('');
     try {
       // Fetch person photo as file
@@ -154,6 +178,8 @@ export default function FittingRoomPanel({ storeId }) {
       const data = await res.json();
       if (res.ok) {
         setResult(data.image);
+        // Refresh notifications to celebrate achievements (like first try-on coupon or level up)
+        window.dispatchEvent(new CustomEvent('cnb-refresh-notifications'));
         if (storeId) {
           fetch(`/api/tryon/usage-status?store_id=${storeId}`)
             .then(r => r.json())
@@ -174,12 +200,49 @@ export default function FittingRoomPanel({ storeId }) {
   };
 
   const handleAddAllToCart = async () => {
+    let savedMeasurements = null;
+    try {
+      const data = localStorage.getItem('cnb_user_measurements');
+      if (data) savedMeasurements = JSON.parse(data);
+    } catch {}
+
     for (const item of items) {
-      await addItem(item.id);
+      let size = null;
+      // Map category to match clothing sizes S/M/L/XL/XXL
+      if (savedMeasurements && ['remera', 'pantalon', 'abrigo', 'camisa'].includes(item.category)) {
+        size = savedMeasurements.size;
+      }
+      await addItem(item.id, 1, size);
     }
     setAddedAll(true);
     openCart(true);
     setTimeout(() => setAddedAll(false), 2000);
+  };
+
+  const handleSaveLook = async () => {
+    if (savedLook || savingLook || !result) return;
+    setSavingLook(true);
+    try {
+      const res = await fetch('/api/tryon/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          result_image_url: result,
+          store_id: storeId,
+          garment_names: items.map(i => i.name).join(', ')
+        })
+      });
+      if (res.ok) {
+        setSavedLook(true);
+        toast.success("Look guardado en tu galeria");
+      } else {
+        toast.error("No se pudo guardar");
+      }
+    } catch {
+      toast.error("No se pudo guardar");
+    } finally {
+      setSavingLook(false);
+    }
   };
 
   const handleDownload = () => {
@@ -350,6 +413,42 @@ export default function FittingRoomPanel({ storeId }) {
           <div style={{ borderTop: '0.5px solid rgba(128,128,128,0.2)', paddingTop: '20px' }}>
 
             {/* Paso 1: Foto */}
+            {showTipBanner && (
+              <div style={{
+                background: '#f0f9ff',
+                borderLeft: '3px solid var(--store-primary, #0284c7)',
+                padding: '12px 16px',
+                borderRadius: '4px',
+                marginBottom: '16px',
+                position: 'relative',
+                opacity: tipTransition ? 0 : 1,
+                transition: 'opacity 0.3s ease',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+              }}>
+                <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>✨</span>
+                <div style={{ flex: 1, paddingRight: '16px' }}>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: '0.78rem', color: '#0369a1' }}>
+                    Consejo: proba varias prendas juntas
+                  </p>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.7rem', color: '#0284c7', lineHeight: 1.4 }}>
+                    Agrega remera, pantalon y zapatillas al vestidor antes de probar. El AI las combina todas en una sola imagen.
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseTipBanner}
+                  style={{
+                    position: 'absolute', top: '8px', right: '8px',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: '0.75rem', color: '#0284c7', opacity: 0.7, padding: '2px', lineHeight: 1
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--store-panel-text, #6b6560)', opacity: 0.7 }}>
               Paso 1 — Tu foto de cuerpo
             </p>
@@ -503,7 +602,7 @@ export default function FittingRoomPanel({ storeId }) {
                   Ver completo
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 6, marginBottom: '12px' }}>
+              <div style={{ display: 'flex', gap: 6, marginBottom: '10px' }}>
                 <button
                   onClick={() => { setZoom(1); setLightboxOpen(true); }}
                   style={{ flex: 1, padding: '7px 4px', background: 'transparent', border: '0.5px solid #e0dbd4', borderRadius: '2px', fontFamily: 'var(--font-sans)', fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', color: '#6b6560' }}
@@ -517,6 +616,37 @@ export default function FittingRoomPanel({ storeId }) {
                   ↓ Descargar
                 </button>
               </div>
+              <button
+                onClick={handleSaveLook}
+                disabled={savingLook}
+                style={{
+                  width: '100%', padding: '10px',
+                  background: 'transparent',
+                  border: '0.5px solid #d4cfc8',
+                  borderRadius: '2px',
+                  fontFamily: 'var(--font-sans)', fontSize: '0.72rem',
+                  letterSpacing: '0.12em', textTransform: 'uppercase',
+                  cursor: 'pointer', color: '#0f0f0f',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  marginBottom: '10px'
+                }}
+              >
+                {savedLook ? (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="#e11d48" stroke="#e11d48" strokeWidth="1.5">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    Guardado!
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    {savingLook ? 'Guardando...' : 'Guardar look'}
+                  </>
+                )}
+              </button>
               {items.length > 0 && (
                 <button
                   onClick={handleAddAllToCart}

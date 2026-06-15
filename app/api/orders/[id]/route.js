@@ -15,7 +15,7 @@ export async function GET(req, { params }) {
     if (!order) return NextResponse.json({ error: 'Orden no encontrada' }, { status: 404 });
 
     const items = await sql`
-      SELECT oi.quantity, oi.price_at_purchase,
+      SELECT oi.quantity, oi.price_at_purchase, oi.size,
         p.name, p.image_url, p.slug
       FROM order_items oi
       LEFT JOIN products p ON p.id = oi.product_id

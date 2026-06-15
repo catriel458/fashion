@@ -1,6 +1,9 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
+import { addPoints } from '@/lib/points';
+import { createNotification } from '@/lib/notify';
+
 
 export const maxDuration = 60;
 
@@ -67,6 +70,36 @@ async function checkFittingLimits(rawStoreId, userId) {
 async function registerFittingUsage(storeId, userId) {
   await sql`INSERT INTO fitting_room_usage (store_id, user_id) VALUES (${storeId}, ${userId})`;
   await sql`UPDATE stores SET fitting_used_this_month = fitting_used_this_month + 1 WHERE id = ${storeId}`;
+
+  try {
+    const [{ count }] = await sql`
+      SELECT COUNT(*)::int as count FROM fitting_room_usage WHERE user_id = ${userId}
+    `;
+
+    if (count === 1) {
+      const couponCode = `PRIMERAPROBADA-${userId}`;
+      await sql`
+        INSERT INTO coupons (code, user_id, store_id, type, discount_percentage, expires_at)
+        VALUES (${couponCode}, ${userId}, ${storeId}, 'first_tryon', 15, NOW() + INTERVAL '7 days')
+        ON CONFLICT DO NOTHING
+      `;
+
+      await createNotification({
+        userId,
+        storeId,
+        type: 'first_tryon_coupon',
+        title: 'Cupon por tu primera probada!',
+        message: `Usaste el probador virtual por primera vez. Tenes 15% de descuento valido por 7 dias. Codigo: ${couponCode}`,
+        link: '/profile/benefits',
+      });
+
+      await addPoints(userId, storeId, 'first_tryon');
+    } else {
+      await addPoints(userId, storeId, 'tryon');
+    }
+  } catch (err) {
+    // Evitar que falle el flujo principal si hay un error en los puntos o cupones
+  }
 }
 
 async function handleJsonMode(parsed, apiKey) {
