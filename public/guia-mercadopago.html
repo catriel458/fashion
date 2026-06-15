@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cómo vincular Mercado Pago con tu tienda</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #009ee3 0%, #00c0ff 100%);
+      border-radius: 16px;
+      padding: 40px 36px;
+      color: white;
+      margin-bottom: 36px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .header-logo {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .header-logo svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .header p {
+      font-size: 15px;
+      opacity: 0.9;
+      line-height: 1.5;
+    }
+
+    /* INTRO BOX */
+    .intro-box {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      border-left: 4px solid #009ee3;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .intro-box p {
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .intro-box strong {
+      color: #009ee3;
+    }
+
+    /* STEPS */
+    .step {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      position: relative;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .step-number {
+      background: #009ee3;
+      color: white;
+      font-size: 18px;
+      font-weight: 800;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .step-desc {
+      font-size: 14.5px;
+      color: #555;
+      line-height: 1.65;
+      margin-bottom: 18px;
+    }
+
+    /* IMAGE MOCK */
+    .mock-browser {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1.5px solid #e0e6ef;
+      margin: 20px 0 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .mock-bar {
+      background: #f0f2f5;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid #dde3ec;
+    }
+
+    .mock-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .mock-dot.r { background: #ff5f57; }
+    .mock-dot.y { background: #febc2e; }
+    .mock-dot.g { background: #28c840; }
+
+    .mock-url {
+      background: white;
+      border-radius: 5px;
+      font-size: 11px;
+      color: #777;
+      padding: 3px 10px;
+      margin-left: 6px;
+      flex: 1;
+      border: 1px solid #dde3ec;
+      font-family: monospace;
+    }
+
+    .mock-content {
+      background: #fafbfd;
+      padding: 0;
+      min-height: 160px;
+    }
+
+    /* MOCK MP SCREENS */
+    .mp-screen {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px 24px;
+    }
+
+    .mp-nav {
+      background: #009ee3;
+      margin: -20px -24px 20px;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mp-nav-logo {
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: -0.5px;
+    }
+
+    .mp-nav-links {
+      display: flex;
+      gap: 20px;
+      margin-left: 20px;
+    }
+
+    .mp-nav-link {
+      color: rgba(255,255,255,0.85);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .mp-nav-link.active {
+      color: white;
+      font-weight: 600;
+      border-bottom: 2px solid white;
+      padding-bottom: 2px;
+    }
+
+    /* Screen 1: Developers home */
+    .mp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .mp-card {
+      border: 1.5px solid #e8ecf3;
+      border-radius: 10px;
+      padding: 16px;
+      background: white;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .mp-card:hover { border-color: #009ee3; }
+
+    .mp-card-icon {
+      width: 32px;
+      height: 32px;
+      background: #e8f5ff;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .mp-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .mp-card-sub {
+      font-size: 11.5px;
+      color: #888;
+    }
+
+    .mp-btn {
+      background: #009ee3;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      display: inline-block;
+    }
+
+    .mp-btn-outline {
+      background: white;
+      color: #009ee3;
+      border: 1.5px solid #009ee3;
+      border-radius: 6px;
+      padding: 7px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      display: inline-block;
+    }
+
+    /* Screen 2: Crear app */
+    .mp-form-group {
+      margin-bottom: 14px;
+    }
+
+    .mp-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .mp-input {
+      width: 100%;
+      border: 1.5px solid #dde3ec;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #333;
+      background: white;
+    }
+
+    .mp-input.filled {
+      border-color: #009ee3;
+      color: #1a1a2e;
+    }
+
+    .mp-radio-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mp-radio {
+      border: 1.5px solid #dde3ec;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mp-radio.selected {
+      border-color: #009ee3;
+      background: #e8f5ff;
+      color: #009ee3;
+      font-weight: 600;
+    }
+
+    .mp-radio-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      border: 2px solid #009ee3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mp-radio-dot::after {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #009ee3;
+    }
+
+    /* Screen 3: Credenciales */
+    .mp-sidebar-layout {
+      display: flex;
+      gap: 0;
+    }
+
+    .mp-sidebar {
+      width: 180px;
+      flex-shrink: 0;
+      border-right: 1px solid #eee;
+      padding-right: 16px;
+      margin-right: 20px;
+    }
+
+    .mp-sidebar-item {
+      font-size: 12.5px;
+      color: #666;
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+
+    .mp-sidebar-item.active {
+      background: #e8f5ff;
+      color: #009ee3;
+      font-weight: 600;
+    }
+
+    .mp-sidebar-section {
+      font-size: 10px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 10px 4px;
+      font-weight: 700;
+    }
+
+    .mp-cred-box {
+      border: 1.5px solid #e0e6ef;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: white;
+    }
+
+    .mp-cred-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .mp-cred-value {
+      font-family: monospace;
+      font-size: 12px;
+      color: #1a1a2e;
+      background: #f4f6f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      word-break: break-all;
+    }
+
+    .mp-copy-btn {
+      background: #009ee3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .mp-highlight-box {
+      border: 2px solid #009ee3;
+      box-shadow: 0 0 0 4px rgba(0,158,227,0.12);
+    }
+
+    /* ARROW / HIGHLIGHT */
+    .arrow-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #fff8e6;
+      border: 1.5px solid #f0c040;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 6px;
+      font-size: 13px;
+      color: #7a5c00;
+    }
+
+    .arrow-note .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* Step 4: Panel CnB */
+    .cnb-panel {
+      background: #1a1a2e;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .cnb-header {
+      background: #0f3460;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cnb-logo {
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .cnb-badge {
+      background: #009ee3;
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .cnb-body {
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+    }
+
+    .cnb-sidebar {
+      width: 140px;
+      flex-shrink: 0;
+    }
+
+    .cnb-menu-item {
+      color: #8892a4;
+      font-size: 12px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .cnb-menu-item.active {
+      background: #0f3460;
+      color: white;
+      font-weight: 600;
+    }
+
+    .cnb-main {
+      flex: 1;
+    }
+
+    .cnb-section-title {
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .cnb-field-label {
+      color: #8892a4;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .cnb-input {
+      width: 100%;
+      background: #0f3460;
+      border: 1.5px solid #2a3f6f;
+      border-radius: 6px;
+      padding: 9px 12px;
+      font-size: 12px;
+      color: #7ec8e3;
+      font-family: monospace;
+      margin-bottom: 12px;
+    }
+
+    .cnb-input.active-border {
+      border-color: #009ee3;
+      box-shadow: 0 0 0 3px rgba(0,158,227,0.15);
+    }
+
+    .cnb-save-btn {
+      background: #009ee3;
+      color: white;
+      border: none;
+      border-radius: 7px;
+      padding: 9px 22px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .cnb-success {
+      background: #0f3460;
+      border: 1.5px solid #28c840;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #28c840;
+      font-size: 12px;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    /* CONNECTOR */
+    .step-connector {
+      display: flex;
+      justify-content: center;
+      margin: -10px 0 -2px;
+    }
+
+    .step-connector-line {
+      width: 2px;
+      height: 28px;
+      background: #c8dff0;
+    }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      color: #aaa;
+      font-size: 12.5px;
+    }
+
+    .footer strong { color: #009ee3; }
+
+    /* HIGHLIGHT OVERLAY */
+    .highlight-ring {
+      position: relative;
+      display: inline-block;
+    }
+
+    .highlight-ring::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border: 2.5px dashed #ff6b35;
+      border-radius: 6px;
+      pointer-events: none;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .caption {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .step { box-shadow: none; border: 1px solid #eee; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="10" fill="#009ee3"/>
+        <path d="M8 24C8 15.163 15.163 8 24 8C32.837 8 40 15.163 40 24C40 32.837 32.837 40 24 40C15.163 40 8 32.837 8 24Z" fill="white" fill-opacity="0.15"/>
+        <path d="M16 22H32M16 26H28" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="10" stroke="white" stroke-width="2" fill="none"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Vinculá tu Mercado Pago<br>con tu tienda</h1>
+      <p>Guía paso a paso · Solo te lleva 3 minutos</p>
+    </div>
+  </div>
+
+  <!-- INTRO -->
+  <div class="intro-box">
+    <p>Para que tu tienda pueda cobrar con Mercado Pago, necesitás obtener tu <strong>Access Token</strong> desde el portal de desarrolladores de MP y pegarlo en la configuración de tu tienda. Seguí estos 4 pasos simples.</p>
+  </div>
+
+  <!-- PASO 1 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <div class="step-title">Ingresá al portal de desarrolladores</div>
+    </div>
+    <p class="step-desc">
+      Abrí tu navegador y andá a <strong>mercadopago.com.ar/developers</strong>. Iniciá sesión con la cuenta de Mercado Pago que usás para tu negocio. Una vez adentro, hacé clic en <strong>"Tus integraciones"</strong> en el menú superior.
+    </p>
+
+    <div class="mock-browser">
+      <div class="mock-bar">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+        <div class="mock-url">mercadopago.com.ar/developers</div>
+      </div>
+      <div class="mock-content">
+        <div class="mp-screen">
+          <div class="mp-nav">
+            <div class="mp-nav-logo">Mercado Pago Developers</div>
+            <div class="mp-nav-links">
+              <div class="mp-nav-link active">Tus integraciones</div>
+              <div class="mp-nav-link">Documentación</div>
+              <div class="mp-nav-link">Soporte</div>
+            </div>
+          </div>
+          <div style="font-size:16px;font-weight:700;color:#1a1a2e;margin-bottom:14px;">Mis aplicaciones</div>
+          <div class="mp-grid">
+            <div class="mp-card">
+              <div class="mp-card-icon">➕</div>
+              <div class="mp-card-title">Crear aplicación</div>
+              <div class="mp-card-sub">Empezá una nueva integración</div>
+            </div>
+            <div class="mp-card" style="opacity:0.5;">
+              <div class="mp-card-icon">📦</div>
+              <div class="mp-card-title">Mi app</div>
+              <div class="mp-card-sub">Creada anteriormente</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Pantalla principal de Mercado Pago Developers</p>
+
+    <div class="arrow-note">
+      <span class="icon">💡</span>
+      Si no tenés cuenta de MP, primero creá una en <strong>mercadopago.com.ar</strong> con tu CUIT/CUIL y datos bancarios.
+    </div>
+  </div>
+
+  <div class="step-connector"><div class="step-connector-line"></div></div>
+
+  <!-- PASO 2 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <div class="step-title">Creá una aplicación</div>
+    </div>
+    <p class="step-desc">
+      Hacé clic en <strong>"Crear aplicación"</strong>. Completá el nombre (puede ser el nombre de tu tienda), seleccioná <strong>"Pagos online"</strong> como tipo de integración y guardá. Esto genera las credenciales que vas a necesitar.
+    </p>
+
+    <div class="mock-browser">
+      <div class="mock-bar">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+        <div class="mock-url">mercadopago.com.ar/developers/panel/app/create</div>
+      </div>
+      <div class="mock-content">
+        <div class="mp-screen">
+          <div style="font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:18px;">Nueva aplicación</div>
+          <div class="mp-form-group">
+            <label class="mp-label">Nombre de la aplicación *</label>
+            <input class="mp-input filled" value="Mi Tienda Online" readonly />
+          </div>
+          <div class="mp-form-group">
+            <label class="mp-label">¿Para qué usarás la integración? *</label>
+            <div class="mp-radio-group">
+              <div class="mp-radio selected">
+                <div class="mp-radio-dot"></div>
+                Pagos online
+              </div>
+              <div class="mp-radio">
+                <div class="mp-radio-dot" style="border-color:#ccc;"><span style="display:none"></span></div>
+                Pagos presenciales
+              </div>
+            </div>
+          </div>
+          <div class="mp-form-group">
+            <label class="mp-label">¿Con qué solución vas a integrar? *</label>
+            <div class="mp-radio-group">
+              <div class="mp-radio selected">
+                <div class="mp-radio-dot"></div>
+                Checkout API
+              </div>
+              <div class="mp-radio">
+                <div class="mp-radio-dot" style="border-color:#ccc;"></div>
+                Checkout Pro
+              </div>
+            </div>
+          </div>
+          <div class="mp-btn">Crear aplicación</div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Formulario de creación de aplicación</p>
+  </div>
+
+  <div class="step-connector"><div class="step-connector-line"></div></div>
+
+  <!-- PASO 3 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <div class="step-title">Copiá tu Access Token de producción</div>
+    </div>
+    <p class="step-desc">
+      Una vez creada la aplicación, en el menú de la izquierda buscá la sección <strong>"Producción"</strong> y hacé clic en <strong>"Credenciales de producción"</strong>. Si es la primera vez, te va a pedir que aceptes los términos y completes un captcha. Después copiá el valor del <strong>Access Token</strong> (el botón azul "Copiar").
+    </p>
+
+    <div class="mock-browser">
+      <div class="mock-bar">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+        <div class="mock-url">mercadopago.com.ar/developers/panel/app/123/credentials/production</div>
+      </div>
+      <div class="mock-content">
+        <div class="mp-screen">
+          <div class="mp-sidebar-layout">
+            <div class="mp-sidebar">
+              <div class="mp-sidebar-section">Mi App</div>
+              <div class="mp-sidebar-item">📊 Información</div>
+              <div class="mp-sidebar-section">Credenciales</div>
+              <div class="mp-sidebar-item">🧪 Credenciales de prueba</div>
+              <div class="mp-sidebar-item active">🔑 Credenciales de producción</div>
+              <div class="mp-sidebar-section">Configuración</div>
+              <div class="mp-sidebar-item">⚙️ Notificaciones</div>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:14px;">Credenciales de producción</div>
+
+              <div class="mp-cred-box">
+                <div class="mp-cred-label">Public Key</div>
+                <div class="mp-cred-value">
+                  <span>APP_USR-a1b2c3d4-e5f6-...</span>
+                  <button class="mp-copy-btn">Copiar</button>
+                </div>
+              </div>
+
+              <div class="mp-cred-box mp-highlight-box">
+                <div class="mp-cred-label" style="color:#009ee3;">⭐ Access Token — Este es el que necesitás</div>
+                <div class="mp-cred-value" style="border:1.5px solid #009ee3;">
+                  <span style="color:#009ee3;font-weight:600;">APP_USR-1234567890abcdef...</span>
+                  <button class="mp-copy-btn">Copiar</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Sección de Credenciales de producción — copiá el Access Token resaltado</p>
+
+    <div class="arrow-note">
+      <span class="icon">⚠️</span>
+      El Access Token es como una contraseña. <strong>No lo compartas con nadie</strong> ni lo publiques en redes. Solo pegalo en el panel de tu tienda.
+    </div>
+  </div>
+
+  <div class="step-connector"><div class="step-connector-line"></div></div>
+
+  <!-- PASO 4 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">4</div>
+      <div class="step-title">Pegalo en el panel de tu tienda</div>
+    </div>
+    <p class="step-desc">
+      Ingresá al panel de tu tienda y andá a <strong>Configuración → Métodos de pago → Mercado Pago</strong>. Pegá el Access Token que copiaste y hacé clic en <strong>"Guardar"</strong>. ¡Listo, ya podés recibir pagos!
+    </p>
+
+    <div class="mock-browser">
+      <div class="mock-bar">
+        <div class="mock-dot r"></div>
+        <div class="mock-dot y"></div>
+        <div class="mock-dot g"></div>
+        <div class="mock-url">tu-tienda.com/admin/configuracion/pagos</div>
+      </div>
+      <div class="mock-content" style="background:#1a1a2e;">
+        <div class="cnb-panel">
+          <div class="cnb-header">
+            <div class="cnb-logo">Mi Tienda</div>
+            <div class="cnb-badge">Admin</div>
+          </div>
+          <div class="cnb-body">
+            <div class="cnb-sidebar">
+              <div class="cnb-menu-item">🏠 Inicio</div>
+              <div class="cnb-menu-item">📦 Productos</div>
+              <div class="cnb-menu-item">🛒 Pedidos</div>
+              <div class="cnb-menu-item active">⚙️ Configuración</div>
+            </div>
+            <div class="cnb-main">
+              <div class="cnb-section-title">💳 Métodos de pago · Mercado Pago</div>
+              <div class="cnb-field-label">Access Token de Mercado Pago</div>
+              <input class="cnb-input active-border" value="APP_USR-1234567890abcdef-..." readonly />
+              <button class="cnb-save-btn">✓ Guardar configuración</button>
+              <div class="cnb-success">✅ ¡Mercado Pago vinculado correctamente!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="caption">Panel de configuración — pegá el Access Token y guardá</p>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p>¿Tenés problemas para vincular tu cuenta? Contactanos por <strong>WhatsApp</strong> o al correo de soporte.</p>
+    <p style="margin-top:8px;">Guía generada para clientes de la plataforma &nbsp;·&nbsp; Mercado Pago® es marca registrada de MercadoLibre S.R.L.</p>
+  </div>
+
+</div>
+</body>
+</html>

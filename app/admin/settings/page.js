@@ -483,6 +483,20 @@ export default function AdminSettingsPage() {
                   </div>
                 )
               )}
+
+              {mpEnabled && (
+                <div style={{ marginTop: '10px' }}>
+                  <a
+                    href="/guia-mercadopago"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.75rem', color: '#2563eb', textDecoration: 'underline' }}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '14px', height: '14px', borderRadius: '50%', border: '1px solid #2563eb', fontSize: '0.6rem', fontWeight: 700, lineHeight: 1 }}>?</span>
+                    ¿Cómo obtengo mi Access Token? → Ver guía paso a paso
+                  </a>
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: '20px' }}>
