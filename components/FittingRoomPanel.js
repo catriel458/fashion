@@ -173,6 +173,7 @@ export default function FittingRoomPanel({ storeId }) {
       fd.append('person',  personFile);
       fd.append('garment', collageBlob, 'collage.jpg');
       if (storeId) fd.append('store_id', storeId);
+      fd.append('product_ids', JSON.stringify(items.map(i => i.id)));
 
       const res  = await fetch('/api/tryon', { method: 'POST', body: fd });
       const data = await res.json();

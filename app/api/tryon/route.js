@@ -67,9 +67,32 @@ async function checkFittingLimits(rawStoreId, userId) {
   return { ok: true, storeId };
 }
 
-async function registerFittingUsage(storeId, userId) {
+async function registerFittingUsage(storeId, userId, productIds) {
+  // Asegurar la existencia de la tabla para registrar prendas probadas
+  await sql`
+    CREATE TABLE IF NOT EXISTS fitting_room_item_logs (
+      id SERIAL PRIMARY KEY,
+      store_id INTEGER REFERENCES stores(id) ON DELETE CASCADE,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
   await sql`INSERT INTO fitting_room_usage (store_id, user_id) VALUES (${storeId}, ${userId})`;
   await sql`UPDATE stores SET fitting_used_this_month = fitting_used_this_month + 1 WHERE id = ${storeId}`;
+
+  // Registrar cada prenda en fitting_room_item_logs
+  if (productIds && Array.isArray(productIds) && productIds.length > 0) {
+    for (const prodId of productIds) {
+      if (prodId) {
+        await sql`
+          INSERT INTO fitting_room_item_logs (store_id, user_id, product_id)
+          VALUES (${storeId}, ${userId}, ${prodId})
+        `;
+      }
+    }
+  }
 
   try {
     const [{ count }] = await sql`
@@ -219,7 +242,7 @@ export async function POST(request) {
   }
   const userId = Number(session.user.id);
 
-  // Modo JSON: acepta { personImage: URL, clothingImages: [URLs], store_id }
+  // Modo JSON: acepta { personImage: URL, clothingImages: [URLs], store_id, product_ids }
   const ct = request.headers.get('content-type') || '';
   if (ct.includes('application/json')) {
     let parsed;
@@ -229,8 +252,10 @@ export async function POST(request) {
     const limitCheck = await checkFittingLimits(parsed.store_id, userId);
     if (limitCheck.error) return limitCheck.error;
 
+    const productIds = parsed.product_ids || parsed.productIds || [];
+
     const result = await handleJsonMode(parsed, apiKey);
-    if (result.status === 200) await registerFittingUsage(limitCheck.storeId, userId);
+    if (result.status === 200) await registerFittingUsage(limitCheck.storeId, userId, productIds);
     return result;
   }
 
@@ -247,6 +272,12 @@ export async function POST(request) {
 
   const limitCheck = await checkFittingLimits(formData.get('store_id'), userId);
   if (limitCheck.error) return limitCheck.error;
+
+  let productIds = [];
+  try {
+    const rawIds = formData.get('product_ids');
+    if (rawIds) productIds = JSON.parse(rawIds);
+  } catch (e) {}
 
   const personFile = formData.get('person');
   const garmentFile = formData.get('garment');
@@ -389,6 +420,6 @@ The output must be a single full-body photo of the person dressed, standing in a
   }
 
   const result = extractTryOnImage(data);
-  if (result.status === 200) await registerFittingUsage(limitCheck.storeId, userId);
+  if (result.status === 200) await registerFittingUsage(limitCheck.storeId, userId, productIds);
   return result;
 }

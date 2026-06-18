@@ -209,27 +209,25 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* IA Fitting usage summary */}
-        <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '16px' }}>
-              Rendimiento del Probador IA
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginTop: '10px' }}>
-              <span style={{ fontSize: '3rem', fontWeight: 300, fontFamily: 'var(--font-serif)' }}>
-                {data.fitting_usage_total}
-              </span>
-              <span style={{ fontSize: '0.8rem', color: '#6b6560' }}>
-                simulaciones totales
-              </span>
-            </div>
-            <p style={{ fontSize: '0.82rem', color: '#6b6560', lineHeight: 1.5, marginTop: '16px' }}>
-              El probador virtual con IA impulsa la decisión de compra en tu tienda. Los clientes interactúan visualmente con tus prendas de forma interactiva antes de agregarlas al carrito.
-            </p>
+        {/* Top tried products in IA Fitting Room */}
+        <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '20px' }}>
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '16px' }}>
+            Top 5 productos más probados (IA)
           </div>
-          <div style={{ borderTop: '0.5px solid #e0dbd4', paddingTop: '14px', marginTop: '14px', fontSize: '0.78rem', color: '#6b6560' }}>
-            💡 Un alto número de simulaciones indica un catálogo interactivo atractivo para tus clientes.
-          </div>
+          {(!data.top_tried || data.top_tried.length === 0) ? (
+            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b6560', fontSize: '0.8rem' }}>
+              Sin productos probados todavía
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={data.top_tried} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                <XAxis type="number" tick={{ fontSize: 9 }} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={90} />
+                <Tooltip formatter={(v) => [v, 'Probados']} />
+                <Bar dataKey="count" fill="#7c3aed" radius={[0, 2, 2, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 

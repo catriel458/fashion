@@ -65,6 +65,14 @@ export async function GET() {
           GROUP BY p.id, p.name
           ORDER BY count DESC
           LIMIT 5
+        `,
+        sql`
+          SELECT p.name, COUNT(f.id)::int AS count
+          FROM fitting_room_item_logs f
+          JOIN products p ON f.product_id = p.id
+          GROUP BY p.id, p.name
+          ORDER BY count DESC
+          LIMIT 5
         `
       ]);
     } else {
@@ -121,6 +129,15 @@ export async function GET() {
           GROUP BY p.id, p.name
           ORDER BY count DESC
           LIMIT 5
+        `,
+        sql`
+          SELECT p.name, COUNT(f.id)::int AS count
+          FROM fitting_room_item_logs f
+          JOIN products p ON f.product_id = p.id
+          WHERE f.store_id = ${storeId}
+          GROUP BY p.id, p.name
+          ORDER BY count DESC
+          LIMIT 5
         `
       ]);
     }
@@ -132,7 +149,7 @@ export async function GET() {
       topProducts, recentOrders,
       [ordersToday], [ordersPending], [ordersReady], [revenueMonth],
       categorySales,
-      [fittingUsageTotal], topWishlisted,
+      [fittingUsageTotal], topWishlisted, topTried,
     ] = queries;
 
     const dayMap = {};
@@ -168,6 +185,7 @@ export async function GET() {
       category_sales: categorySales,
       fitting_usage_total: fittingUsageTotal.total,
       top_wishlisted: topWishlisted,
+      top_tried: topTried,
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
