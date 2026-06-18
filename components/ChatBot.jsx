@@ -321,14 +321,15 @@ export default function ChatBot() {
           {suggestions.length > 0 && !isLoading && (
             <div
               style={{
-                padding: '10px 14px',
+                padding: '10px 14px 14px',
                 background: 'rgba(247, 246, 242, 0.9)',
                 borderTop: '1px solid rgba(224, 219, 212, 0.5)',
                 display: 'flex',
                 gap: '8px',
                 overflowX: 'auto',
                 whiteSpace: 'nowrap',
-                scrollbarWidth: 'none', // Firefox
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(0, 0, 0, 0.15) transparent',
               }}
               className="pills-container"
             >
@@ -455,7 +456,19 @@ export default function ChatBot() {
         }
         
         .pills-container::-webkit-scrollbar {
-          display: none;
+          height: 5px;
+        }
+        .pills-container::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.02);
+          border-radius: 10px;
+        }
+        .pills-container::-webkit-scrollbar-thumb {
+          background: rgba(0, 0, 0, 0.12);
+          border-radius: 10px;
+          transition: background 0.2s;
+        }
+        .pills-container::-webkit-scrollbar-thumb:hover {
+          background: rgba(0, 0, 0, 0.25);
         }
 
         /* Responsive styling */

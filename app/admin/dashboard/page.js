@@ -35,6 +35,8 @@ export default function AdminDashboard() {
   const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [categorySearch, setCategorySearch]     = useState('');
 
   useEffect(() => {
     fetch('/api/admin/dashboard')
@@ -62,6 +64,20 @@ export default function AdminDashboard() {
   }));
 
   const statusLabel = { pending: 'Pendientes', confirmed: 'Confirmados', ready: 'Listos', delivered: 'Vendidos', cancelled: 'Cancelados' };
+
+  // Group product-level sales by category name for summary
+  const categorySummaryMap = {};
+  if (data && data.category_sales) {
+    data.category_sales.forEach(item => {
+      const catName = item.category_name;
+      if (!categorySummaryMap[catName]) {
+        categorySummaryMap[catName] = { category_name: catName, units_sold: 0, revenue: 0 };
+      }
+      categorySummaryMap[catName].units_sold += item.units_sold;
+      categorySummaryMap[catName].revenue += parseFloat(item.revenue);
+    });
+  }
+  const categorySummaries = Object.values(categorySummaryMap).sort((a, b) => b.units_sold - a.units_sold);
 
   return (
     <div style={{ padding: 'clamp(2rem, 4vw, 3rem) clamp(1.2rem, 4vw, 2.5rem)', fontFamily: 'var(--font-sans)' }}>
@@ -160,6 +176,157 @@ export default function AdminDashboard() {
               <Bar dataKey="total_sold" fill="#0f0f0f" radius={[0, 2, 2, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ── SECCIÓN ESTADÍSTICAS POR CATEGORÍA ── */}
+      <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', margin: 0 }}>
+              Estadísticas por Categoría y Productos
+            </h2>
+            <p style={{ fontSize: '0.78rem', color: '#888', margin: '4px 0 0 0' }}>
+              Unidades vendidas y ganancias totales
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Category select filter */}
+            <select
+              value={selectedCategory}
+              onChange={e => setSelectedCategory(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                border: '0.5px solid #e0dbd4',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
+                outline: 'none',
+                background: '#fafaf8',
+                fontFamily: 'var(--font-sans)',
+                color: '#1a1a1a',
+              }}
+            >
+              <option value="">Todas las categorías</option>
+              {categorySummaries.map(cat => (
+                <option key={cat.category_name} value={cat.category_name}>
+                  {cat.category_name}
+                </option>
+              ))}
+            </select>
+
+            {/* Category search input (only visible when showing category overview) */}
+            {!selectedCategory && (
+              <input
+                type="text"
+                placeholder="Buscar categoría..."
+                value={categorySearch}
+                onChange={e => setCategorySearch(e.target.value)}
+                style={{
+                  padding: '6px 12px',
+                  border: '0.5px solid #e0dbd4',
+                  borderRadius: '4px',
+                  fontSize: '0.78rem',
+                  outline: 'none',
+                  fontFamily: 'var(--font-sans)',
+                  background: '#fafaf8',
+                  width: '150px',
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Display either Category Summaries or Product Breakdown */}
+        <div style={{ overflowX: 'auto' }}>
+          {!selectedCategory ? (
+            // ── CATEGORY SUMMARIES ──
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: '#f5f3f0' }}>
+                  {['Categoría', 'Unidades Vendidas', 'Porcentaje del total', 'Ganancia Total'].map(h => (
+                    <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', fontWeight: 400 }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {categorySummaries.filter(cat => cat.category_name.toLowerCase().includes(categorySearch.toLowerCase())).length === 0 ? (
+                  <tr>
+                    <td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: '#6b6560' }}>
+                      Sin datos de categorías
+                    </td>
+                  </tr>
+                ) : (
+                  (() => {
+                    const filtered = categorySummaries.filter(cat => cat.category_name.toLowerCase().includes(categorySearch.toLowerCase()));
+                    const maxUnits = Math.max(...categorySummaries.map(c => c.units_sold), 1);
+                    return filtered.map(cat => (
+                      <tr key={cat.category_name} style={{ borderBottom: '0.5px solid #e0dbd4' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 500 }}>{cat.category_name}</td>
+                        <td style={{ padding: '12px 16px' }}>{cat.units_sold}</td>
+                        <td style={{ padding: '12px 16px', width: '200px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ minWidth: '32px', fontSize: '0.75rem', color: '#6b6560' }}>
+                              {((cat.units_sold / maxUnits) * 100).toFixed(0)}%
+                            </span>
+                            <div style={{ flex: 1, background: '#f5f3f0', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{
+                                background: '#1a1a1a',
+                                height: '100%',
+                                width: `${(cat.units_sold / maxUnits) * 100}%`
+                              }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontWeight: 500, color: '#2e7d32' }}>
+                          ${cat.revenue.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ));
+                  })()
+                )}
+              </tbody>
+            </table>
+          ) : (
+            // ── DETAILED PRODUCTS BREAKDOWN FOR SELECTED CATEGORY ──
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: '#f5f3f0' }}>
+                  {['Producto', 'Categoría', 'Unidades Vendidas', 'Ganancia Total'].map(h => (
+                    <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', fontWeight: 400 }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const filteredProducts = (data?.category_sales || []).filter(item => item.category_name === selectedCategory);
+                  if (filteredProducts.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={4} style={{ padding: '32px', textAlign: 'center', color: '#6b6560' }}>
+                          No hay productos vendidos en esta categoría
+                        </td>
+                      </tr>
+                    );
+                  }
+                  return filteredProducts.map((prod, idx) => (
+                    <tr key={idx} style={{ borderBottom: '0.5px solid #e0dbd4' }}>
+                      <td style={{ padding: '12px 16px', fontWeight: 500 }}>{prod.product_name}</td>
+                      <td style={{ padding: '12px 16px', color: '#6b6560' }}>{prod.category_name}</td>
+                      <td style={{ padding: '12px 16px' }}>{prod.units_sold}</td>
+                      <td style={{ padding: '12px 16px', fontWeight: 500, color: '#2e7d32' }}>
+                        ${parseFloat(prod.revenue).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
