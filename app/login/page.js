@@ -22,8 +22,9 @@ function LoginForm() {
   const router      = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const defaultTab  = searchParams.get('tab') === 'register' ? 'register' : 'login';
 
-  const [tab, setTab]             = useState('login');
+  const [tab, setTab]             = useState(defaultTab);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [regForm, setRegForm]     = useState({ username: '', email: '', password: '', confirm: '' });
   const [loading, setLoading]     = useState(false);
