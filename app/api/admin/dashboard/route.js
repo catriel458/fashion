@@ -13,6 +13,26 @@ export async function GET() {
   const storeId = session.user.role === 'superadmin' ? null : await getAdminStoreId(session);
 
   try {
+    // Asegurar la existencia de las tablas para evitar errores de relación inexistente
+    await sql`
+      CREATE TABLE IF NOT EXISTS fitting_room_usage (
+        id SERIAL PRIMARY KEY,
+        store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        used_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS fitting_room_item_logs (
+        id SERIAL PRIMARY KEY,
+        store_id INTEGER REFERENCES stores(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+
     let queries;
 
     if (session.user.role === 'superadmin') {
