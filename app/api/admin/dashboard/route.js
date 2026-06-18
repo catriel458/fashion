@@ -56,6 +56,15 @@ export async function GET() {
           LEFT JOIN orders o ON o.id = oi.order_id AND o.status != 'cancelled'
           GROUP BY c.id, c.name, p.id, p.name
           ORDER BY units_sold DESC
+        `,
+        sql`SELECT COUNT(*)::int AS total FROM fitting_room_usage`,
+        sql`
+          SELECT p.name, COUNT(w.id)::int AS count
+          FROM wishlist w
+          JOIN products p ON w.product_id = p.id
+          GROUP BY p.id, p.name
+          ORDER BY count DESC
+          LIMIT 5
         `
       ]);
     } else {
@@ -102,6 +111,16 @@ export async function GET() {
           WHERE c.store_id = ${storeId}
           GROUP BY c.id, c.name, p.id, p.name
           ORDER BY units_sold DESC
+        `,
+        sql`SELECT COUNT(*)::int AS total FROM fitting_room_usage WHERE store_id = ${storeId}`,
+        sql`
+          SELECT p.name, COUNT(w.id)::int AS count
+          FROM wishlist w
+          JOIN products p ON w.product_id = p.id
+          WHERE w.store_id = ${storeId}
+          GROUP BY p.id, p.name
+          ORDER BY count DESC
+          LIMIT 5
         `
       ]);
     }
@@ -113,6 +132,7 @@ export async function GET() {
       topProducts, recentOrders,
       [ordersToday], [ordersPending], [ordersReady], [revenueMonth],
       categorySales,
+      [fittingUsageTotal], topWishlisted,
     ] = queries;
 
     const dayMap = {};
@@ -141,10 +161,13 @@ export async function GET() {
       products: { active: productsActive.total, out_of_stock: productsNoStock.total },
       revenue: {
         total:       parseFloat(ordersRevenue.revenue),
+        delivered_count: ordersRevenue.total,
         this_month:  parseFloat(revenueMonth.total),
       },
       top_products: topProducts,
       category_sales: categorySales,
+      fitting_usage_total: fittingUsageTotal.total,
+      top_wishlisted: topWishlisted,
     });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -90,7 +90,7 @@ export default function AdminDashboard() {
       </p>
 
       {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '14px', marginBottom: '36px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '14px', marginBottom: '36px' }}>
         <StatCard label="Pedidos hoy" value={data.orders.today} sub="excluye cancelados" />
         <StatCard
           label="Pendientes"
@@ -99,8 +99,15 @@ export default function AdminDashboard() {
         />
         <StatCard label="Listos para retirar" value={data.orders.ready} sub="esperando cliente" />
         <StatCard label="Ingresos del mes" value={`$${parseFloat(data.revenue.this_month).toFixed(0)}`} sub="pedidos entregados" />
+        <StatCard label="Ingresos Totales" value={`$${parseFloat(data.revenue.total).toFixed(0)}`} sub="histórico acumulado" />
+        <StatCard
+          label="Ticket Promedio"
+          value={`$${data.revenue.delivered_count > 0 ? (data.revenue.total / data.revenue.delivered_count).toFixed(0) : '0'}`}
+          sub="promedio por compra"
+        />
         <StatCard label="Productos activos" value={data.products.active} />
         <StatCard label="Sin stock" value={data.products.out_of_stock} sub="en 0 unidades" />
+        <StatCard label="Uso Probador IA" value={data.fitting_usage_total} sub="simulaciones hechas" />
       </div>
 
       {/* Charts row 1 */}
@@ -176,6 +183,53 @@ export default function AdminDashboard() {
               <Bar dataKey="total_sold" fill="#0f0f0f" radius={[0, 2, 2, 0]} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Charts row 3: Desires vs Sales */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '36px' }}>
+        {/* Top wishlisted */}
+        <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '20px' }}>
+          <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '16px' }}>
+            Top 5 productos más deseados (Favoritos)
+          </div>
+          {(!data.top_wishlisted || data.top_wishlisted.length === 0) ? (
+            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b6560', fontSize: '0.8rem' }}>
+              Sin productos en favoritos
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={data.top_wishlisted} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                <XAxis type="number" tick={{ fontSize: 9 }} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 9 }} width={90} />
+                <Tooltip formatter={(v) => [v, 'Favoritos']} />
+                <Bar dataKey="count" fill="#d97706" radius={[0, 2, 2, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* IA Fitting usage summary */}
+        <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '16px' }}>
+              Rendimiento del Probador IA
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginTop: '10px' }}>
+              <span style={{ fontSize: '3rem', fontWeight: 300, fontFamily: 'var(--font-serif)' }}>
+                {data.fitting_usage_total}
+              </span>
+              <span style={{ fontSize: '0.8rem', color: '#6b6560' }}>
+                simulaciones totales
+              </span>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: '#6b6560', lineHeight: 1.5, marginTop: '16px' }}>
+              El probador virtual con IA impulsa la decisión de compra en tu tienda. Los clientes interactúan visualmente con tus prendas de forma interactiva antes de agregarlas al carrito.
+            </p>
+          </div>
+          <div style={{ borderTop: '0.5px solid #e0dbd4', paddingTop: '14px', marginTop: '14px', fontSize: '0.78rem', color: '#6b6560' }}>
+            💡 Un alto número de simulaciones indica un catálogo interactivo atractivo para tus clientes.
+          </div>
         </div>
       </div>
 
