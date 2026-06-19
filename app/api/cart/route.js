@@ -11,7 +11,7 @@ export async function GET(request) {
     }
 
     const items = await sql`
-      SELECT ci.id, ci.product_id, ci.quantity, ci.size, ci.created_at,
+      SELECT ci.id, ci.product_id, ci.quantity, ci.size, ci.color, ci.created_at,
              p.name, p.price, p.image_url, p.slug
       FROM cart_items ci
       JOIN products p ON ci.product_id = p.id
@@ -27,7 +27,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { session_id, product_id, quantity = 1, size = null } = await request.json();
+    const { session_id, product_id, quantity = 1, size = null, color = null } = await request.json();
 
     if (!session_id || !product_id) {
       return NextResponse.json({ error: 'session_id y product_id requeridos' }, { status: 400 });
@@ -35,7 +35,7 @@ export async function POST(request) {
 
     const existing = await sql`
       SELECT id, quantity FROM cart_items
-      WHERE session_id = ${session_id} AND product_id = ${product_id} AND size IS NOT DISTINCT FROM ${size}
+      WHERE session_id = ${session_id} AND product_id = ${product_id} AND size IS NOT DISTINCT FROM ${size} AND color IS NOT DISTINCT FROM ${color}
     `;
 
     let item;
@@ -43,13 +43,13 @@ export async function POST(request) {
       item = await sql`
         UPDATE cart_items
         SET quantity = quantity + ${quantity}
-        WHERE session_id = ${session_id} AND product_id = ${product_id} AND size IS NOT DISTINCT FROM ${size}
+        WHERE session_id = ${session_id} AND product_id = ${product_id} AND size IS NOT DISTINCT FROM ${size} AND color IS NOT DISTINCT FROM ${color}
         RETURNING *
       `;
     } else {
       item = await sql`
-        INSERT INTO cart_items (session_id, product_id, quantity, size)
-        VALUES (${session_id}, ${product_id}, ${quantity}, ${size})
+        INSERT INTO cart_items (session_id, product_id, quantity, size, color)
+        VALUES (${session_id}, ${product_id}, ${quantity}, ${size}, ${color})
         RETURNING *
       `;
     }

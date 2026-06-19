@@ -23,6 +23,7 @@ export async function PUT(request, { params }) {
     const stock       = formData.get('stock')       != null ? parseInt(formData.get('stock'))    : prev.stock;
     const activeRaw   = formData.get('active');
     const active      = activeRaw != null ? activeRaw === 'true' : prev.active;
+    const colors      = formData.get('colors') !== null ? (formData.get('colors') || null) : prev.colors;
 
     const rawCatId   = formData.get('category_id');
     const categoryId = rawCatId != null
@@ -78,6 +79,7 @@ export async function PUT(request, { params }) {
         active      = ${active},
         image_url   = ${primaryImageUrl},
         image_urls  = ${combinedImageUrls},
+        colors      = ${colors},
         updated_at  = NOW()
       WHERE id = ${id}
       RETURNING *

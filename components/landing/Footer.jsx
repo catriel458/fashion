@@ -23,7 +23,7 @@ export default function Footer() {
           <Link href="/api-docs" className="transition-colors hover:text-[#8B2635]">
             Documentación
           </Link>
-          <a href="#plans-section" className="transition-colors hover:text-[#8B2635]">
+          <a href="#contact-section" className="transition-colors hover:text-[#8B2635]">
             Contacto
           </a>
         </div>

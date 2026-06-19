@@ -353,13 +353,13 @@ export default function CartSidebar({ storeSlug: propSlug }) {
       {/* Sidebar panel */}
       <div style={{
         position: 'fixed', top: 0, right: 0, height: '100vh',
-        width: isOpen ? '380px' : '0', maxWidth: '100vw',
+        width: isOpen ? 'min(380px, 100vw)' : '0', maxWidth: '100vw',
         background: 'var(--store-panel-bg, #fafaf8)', zIndex: 1000,
         transition: 'width 0.3s ease', overflow: 'hidden',
         borderLeft: '0.5px solid rgba(128,128,128,0.2)',
         color: 'var(--store-panel-text, #0f0f0f)',
       }}>
-        <div style={{ width: '380px', maxWidth: '100vw', height: '100%', display: 'flex', flexDirection: 'column', padding: '24px', boxSizing: 'border-box' }}>
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', padding: '24px 16px', boxSizing: 'border-box' }}>
 
           {/* Header — fixed */}
           <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingBottom: '16px', borderBottom: '0.5px solid rgba(128,128,128,0.2)' }}>
@@ -493,6 +493,11 @@ export default function CartSidebar({ storeSlug: propSlug }) {
                           {item.size && (
                             <span style={{ padding: '2px 6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.68rem', color: '#6b6560', fontWeight: 500, flexShrink: 0 }}>
                               {item.size}
+                            </span>
+                          )}
+                          {item.color && (
+                            <span style={{ padding: '2px 6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.68rem', color: '#6b6560', fontWeight: 500, flexShrink: 0 }}>
+                              {item.color}
                             </span>
                           )}
                         </p>

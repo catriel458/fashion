@@ -60,6 +60,7 @@ export default function ProductClient({ product, storeSlug, storeId }) {
   const [sizerResult, setSizerResult] = useState(null);
   const [savedMeasurements, setSavedMeasurements] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function ProductClient({ product, storeSlug, storeId }) {
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
 
   const availableSizes = getAvailableSizes(product.category_slug);
+  const availableColors = product.colors ? product.colors.split(',').map(c => c.trim()).filter(Boolean) : [];
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -161,7 +163,11 @@ export default function ProductClient({ product, storeSlug, storeId }) {
       toast.error("Por favor, seleccioná un talle");
       return;
     }
-    await addItem(product.id, quantity, selectedSize);
+    if (availableColors.length > 0 && !selectedColor) {
+      toast.error("Por favor, seleccioná un color");
+      return;
+    }
+    await addItem(product.id, quantity, selectedSize, selectedColor);
     setAdded(true); setIsOpen(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -547,6 +553,42 @@ export default function ProductClient({ product, storeSlug, storeId }) {
                           }}
                         >
                           {sz}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Color Selector */}
+                {availableColors.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <p style={{ fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#6b6560', marginBottom: '10px' }}>Seleccionar Color</p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {availableColors.map(cl => (
+                        <button
+                          key={cl}
+                          type="button"
+                          onClick={() => setSelectedColor(cl)}
+                          style={{
+                            minWidth: '40px',
+                            height: '40px',
+                            padding: '0 12px',
+                            border: '0.5px solid',
+                            borderColor: selectedColor === cl ? '#0f0f0f' : '#d4cfc8',
+                            background: selectedColor === cl ? '#0f0f0f' : 'transparent',
+                            color: selectedColor === cl ? '#fafaf8' : '#0f0f0f',
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: '0.78rem',
+                            fontWeight: selectedColor === cl ? 600 : 400,
+                            cursor: 'pointer',
+                            borderRadius: '2px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {cl}
                         </button>
                       ))}
                     </div>

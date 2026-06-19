@@ -92,7 +92,7 @@ export async function POST(req) {
     if (!session_id) return NextResponse.json({ error: 'session_id requerido' }, { status: 400 });
 
     const cartItems = await sql`
-      SELECT ci.product_id, ci.quantity, ci.size, p.name, p.price, p.image_url, p.store_id
+      SELECT ci.product_id, ci.quantity, ci.size, ci.color, p.name, p.price, p.image_url, p.store_id
       FROM cart_items ci
       JOIN products p ON p.id = ci.product_id
       WHERE ci.session_id = ${session_id}
@@ -150,8 +150,8 @@ export async function POST(req) {
 
     for (const item of cartItems) {
       await sql`
-        INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase, size)
-        VALUES (${order.id}, ${item.product_id}, ${item.quantity}, ${item.price}, ${item.size})
+        INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase, size, color)
+        VALUES (${order.id}, ${item.product_id}, ${item.quantity}, ${item.price}, ${item.size}, ${item.color})
       `;
     }
 

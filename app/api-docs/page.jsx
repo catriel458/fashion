@@ -45,16 +45,16 @@ print(response.json())
       
       {/* Barra superior de navegación */}
       <header className="border-b border-[#2a2a2a] bg-[#0a0a0a]/85 sticky top-0 z-50 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
             <span className="font-serif font-light text-2xl tracking-wider text-[#f5f0eb]">CnB</span>
-            <span className="text-[10px] text-[#d4c5b0]/55 font-mono group-hover:text-[#8B2635] transition-colors">← Volver al inicio</span>
+            <span className="text-[10px] text-[#d4c5b0]/55 font-mono group-hover:text-[#8B2635] transition-colors hidden xs:inline">← Inicio</span>
           </Link>
-          <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider text-[#d4c5b0]/75">
-            <a href="#intro" className="hover:text-[#8B2635] transition-colors">Introducción</a>
-            <a href="#auth" className="hover:text-[#8B2635] transition-colors">Autenticación</a>
-            <a href="#endpoints" className="hover:text-[#8B2635] transition-colors">Endpoints</a>
-            <a href="#errors" className="hover:text-[#8B2635] transition-colors">Errores</a>
+          <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider text-[#d4c5b0]/75 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
+            <a href="#intro" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Introducción</a>
+            <a href="#auth" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Autenticación</a>
+            <a href="#endpoints" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Endpoints</a>
+            <a href="#errors" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Errores</a>
           </div>
         </div>
       </header>
@@ -119,27 +119,29 @@ print(response.json())
               </p>
 
               <h4 className="text-[#f5f0eb] font-bold text-xs uppercase tracking-wider mb-3">Parámetros del Body (JSON)</h4>
-              <table className="w-full text-xs text-left border-collapse border border-[#2a2a2a] mb-6">
-                <thead>
-                  <tr className="bg-[#111111] text-[#d4c5b0] border-b border-[#2a2a2a]">
-                    <th className="p-3 border-r border-[#2a2a2a]">Campo</th>
-                    <th className="p-3 border-r border-[#2a2a2a]">Tipo</th>
-                    <th className="p-3">Descripción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-[#2a2a2a]">
-                    <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#d4c5b0]">userPhoto</td>
-                    <td className="p-3 border-r border-[#2a2a2a] font-mono">String</td>
-                    <td className="p-3">URL pública de la foto del usuario o cadena en formato Base64. Requerido.</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#d4c5b0]">garments</td>
-                    <td className="p-3 border-r border-[#2a2a2a] font-mono">Array [String]</td>
-                    <td className="p-3">Array conteniendo de 1 a 5 URLs públicas o Base64 de las prendas que vestirá. Requerido.</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+                <table className="w-full min-w-[500px] text-xs text-left border-collapse border border-[#2a2a2a] mb-6">
+                  <thead>
+                    <tr className="bg-[#111111] text-[#d4c5b0] border-b border-[#2a2a2a]">
+                      <th className="p-3 border-r border-[#2a2a2a] w-1/4">Campo</th>
+                      <th className="p-3 border-r border-[#2a2a2a] w-1/4">Tipo</th>
+                      <th className="p-3">Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-[#2a2a2a]">
+                      <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#d4c5b0]">userPhoto</td>
+                      <td className="p-3 border-r border-[#2a2a2a] font-mono">String</td>
+                      <td className="p-3">URL pública de la foto del usuario o cadena en formato Base64. Requerido.</td>
+                    </tr>
+                    <tr>
+                      <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#d4c5b0]">garments</td>
+                      <td className="p-3 border-r border-[#2a2a2a] font-mono">Array [String]</td>
+                      <td className="p-3">Array conteniendo de 1 a 5 URLs públicas o Base64 de las prendas que vestirá. Requerido.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
               {/* Ejemplo en Fetch */}
               <h4 className="text-[#f5f0eb] font-bold text-xs uppercase tracking-wider mb-3">Ejemplo en JavaScript (Fetch)</h4>
@@ -199,42 +201,44 @@ print(response.json())
             <p className="text-sm leading-relaxed mb-6">
               La API utiliza códigos estándar de estado HTTP para indicar el éxito o fracaso de las llamadas:
             </p>
-            <table className="w-full text-xs text-left border-collapse border border-[#2a2a2a]">
-              <thead>
-                <tr className="bg-[#111111] text-[#d4c5b0] border-b border-[#2a2a2a]">
-                  <th className="p-3 border-r border-[#2a2a2a]">Status</th>
-                  <th className="p-3 border-r border-[#2a2a2a]">Significado</th>
-                  <th className="p-3">Causa Común</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b border-[#2a2a2a]">
-                  <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#d4c5b0] font-bold">200 OK</td>
-                  <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Éxito</td>
-                  <td className="p-3">El procesamiento de la prenda fue exitoso y se devuelve la imagen temporal de resultado.</td>
-                </tr>
-                <tr className="border-b border-[#2a2a2a]">
-                  <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#a0522d] font-bold">400 Bad Request</td>
-                  <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Solicitud Inválida</td>
-                  <td className="p-3">Faltan parámetros obligatorios (`userPhoto`, `garments`), o se enviaron más de 5 prendas.</td>
-                </tr>
-                <tr className="border-b border-[#2a2a2a]">
-                  <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#a0522d] font-bold">401 Unauthorized</td>
-                  <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">No Autorizado</td>
-                  <td className="p-3">El encabezado de autorización falta, no tiene formato Bearer, o la clave API es inválida o inactiva.</td>
-                </tr>
-                <tr className="border-b border-[#2a2a2a]">
-                  <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#a0522d] font-bold">429 Too Many Requests</td>
-                  <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Límite Superado</td>
-                  <td className="p-3">El cliente consumió todas las peticiones mensuales de su plan.</td>
-                </tr>
-                <tr>
-                  <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#8B2635] font-bold">500 Internal Error</td>
-                  <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Error de Servidor</td>
-                  <td className="p-3">Error inesperado en los procesadores del servidor. El error se reporta de forma interna en logs.</td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <table className="w-full min-w-[550px] text-xs text-left border-collapse border border-[#2a2a2a]">
+                <thead>
+                  <tr className="bg-[#111111] text-[#d4c5b0] border-b border-[#2a2a2a]">
+                    <th className="p-3 border-r border-[#2a2a2a] w-1/4">Status</th>
+                    <th className="p-3 border-r border-[#2a2a2a] w-1/4">Significado</th>
+                    <th className="p-3">Causa Común</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-[#2a2a2a]">
+                    <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#d4c5b0] font-bold">200 OK</td>
+                    <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Éxito</td>
+                    <td className="p-3">El procesamiento de la prenda fue exitoso y se devuelve la imagen temporal de resultado.</td>
+                  </tr>
+                  <tr className="border-b border-[#2a2a2a]">
+                    <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#a0522d] font-bold">400 Bad Request</td>
+                    <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Solicitud Inválida</td>
+                    <td className="p-3">Faltan parámetros obligatorios (`userPhoto`, `garments`), o se enviaron más de 5 prendas.</td>
+                  </tr>
+                  <tr className="border-b border-[#2a2a2a]">
+                    <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#a0522d] font-bold">401 Unauthorized</td>
+                    <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">No Autorizado</td>
+                    <td className="p-3">El encabezado de autorización falta, no tiene formato Bearer, o la clave API es inválida o inactiva.</td>
+                  </tr>
+                  <tr className="border-b border-[#2a2a2a]">
+                    <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#a0522d] font-bold">429 Too Many Requests</td>
+                    <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Límite Superado</td>
+                    <td className="p-3">El cliente consumió todas las peticiones mensuales de su plan.</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 border-r border-[#2a2a2a] font-mono text-[#8B2635] font-bold">500 Internal Error</td>
+                    <td className="p-3 border-r border-[#2a2a2a] font-medium text-[#f5f0eb]">Error de Servidor</td>
+                    <td className="p-3">Error inesperado en los procesadores del servidor. El error se reporta de forma interna en logs.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
         </section>

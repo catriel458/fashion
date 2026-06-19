@@ -224,7 +224,12 @@ export default function OrdersPage() {
           <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: '1.6rem', color: '#fff', margin: '0 0 16px' }}>
             Mis pedidos
           </h1>
-          <div style={{ display: 'flex', gap: '24px', borderBottom: '0.5px solid rgba(255,255,255,0.1)', paddingBottom: '0' }}>
+          <div style={{
+            display: 'flex', gap: '24px',
+            borderBottom: '0.5px solid rgba(255,255,255,0.1)', paddingBottom: '0',
+            overflowX: 'auto', WebkitOverflowScrolling: 'touch', whiteSpace: 'nowrap',
+            scrollbarWidth: 'none',
+          }}>
             {[
               { label: 'Mi perfil', href: '/profile' },
               { label: 'Mis pedidos', href: '/profile/orders' },
@@ -235,6 +240,7 @@ export default function OrdersPage() {
                 color: href === '/profile/orders' ? '#fff' : 'rgba(255,255,255,0.45)',
                 textDecoration: 'none', paddingBottom: '12px',
                 borderBottom: href === '/profile/orders' ? '1.5px solid #fff' : 'none',
+                flexShrink: 0,
               }}>
                 {label}
               </Link>
@@ -430,6 +436,11 @@ export default function OrdersPage() {
                                   {item.size && (
                                     <span style={{ marginLeft: '8px', padding: '2px 6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.68rem', color: '#6b6560', fontWeight: 500 }}>
                                       Talle: {item.size}
+                                    </span>
+                                  )}
+                                  {item.color && (
+                                    <span style={{ marginLeft: '8px', padding: '2px 6px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.68rem', color: '#6b6560', fontWeight: 500 }}>
+                                      Color: {item.color}
                                     </span>
                                   )}
                                 </div>

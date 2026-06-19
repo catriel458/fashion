@@ -113,7 +113,12 @@ export default function BenefitsPage() {
           </div>
 
           {/* Tabs nav */}
-          <div style={{ display: 'flex', gap: '24px', marginTop: '20px', borderBottom: '0.5px solid rgba(255,255,255,0.1)', paddingBottom: '0' }}>
+          <div style={{
+            display: 'flex', gap: '24px', marginTop: '20px',
+            borderBottom: '0.5px solid rgba(255,255,255,0.1)', paddingBottom: '0',
+            overflowX: 'auto', WebkitOverflowScrolling: 'touch', whiteSpace: 'nowrap',
+            scrollbarWidth: 'none',
+          }}>
             {[
               { label: 'Mi perfil', href: '/profile' },
               ...(user.role === 'visitor' ? [{ label: 'Mis compras', href: '/profile/orders' }] : []),
@@ -125,6 +130,7 @@ export default function BenefitsPage() {
                 color: href === '/profile/benefits' ? '#fff' : 'rgba(255,255,255,0.45)',
                 textDecoration: 'none', paddingBottom: '12px',
                 borderBottom: href === '/profile/benefits' ? '1.5px solid #fff' : 'none',
+                flexShrink: 0,
               }}>
                 {label}
               </Link>

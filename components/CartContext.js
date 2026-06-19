@@ -30,12 +30,12 @@ export function CartProvider({ children }) {
     if (sessionId) fetchCart(sessionId);
   }, [sessionId, fetchCart]);
 
-  const addItem = async (productId, qty = 1, size = null) => {
+  const addItem = async (productId, qty = 1, size = null, color = null) => {
     if (!sessionId) return;
     await fetch('/api/cart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: qty, size }),
+      body: JSON.stringify({ session_id: sessionId, product_id: productId, quantity: qty, size, color }),
     });
     await fetchCart(sessionId);
   };

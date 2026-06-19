@@ -85,9 +85,10 @@ export async function POST(request) {
     const slug = slugify(name) + '-' + Date.now();
     const finalCategoryId = categoryId === '' ? null : categoryId;
     const storeId = session.user.role === 'admin' ? await getAdminStoreId(session) : (formData.get('store_id') || null);
+    const colors = formData.get('colors') || null;
 
     const product = await sql`
-      INSERT INTO products (name, slug, category_id, description, price, stock, image_url, image_urls, active, store_id)
+      INSERT INTO products (name, slug, category_id, description, price, stock, image_url, image_urls, active, store_id, colors)
       VALUES (
         ${name},
         ${slug},
@@ -98,7 +99,8 @@ export async function POST(request) {
         ${primaryImageUrl},
         ${imageUrls},
         true,
-        ${storeId}
+        ${storeId},
+        ${colors}
       )
       RETURNING *
     `;

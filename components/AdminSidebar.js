@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
@@ -29,6 +29,10 @@ export default function AdminSidebar() {
   const isSuperadmin       = session?.user?.role === 'superadmin';
   const NAV                = isSuperadmin ? NAV_SUPERADMIN : NAV_ADMIN;
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <>
       {/* ── Desktop sidebar ── */}
@@ -37,7 +41,7 @@ export default function AdminSidebar() {
         display: 'flex', flexDirection: 'column',
         position: 'fixed', top: 0, left: 0, height: '100vh',
         zIndex: 200,
-      }}>
+      }} className={`admin-sidebar ${open ? 'open' : ''}`}>
         <div style={{ padding: '22px 20px', borderBottom: '0.5px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <Link href="/" style={{ textDecoration: 'none' }}>
@@ -102,20 +106,29 @@ export default function AdminSidebar() {
 
       {/* ── Mobile top bar ── */}
       <div style={{
-        display: 'none', position: 'fixed', top: 0, left: 0, right: 0, height: '52px',
-        background: '#0f0f0f', zIndex: 200,
-        alignItems: 'center', padding: '0 16px', gap: '12px',
-        '@media (max-width: 768px)': { display: 'flex' },
-      }}>
+        display: 'none', position: 'fixed', top: 0, left: 0, right: 0, height: '56px',
+        background: '#0f0f0f', zIndex: 190,
+        alignItems: 'center', justifyContent: 'space-between', padding: '0 16px',
+        borderBottom: '0.5px solid rgba(255,255,255,0.08)',
+      }} className="admin-mobile-bar">
+        <button onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '1.4rem', padding: '4px' }} aria-label="Abrir menú">
+          ☰
+        </button>
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', letterSpacing: '0.08em', color: '#fff' }}>
+            CnB
+          </div>
+        </Link>
+        <NotificationBell textColor="#fff" />
       </div>
 
-      <style>{`
-        @media (max-width: 767px) {
-          .admin-sidebar-desktop { display: none !important; }
-          .admin-mobile-bar { display: flex !important; }
-          .admin-main { margin-left: 0 !important; padding-top: 52px !important; }
-        }
-      `}</style>
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.5)' }}
+          className="admin-sidebar-backdrop"
+        />
+      )}
     </>
   );
 }

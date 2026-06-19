@@ -180,7 +180,7 @@ export default function AdminOrdersPage() {
       : detail.username || 'Cliente';
 
     const itemsStr = (detail.items || [])
-      .map(i => `• ${i.quantity}x ${i.name}${i.size ? ` (Talle: ${i.size})` : ''} — $${(parseFloat(i.price_at_purchase) * i.quantity).toFixed(2)}`)
+      .map(i => `• ${i.quantity}x ${i.name}${i.size ? ` (Talle: ${i.size})` : ''}${i.color ? ` (Color: ${i.color})` : ''} — $${(parseFloat(i.price_at_purchase) * i.quantity).toFixed(2)}`)
       .join('\n');
 
     const paymentLabel = detail.payment_method === 'mp' ? 'Mercado Pago' : 'Transferencia bancaria';
@@ -386,6 +386,11 @@ export default function AdminOrdersPage() {
                           {item.size && (
                             <span style={{ padding: '2px 5px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.62rem', color: '#6b6560', fontWeight: 500 }}>
                               {item.size}
+                            </span>
+                          )}
+                          {item.color && (
+                            <span style={{ padding: '2px 5px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', fontSize: '0.62rem', color: '#6b6560', fontWeight: 500 }}>
+                              {item.color}
                             </span>
                           )}
                         </div>

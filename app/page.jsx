@@ -3,6 +3,7 @@ import Hero from '@/components/landing/Hero';
 import VirtualShopping from '@/components/landing/VirtualShopping';
 import VirtualFittingRoomApi from '@/components/landing/VirtualFittingRoomApi';
 import Plans from '@/components/landing/Plans';
+import ContactForm from '@/components/landing/ContactForm';
 import Footer from '@/components/landing/Footer';
 
 export default function LandingPage() {
@@ -19,6 +20,9 @@ export default function LandingPage() {
 
       {/* 5. Sección de Planes */}
       <Plans />
+
+      {/* 5.5. Formulario de Contacto */}
+      <ContactForm />
 
       {/* 6. Footer */}
       <Footer />

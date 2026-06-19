@@ -6,7 +6,7 @@ export default function AdminLayout({ children }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f5f3f0' }}>
       <AdminSidebar />
-      <main style={{ marginLeft: '220px', flex: 1, minHeight: '100vh', fontFamily: 'var(--font-sans)' }}>
+      <main style={{ marginLeft: '220px', flex: 1, minHeight: '100vh', fontFamily: 'var(--font-sans)' }} className="admin-main">
         {children}
       </main>
     </div>

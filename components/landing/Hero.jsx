@@ -55,9 +55,9 @@ export default function Hero() {
         </span>
 
         {/* Título Principal */}
-        <h1
+        <h1 
           style={{ textShadow: '0 2px 30px rgba(0,0,0,0.9)' }}
-          className="font-serif text-8xl md:text-9xl font-light tracking-wide text-[#f5f0eb] select-none mb-8"
+          className="font-serif text-6xl sm:text-8xl md:text-9xl font-light tracking-wide text-[#f5f0eb] select-none mb-8"
         >
           CnB
         </h1>

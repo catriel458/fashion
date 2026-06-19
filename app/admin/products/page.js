@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 const EMPTY_FORM = {
-  name: '', category_id: '', description: '', price: '', stock: '0', active: true,
+  name: '', category_id: '', description: '', price: '', stock: '0', active: true, colors: '',
 };
 
 const labelStyle = {
@@ -83,6 +83,7 @@ export default function AdminProductsPage() {
       price:       product.price,
       stock:       String(product.stock),
       active:      product.active,
+      colors:      product.colors || '',
     });
     setRetainedImages(product.image_urls || (product.image_url ? [product.image_url] : []));
     setSelectedNewFiles([]);
@@ -102,6 +103,7 @@ export default function AdminProductsPage() {
       fd.append('price',       form.price);
       fd.append('stock',       form.stock);
       fd.append('active',      form.active ? 'true' : 'false');
+      fd.append('colors',      form.colors || '');
       
       fd.append('retained_images', JSON.stringify(retainedImages));
       selectedNewFiles.forEach(file => {
@@ -358,6 +360,14 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
+              {/* Colors */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={labelStyle}>Colores (opcional, separados por coma)</label>
+                <input type="text" value={form.colors}
+                  onChange={e => setForm({ ...form, colors: e.target.value })}
+                  style={inputStyle} placeholder="Ej: Rojo, Blanco, Negro, Azul" />
+              </div>
+
               {/* Description */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={labelStyle}>Descripción</label>
@@ -504,7 +514,7 @@ function ProductRow({ product, isMobile, onEdit, onDelete }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 500, fontSize: '0.875rem', marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
             <div style={{ fontSize: '0.75rem', color: '#6b6560', marginBottom: '4px' }}>{product.category_name || '—'} · ${parseFloat(product.price).toFixed(2)}</div>
-            <div style={{ fontSize: '0.72rem', color: '#6b6560' }}>Stock: {product.stock} · {product.active ? 'Activo' : 'Inactivo'}</div>
+            <div style={{ fontSize: '0.72rem', color: '#6b6560' }}>Stock: {product.stock} · {product.active ? 'Activo' : 'Inactivo'}{product.colors ? ` · Colores: ${product.colors}` : ''}</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <button onClick={onEdit} style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', padding: '5px 10px', fontSize: '0.68rem', borderRadius: '2px', color: '#0f0f0f' }}>Editar</button>
@@ -537,7 +547,7 @@ function ProductRow({ product, isMobile, onEdit, onDelete }) {
       </div>
       <div>
         <div style={{ fontWeight: 500, fontSize: '0.875rem' }}>{product.name}</div>
-        <div style={{ color: '#aaa', fontSize: '0.7rem', marginTop: '2px' }}>{product.slug}</div>
+        <div style={{ color: '#aaa', fontSize: '0.7rem', marginTop: '2px' }}>{product.slug}{product.colors ? ` · Colores: ${product.colors}` : ''}</div>
       </div>
       <div style={{ color: '#6b6560', fontSize: '0.8rem' }}>{product.category_name || '—'}</div>
       <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>${parseFloat(product.price).toFixed(2)}</div>

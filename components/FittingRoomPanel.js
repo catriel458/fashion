@@ -277,16 +277,16 @@ export default function FittingRoomPanel({ storeId }) {
 
       <div style={{
         position: 'fixed', top: 0, right: 0, height: '100vh',
-        width: isPanelOpen ? '420px' : '0', maxWidth: '100vw',
+        width: isPanelOpen ? 'min(420px, 100vw)' : '0', maxWidth: '100vw',
         background: 'var(--store-panel-bg, #fafaf8)', zIndex: 1000,
         transition: 'width 0.3s ease', overflow: 'hidden',
         borderLeft: '0.5px solid rgba(128,128,128,0.2)',
         color: 'var(--store-panel-text, #0f0f0f)',
       }}>
         <div style={{
-          width: '420px', maxWidth: '100vw', height: '100%',
+          width: '100%', height: '100%',
           display: 'flex', flexDirection: 'column',
-          padding: '24px', boxSizing: 'border-box',
+          padding: '24px 16px', boxSizing: 'border-box',
           overflowY: 'auto',
         }}>
 

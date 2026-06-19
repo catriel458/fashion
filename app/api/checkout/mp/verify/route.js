@@ -18,7 +18,9 @@ function generateInvoiceHtml({ order, items, orderNumber, storeName }) {
   const itemsHtml = items.map(i => `
     <tr>
       <td style="padding:10px 12px;border-bottom:1px solid #eee">
-        ${i.name} ${i.size ? `<span style="font-size:0.75rem;color:#6b6560;background:#f0ede8;padding:2px 6px;border-radius:3px;margin-left:6px">Talle: ${i.size}</span>` : ''}
+        ${i.name}
+        ${i.size ? `<span style="font-size:0.75rem;color:#6b6560;background:#f0ede8;padding:2px 6px;border-radius:3px;margin-left:6px">Talle: ${i.size}</span>` : ''}
+        ${i.color ? `<span style="font-size:0.75rem;color:#6b6560;background:#f0ede8;padding:2px 6px;border-radius:3px;margin-left:6px">Color: ${i.color}</span>` : ''}
       </td>
       <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right">$${parseFloat(i.price_at_purchase).toFixed(2)}</td>
@@ -152,7 +154,7 @@ export async function POST(req) {
         `;
 
         const items = await sql`
-          SELECT oi.quantity, oi.price_at_purchase, oi.size, p.name
+          SELECT oi.quantity, oi.price_at_purchase, oi.size, oi.color, p.name
           FROM order_items oi JOIN products p ON oi.product_id = p.id
           WHERE oi.order_id = ${orderId}
         `;
