@@ -622,6 +622,96 @@
       font-style: italic;
     }
 
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 12px;
+      }
+      .header {
+        flex-direction: column;
+        padding: 24px 20px;
+        gap: 16px;
+        text-align: center;
+        align-items: center;
+      }
+      .header-logo {
+        margin: 0 auto;
+      }
+      .header h1 {
+        font-size: 20px;
+      }
+      .header p {
+        font-size: 13px;
+      }
+      .step {
+        padding: 20px 16px;
+      }
+      .step-title {
+        font-size: 16px;
+      }
+      .step-desc {
+        font-size: 13.5px;
+      }
+      .mp-grid {
+        grid-template-columns: 1fr;
+      }
+      .mp-sidebar-layout {
+        flex-direction: column;
+      }
+      .mp-sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1.5px solid #dde3ec;
+        padding-right: 0;
+        margin-right: 0;
+        margin-bottom: 16px;
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+        padding-bottom: 8px;
+        scrollbar-width: none;
+      }
+      .mp-sidebar::-webkit-scrollbar {
+        display: none;
+      }
+      .mp-sidebar-item {
+        margin-bottom: 0;
+        white-space: nowrap;
+        font-size: 11.5px;
+        padding: 6px 10px;
+      }
+      .mp-sidebar-section {
+        display: none;
+      }
+      .cnb-body {
+        flex-direction: column;
+        padding: 16px;
+      }
+      .cnb-sidebar {
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+        margin-bottom: 16px;
+        scrollbar-width: none;
+      }
+      .cnb-sidebar::-webkit-scrollbar {
+        display: none;
+      }
+      .cnb-menu-item {
+        margin-bottom: 0;
+        white-space: nowrap;
+      }
+      .arrow-note {
+        font-size: 12px;
+      }
+      .mock-content {
+        overflow-x: auto;
+      }
+      .mp-screen, .cnb-panel {
+        min-width: 520px;
+      }
+    }
+
     @media print {
       body { background: white; padding: 0; }
       .step { box-shadow: none; border: 1px solid #eee; }
