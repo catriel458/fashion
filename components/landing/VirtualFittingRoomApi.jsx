@@ -3,13 +3,41 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
+const PRESET_GARMENTS = [
+  {
+    id: 'campera',
+    name: 'Campera',
+    url: 'https://aiq7mraevuhfwffd.public.blob.vercel-storage.com/products/1778607634870-campera.jpg'
+  },
+  {
+    id: 'zapas',
+    name: 'Zapatillas',
+    url: 'https://aiq7mraevuhfwffd.public.blob.vercel-storage.com/products/1778607458823-zapas.PNG'
+  },
+  {
+    id: 'boina',
+    name: 'Boina',
+    url: 'https://aiq7mraevuhfwffd.public.blob.vercel-storage.com/products/1778607580353-boina.jpg'
+  }
+];
+
+const PRESET_PERSON = 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=400&q=80';
+
 export default function VirtualFittingRoomApi() {
-  const [apiKey, setApiKey] = useState('cnb_demo_xxxxxxxxxxxxxxxxxxxx');
-  const [userPhoto, setUserPhoto] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400');
-  const [garmentUrl, setGarmentUrl] = useState('https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&q=80&w=400');
+  const [apiKey] = useState('cnb_demo_xxxxxxxxxxxxxxxxxxxx');
+  const [userPhoto] = useState(PRESET_PERSON);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
   const [error, setError] = useState(null);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomOrigin, setZoomOrigin] = useState({ x: 50, y: 50 });
+
+  const handleOpenLightbox = (url) => {
+    setIsZoomed(false);
+    setZoomOrigin({ x: 50, y: 50 });
+    setLightboxUrl(url);
+  };
 
   const handleTestApi = async (e) => {
     e.preventDefault();
@@ -20,33 +48,61 @@ export default function VirtualFittingRoomApi() {
     const startTime = Date.now();
 
     try {
-      const res = await fetch('/api/v1/fitting/try-on', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey.trim()}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userPhoto: userPhoto.trim(),
-          garments: [garmentUrl.trim()]
-        })
-      });
-
-      const data = await res.json();
-      const elapsed = Date.now() - startTime;
-
-      // Retardo artificial mínimo para mejorar UX de carga
-      await new Promise(r => setTimeout(r, Math.max(0, 800 - elapsed)));
-
-      if (!res.ok) {
-        setError(data);
+      // Si la API key es la demo, simulamos la llamada para evitar el consumo de tokens reales de OpenRouter
+      if (apiKey.trim() === 'cnb_demo_xxxxxxxxxxxxxxxxxxxx') {
+        // Simulamos un delay de procesamiento de IA de 1.8 segundos
+        await new Promise(r => setTimeout(r, 1800));
+        setResponse({
+          success: true,
+          resultImageUrl: '/look-5.png',
+          expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          usage: {
+            requestsThisMonth: 1,
+            monthlyLimit: 100,
+            remaining: 99
+          }
+        });
       } else {
-        setResponse(data);
+        const res = await fetch('/api/v1/fitting/try-on', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey.trim()}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            userPhoto: userPhoto.trim(),
+            garments: PRESET_GARMENTS.map(g => g.url)
+          })
+        });
+
+        const data = await res.json();
+        const elapsed = Date.now() - startTime;
+
+        // Retardo artificial mínimo para mejorar UX de carga
+        await new Promise(r => setTimeout(r, Math.max(0, 800 - elapsed)));
+
+        if (!res.ok) {
+          setError(data);
+        } else {
+          setResponse(data);
+        }
       }
     } catch (err) {
       setError({ error: 'Error de red o conexión con el servidor API.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageClick = (e) => {
+    if (isZoomed) {
+      setIsZoomed(false);
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      setZoomOrigin({ x, y });
+      setIsZoomed(true);
     }
   };
 
@@ -73,50 +129,69 @@ export default function VirtualFittingRoomApi() {
             <div>
               <h3 className="font-serif text-lg font-light tracking-wide text-[#f5f0eb] mb-2">Consola de Prueba</h3>
               <p className="text-xs text-[#d4c5b0]/65 font-light mb-6">
-                Modificá las variables de abajo para simular una petición HTTP POST real a nuestro probador virtual.
+                Variables de simulación de petición HTTP POST real a nuestro probador virtual.
               </p>
 
               <form onSubmit={handleTestApi} className="flex flex-col gap-4 text-left">
                 {/* API Key */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0] font-medium mb-1.5">
-                    Authorization Token (API Key)
+                  <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0]/60 font-semibold mb-1.5">
+                    Authorization Token (API Key) [Solo Lectura]
                   </label>
                   <input
                     type="text"
-                    required
+                    readOnly
                     value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-[#f5f0eb] text-xs font-mono p-2.5 rounded focus:outline-none focus:border-[#8B2635] transition-colors"
+                    className="w-full bg-[#111111]/70 border border-[#2a2a2a] text-[#d4c5b0]/50 text-xs font-mono p-2.5 rounded cursor-not-allowed select-all focus:outline-none"
                   />
                 </div>
 
                 {/* User Photo */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0] font-medium mb-1.5">
-                    User Photo (URL o Base64)
+                  <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0]/60 font-semibold mb-1.5">
+                    User Photo (URL) [Solo Lectura]
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={userPhoto}
-                    onChange={(e) => setUserPhoto(e.target.value)}
-                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-[#f5f0eb] text-xs font-mono p-2.5 rounded focus:outline-none focus:border-[#8B2635] transition-colors"
-                  />
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      readOnly
+                      value={userPhoto}
+                      className="flex-1 bg-[#111111]/70 border border-[#2a2a2a] text-[#d4c5b0]/50 text-xs font-mono p-2.5 rounded cursor-not-allowed select-all focus:outline-none"
+                    />
+                    <div 
+                      onClick={() => handleOpenLightbox(userPhoto)}
+                      className="w-10 h-10 rounded overflow-hidden border border-[#2a2a2a] bg-[#111] flex-shrink-0 cursor-pointer hover:border-[#8B2635] transition-colors"
+                      title="Click para ver pantalla completa"
+                    >
+                      <img src={userPhoto} alt="Persona" className="w-full h-full object-cover" onError={(e) => e.target.src = 'https://placehold.co/100x100?text=Error'} />
+                    </div>
+                  </div>
                 </div>
 
-                {/* Garments (array de 1) */}
+                {/* Garments (Prendas) */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0] font-medium mb-1.5">
-                    Garment URL (Prenda a probar)
+                  <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0]/60 font-semibold mb-1.5">
+                    Garment URLs (Prendas a probar) [Solo Lectura]
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={garmentUrl}
-                    onChange={(e) => setGarmentUrl(e.target.value)}
-                    className="w-full bg-[#0a0a0a] border border-[#2a2a2a] text-[#f5f0eb] text-xs font-mono p-2.5 rounded focus:outline-none focus:border-[#8B2635] transition-colors"
-                  />
+                  <div className="flex flex-col gap-2">
+                    {PRESET_GARMENTS.map((g, index) => (
+                      <div key={g.id} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          readOnly
+                          value={g.url}
+                          className="flex-1 bg-[#111111]/70 border border-[#2a2a2a] text-[#d4c5b0]/50 text-xs font-mono p-2 rounded cursor-not-allowed select-all focus:outline-none"
+                        />
+                        <div 
+                          onClick={() => handleOpenLightbox(g.url)}
+                          className="w-9 h-9 rounded overflow-hidden border border-[#2a2a2a] bg-[#111] flex-shrink-0 cursor-pointer hover:border-[#8B2635] transition-colors"
+                          title="Click para ver pantalla completa"
+                        >
+                          <img src={g.url} alt={g.name} className="w-full h-full object-cover" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Botón Probar API */}
@@ -190,13 +265,36 @@ export default function VirtualFittingRoomApi() {
                     <pre className="text-[#e8ddd0] font-mono text-[11px] md:text-xs">
                       {JSON.stringify(response, null, 2)}
                     </pre>
-                    <div className="mt-4 p-3 bg-[#111111] border border-[#2a2a2a] rounded flex gap-3 items-center">
-                      <div className="w-12 h-16 bg-[#0a0a0a] flex-shrink-0 rounded overflow-hidden flex items-center justify-center text-[10px]">
-                        <img src={response.resultImageUrl} alt="Resultado" className="w-full h-full object-cover" />
+                    <div className="mt-4 p-3 bg-[#111111] border border-[#2a2a2a] rounded flex gap-3 items-center justify-between">
+                      <div className="flex gap-3 items-center">
+                        <div 
+                          onClick={() => handleOpenLightbox(response.resultImageUrl)}
+                          className="w-12 h-16 bg-[#0a0a0a] flex-shrink-0 rounded overflow-hidden border border-[#2a2a2a] flex items-center justify-center text-[10px] cursor-pointer hover:border-[#8B2635] transition-colors"
+                          title="Click para ver pantalla completa"
+                        >
+                          <img src={response.resultImageUrl} alt="Resultado" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="text-[11px] leading-snug">
+                          <span className="text-[#f5f0eb] font-medium block">¡Vestidor IA Simulado con Éxito!</span>
+                          <span className="text-[#d4c5b0]/55 block">Click en miniatura para expandir.</span>
+                        </div>
                       </div>
-                      <div className="text-[11px] leading-snug">
-                        <span className="text-[#f5f0eb] font-medium block">¡Vestidor IA Simulado con Éxito!</span>
-                        <span className="text-[#d4c5b0]/55 block">La URL de la imagen en resultImageUrl expira en 1 hora.</span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleOpenLightbox(response.resultImageUrl)}
+                          className="px-2.5 py-1.5 border border-[#2a2a2a] text-[#d4c5b0] hover:text-[#f5f0eb] hover:border-[#8B2635] text-[10px] uppercase font-bold tracking-wider rounded transition-colors"
+                          title="Ver en pantalla completa"
+                        >
+                          Ampliar
+                        </button>
+                        <a
+                          href={response.resultImageUrl}
+                          download="look-5.png"
+                          className="px-2.5 py-1.5 bg-[#8B2635] hover:bg-[#8B2635]/80 text-white text-[10px] uppercase font-bold tracking-wider rounded transition-colors flex items-center gap-1 cursor-pointer"
+                          title="Descargar resultado"
+                        >
+                          Descargar
+                        </a>
                       </div>
                     </div>
                   </motion.div>
@@ -235,8 +333,12 @@ export default function VirtualFittingRoomApi() {
                       {'    '}<span className="text-[#d4c5b0]">"Content-Type"</span>: <span className="text-[#e8ddd0]">"application/json"</span>{'\n'}
                       {'  '}&#125;,{'\n'}
                       {'  '}body: JSON.<span className="text-[#8B2635]">stringify</span>(&#123;{'\n'}
-                      {'    '}<span className="text-[#d4c5b0]">userPhoto</span>: <span className="text-[#e8ddd0]">"{userPhoto.length > 50 ? userPhoto.substring(0, 47) + '...' : userPhoto}"</span>,{'\n'}
-                      {'    '}<span className="text-[#d4c5b0]">garments</span>: [<span className="text-[#e8ddd0]">"{garmentUrl.length > 50 ? garmentUrl.substring(0, 47) + '...' : garmentUrl}"</span>]{'\n'}
+                      {'    '}<span className="text-[#d4c5b0]">userPhoto</span>: <span className="text-[#e8ddd0]">"{userPhoto}"</span>,{'\n'}
+                      {'    '}<span className="text-[#d4c5b0]">garments</span>: [{'\n'}
+                      {'      '}<span className="text-[#e8ddd0]">"https://aiq7mraevuhfwffd.public.blob.vercel-storage.com/products/1778607634870-campera.jpg"</span>,{'\n'}
+                      {'      '}<span className="text-[#e8ddd0]">"https://aiq7mraevuhfwffd.public.blob.vercel-storage.com/products/1778607458823-zapas.PNG"</span>,{'\n'}
+                      {'      '}<span className="text-[#e8ddd0]">"https://aiq7mraevuhfwffd.public.blob.vercel-storage.com/products/1778607580353-boina.jpg"</span>{'\n'}
+                      {'    '}]{'\n'}
                       {'  '}&#125;){'\n'}
                       &#125;)
                     </code>
@@ -256,6 +358,62 @@ export default function VirtualFittingRoomApi() {
         </div>
 
       </div>
+
+      {/* Lightbox / Modal de Pantalla Completa */}
+      <AnimatePresence>
+        {lightboxUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxUrl(null)}
+            className="fixed inset-0 z-50 bg-[#000000]/95 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="relative max-w-4xl max-h-[85vh] flex flex-col items-center gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Contenedor de la Imagen con zoom interactivo */}
+              <div className="relative overflow-hidden border border-[#2a2a2a] rounded-lg bg-[#050505]/95 shadow-2xl flex items-center justify-center max-w-full max-h-[70vh]">
+                <img 
+                  src={lightboxUrl} 
+                  alt="Vista previa completa" 
+                  onClick={handleImageClick}
+                  style={{
+                    transform: isZoomed ? 'scale(2.5)' : 'scale(1)',
+                    transformOrigin: `${zoomOrigin.x}% ${zoomOrigin.y}%`,
+                    transition: 'transform 0.25s cubic-bezier(0.25, 1, 0.5, 1)',
+                  }}
+                  className={`max-w-full max-h-[65vh] object-contain rounded-lg transition-transform ${
+                    isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'
+                  }`} 
+                />
+              </div>
+              
+              {/* Controles del lightbox inferiores */}
+              <div className="flex items-center gap-4">
+                <a
+                  href={lightboxUrl}
+                  download={lightboxUrl.substring(lightboxUrl.lastIndexOf('/') + 1) || 'imagen.png'}
+                  className="py-2 px-6 bg-[#8B2635] text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-[#8B2635]/80 transition-colors cursor-pointer"
+                >
+                  Descargar Imagen
+                </a>
+                <button
+                  onClick={() => setLightboxUrl(null)}
+                  className="py-2 px-6 border border-[#2a2a2a] text-[#d4c5b0] text-xs font-bold uppercase tracking-wider rounded hover:bg-[#111] transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
+
