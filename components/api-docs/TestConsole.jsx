@@ -123,7 +123,7 @@ export default function TestConsole() {
               {/* API Key */}
               <div>
                 <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0]/60 font-semibold mb-1.5">
-                  Authorization Token (API Key) [Solo Lectura]
+                  Authorization Token (API Key)
                 </label>
                 <input
                   type="text"
@@ -136,7 +136,7 @@ export default function TestConsole() {
               {/* User Photo */}
               <div>
                 <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0]/60 font-semibold mb-1.5">
-                  User Photo (URL) [Solo Lectura]
+                  User Photo (URL)
                 </label>
                 <div className="flex gap-2 items-center">
                   <input
@@ -158,7 +158,7 @@ export default function TestConsole() {
               {/* Garments (Prendas) */}
               <div>
                 <label className="block text-[10px] uppercase tracking-[0.15em] text-[#d4c5b0]/60 font-semibold mb-1.5">
-                  Garment URLs (Prendas a probar) [Solo Lectura]
+                  Garment URLs (Prendas a probar)
                 </label>
                 <div className="flex flex-col gap-2">
                   {PRESET_GARMENTS.map((g, index) => (
