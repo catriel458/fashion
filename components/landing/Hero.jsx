@@ -70,7 +70,7 @@ export default function Hero() {
           style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
           className="font-sans text-base md:text-xl text-[#e8ddd0] font-light tracking-wide max-w-3xl mx-auto mb-16 leading-relaxed"
         >
-          Vendé y probá en nuestro shopping. O llevá el probador a tu tienda.
+          Transformá tu forma de comprar en línea con nuestra experiencia de compra o revolucioná tu negocio con nuestra API "probador virtual" de última tecnología
         </motion.p>
 
         {/* Botones de Acción */}
@@ -82,7 +82,7 @@ export default function Hero() {
         >
           <Link href="/stores">
             <span className="w-56 text-center py-4 px-8 text-xs font-bold tracking-[0.2em] text-[#f5f0eb] uppercase border border-[#8B2635] bg-black/40 backdrop-blur-sm hover:bg-black/70 rounded-sm transition-all duration-300 cursor-pointer">
-              Abrir mi tienda
+              Crear mi experiencia de compra
             </span>
           </Link>
 

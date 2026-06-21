@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import TestConsole from '@/components/api-docs/TestConsole';
 
 export default function ApiDocs() {
   const codeFetch = `
@@ -52,6 +53,7 @@ print(response.json())
           </Link>
           <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider text-[#d4c5b0]/75 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
             <a href="#intro" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Introducción</a>
+            <a href="#console" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Consola de Prueba</a>
             <a href="#auth" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Autenticación</a>
             <a href="#endpoints" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Endpoints</a>
             <a href="#errors" className="hover:text-[#8B2635] transition-colors flex-shrink-0">Errores</a>
@@ -66,12 +68,13 @@ print(response.json())
         <aside className="hidden lg:block lg:col-span-3 sticky top-24 self-start">
           <nav className="flex flex-col gap-4 text-sm text-[#d4c5b0]/75 font-medium border-l border-[#2a2a2a] pl-4">
             <a href="#intro" className="hover:text-[#f5f0eb] transition-colors block">1. Introducción</a>
-            <a href="#auth" className="hover:text-[#f5f0eb] transition-colors block">2. Autenticación</a>
+            <a href="#console" className="hover:text-[#f5f0eb] transition-colors block font-semibold text-[#8B2635]">2. Consola de Prueba</a>
+            <a href="#auth" className="hover:text-[#f5f0eb] transition-colors block">3. Autenticación</a>
             <a href="#endpoints" className="hover:text-[#f5f0eb] transition-colors block pl-2 border-l border-[#2a2a2a] hover:border-[#8B2635]">POST /try-on</a>
             <a href="#status" className="hover:text-[#f5f0eb] transition-colors block pl-2 border-l border-[#2a2a2a] hover:border-[#8B2635]">GET /status/:id</a>
             <a href="#usage" className="hover:text-[#f5f0eb] transition-colors block pl-2 border-l border-[#2a2a2a] hover:border-[#8B2635]">GET /usage</a>
-            <a href="#rate-limits" className="hover:text-[#f5f0eb] transition-colors block">3. Límites (Rate Limiting)</a>
-            <a href="#errors" className="hover:text-[#f5f0eb] transition-colors block">4. Códigos de Estado</a>
+            <a href="#rate-limits" className="hover:text-[#f5f0eb] transition-colors block">4. Límites (Rate Limiting)</a>
+            <a href="#errors" className="hover:text-[#f5f0eb] transition-colors block">5. Códigos de Estado</a>
           </nav>
         </aside>
 
@@ -91,9 +94,15 @@ print(response.json())
             </div>
           </div>
 
+          {/* Consola de Prueba */}
+          <div id="console" className="scroll-mt-24 border-t border-[#2a2a2a] pt-10">
+            <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-6">1. Consola de Prueba interactiva</h2>
+            <TestConsole />
+          </div>
+
           {/* Autenticación */}
           <div id="auth" className="scroll-mt-24 border-t border-[#2a2a2a] pt-10">
-            <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-4">Autenticación</h2>
+            <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-4">2. Autenticación</h2>
             <p className="text-sm leading-relaxed mb-4">
               Cada solicitud que realices a la API de CnB debe estar firmada incluyendo tu API Key provista en el encabezado <code className="bg-[#111111] px-1.5 py-0.5 rounded text-[#8B2635] font-mono">Authorization</code> como un Token Bearer.
             </p>
@@ -182,7 +191,7 @@ print(response.json())
 
           {/* Rate Limiting */}
           <div id="rate-limits" className="scroll-mt-24 border-t border-[#2a2a2a] pt-10">
-            <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-4">Límites y Cabeceras (Rate Limiting)</h2>
+            <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-4">3. Límites y Cabeceras (Rate Limiting)</h2>
             <p className="text-sm leading-relaxed mb-6">
               Cada respuesta devuelta por el servidor contiene metadatos relativos al consumo en sus encabezados HTTP (Headers) para permitirte controlar el nivel de llamadas:
             </p>
@@ -197,7 +206,7 @@ print(response.json())
 
           {/* Códigos de Error */}
           <div id="errors" className="scroll-mt-24 border-t border-[#2a2a2a] pt-10">
-            <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-4">Códigos de Estado y Errores</h2>
+            <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-4">4. Códigos de Estado y Errores</h2>
             <p className="text-sm leading-relaxed mb-6">
               La API utiliza códigos estándar de estado HTTP para indicar el éxito o fracaso de las llamadas:
             </p>
@@ -251,7 +260,7 @@ print(response.json())
           <span className="font-semibold">© 2025 CnB. Todos los derechos reservados.</span>
           <div className="flex gap-4">
             <Link href="/" className="hover:text-[#f5f0eb] transition-colors">Volver al Inicio</Link>
-            <Link href="/stores" className="hover:text-[#f5f0eb] transition-colors">Ver Tiendas</Link>
+            <Link href="/stores" className="hover:text-[#f5f0eb] transition-colors">Ver Experiencias de compra</Link>
           </div>
         </div>
       </footer>

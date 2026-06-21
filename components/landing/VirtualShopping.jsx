@@ -14,7 +14,7 @@ export default function VirtualShopping() {
       )
     },
     {
-      title: 'Personalizá tu tienda',
+      title: 'Personalizá tu experiencia',
       description: 'Configurá tus colores de marca, tu logo y detalles visuales para que la experiencia refleje la identidad de tu negocio.',
       icon: (
         <svg className="w-8 h-8 text-[#8B2635]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@ export default function VirtualShopping() {
         {/* Título de la sección */}
         <div className="text-center mb-16">
           <h2 className="font-serif text-3xl md:text-5xl font-light tracking-wide text-[#f5f0eb] mb-4">
-            Tu tienda online, lista en minutos
+            Tu experiencia de compra online, lista en minutos
           </h2>
           <div className="h-[1px] w-20 bg-[#8B2635] mx-auto mt-4" />
         </div>
@@ -96,7 +96,7 @@ export default function VirtualShopping() {
         <div className="text-center">
           <Link href="/login?tab=register">
             <span className="inline-block py-4 px-10 text-xs font-bold tracking-[0.2em] text-[#f5f0eb] uppercase border border-[#8B2635] bg-transparent hover:bg-[#8B2635] rounded-sm transition-all duration-300 cursor-pointer">
-              Crear mi tienda gratis
+              Crear mi experiencia de compra gratis
             </span>
           </Link>
         </div>

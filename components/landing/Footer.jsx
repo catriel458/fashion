@@ -15,7 +15,7 @@ export default function Footer() {
         {/* Enlaces del Footer */}
         <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-xs font-semibold uppercase tracking-[0.15em] text-[#d4c5b0]">
           <Link href="/stores" className="transition-colors hover:text-[#8B2635]">
-            Tienda Virtual
+            Experiencia Virtual
           </Link>
           <a href="#api-section" className="transition-colors hover:text-[#8B2635]">
             API

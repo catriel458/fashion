@@ -5,40 +5,48 @@ export default function Plans() {
   const plans = [
     {
       name: 'Plan Starter',
-      price: 'Gratis',
+      price: '$19',
+      period: '/ mes',
       features: [
         '100 requests / mes',
         '1 API Key',
-        'Soporte por email',
-        'Acceso estándar a IA'
+        'Soporte por email'
+      ],
+      isPopular: false,
+      ctaText: 'Elegir plan'
+    },
+    {
+      name: 'Plan Growth',
+      price: '$49',
+      period: '/ mes',
+      features: [
+        '300 requests / mes',
+        '2 API Keys',
+        'Soporte prioritario'
       ],
       isPopular: false,
       ctaText: 'Elegir plan'
     },
     {
       name: 'Plan Pro',
-      price: '$29',
+      price: '$99',
       period: '/ mes',
       features: [
-        '5.000 requests / mes',
-        '3 API Keys',
-        'Soporte prioritario',
-        'Analytics básico',
-        'Mayor velocidad de respuesta'
+        '800 requests / mes',
+        '5 API Keys',
+        'Soporte 24/7'
       ],
       isPopular: true,
       ctaText: 'Elegir plan'
     },
     {
-      name: 'Plan Business',
-      price: '$99',
+      name: 'Plan Scale',
+      price: '$249',
       period: '/ mes',
       features: [
-        'Requests ilimitados',
+        '2.000 requests / mes',
         'API Keys ilimitadas',
-        'SLA garantizado',
-        'Soporte dedicado 24/7',
-        'Integración personalizada'
+        'Integración dedicada'
       ],
       isPopular: false,
       ctaText: 'Elegir plan'
@@ -55,13 +63,13 @@ export default function Plans() {
             Planes de API adaptados a tu escala
           </h2>
           <p className="text-[#d4c5b0]/70 text-sm md:text-base max-w-2xl mx-auto font-light leading-relaxed">
-            Elegí la potencia del probador virtual según la cantidad de clientes de tu tienda.
+            Elegí la potencia del probador virtual según la escala de tu experiencia de compra.
           </p>
           <div className="h-[1px] w-20 bg-[#8B2635] mx-auto mt-4" />
         </div>
 
         {/* Cartas de Planes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
           {plans.map((plan, idx) => (
             <motion.div
               key={idx}
