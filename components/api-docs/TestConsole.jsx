@@ -24,7 +24,7 @@ const PRESET_GARMENTS = [
 const PRESET_PERSON = 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=400&q=80';
 
 export default function TestConsole() {
-  const [apiKey] = useState('cnb_demo_xxxxxxxxxxxxxxxxxxxx');
+  const [apiKey] = useState('tnb_demo_xxxxxxxxxxxxxxxxxxxx');
   const [userPhoto] = useState(PRESET_PERSON);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState(null);
@@ -49,7 +49,7 @@ export default function TestConsole() {
 
     try {
       // Si la API key es la demo, simulamos la llamada para evitar el consumo de tokens reales de OpenRouter
-      if (apiKey.trim() === 'cnb_demo_xxxxxxxxxxxxxxxxxxxx') {
+      if (apiKey.trim() === 'tnb_demo_xxxxxxxxxxxxxxxxxxxx') {
         // Simulamos un delay de procesamiento de IA de 1.8 segundos
         await new Promise(r => setTimeout(r, 1800));
         setResponse({
@@ -302,10 +302,10 @@ export default function TestConsole() {
                   className="text-[#e8ddd0]/90"
                 >
                   <code>
-                    <span className="text-[#8B2635]">fetch</span>(<span className="text-[#e8ddd0]">"https://api.cnb.com/v1/fitting/try-on"</span>, &#123;{'\n'}
+                    <span className="text-[#8B2635]">fetch</span>(<span className="text-[#e8ddd0]">"https://api.tnb.com/v1/fitting/try-on"</span>, &#123;{'\n'}
                     {'  '}method: <span className="text-[#e8ddd0]">"POST"</span>,{'\n'}
                     {'  '}headers: &#123;{'\n'}
-                    {'    '}<span className="text-[#d4c5b0]">"Authorization"</span>: <span className="text-[#e8ddd0]">"Bearer {apiKey || 'cnb_demo_xxxxxxxxxx'}"</span>,{'\n'}
+                    {'    '}<span className="text-[#d4c5b0]">"Authorization"</span>: <span className="text-[#e8ddd0]">"Bearer {apiKey || 'tnb_demo_xxxxxxxxxx'}"</span>,{'\n'}
                     {'    '}<span className="text-[#d4c5b0]">"Content-Type"</span>: <span className="text-[#e8ddd0]">"application/json"</span>{'\n'}
                     {'  '}&#125;,{'\n'}
                     {'  '}body: JSON.<span className="text-[#8B2635]">stringify</span>(&#123;{'\n'}

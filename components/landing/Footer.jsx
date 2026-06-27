@@ -8,8 +8,8 @@ export default function Footer() {
         
         {/* Nombre / Branding */}
         <div className="flex flex-col items-center md:items-start leading-tight">
-          <span className="font-serif font-light text-2xl tracking-wider text-[#f5f0eb]">CnB</span>
-          <span className="text-[9px] uppercase tracking-widest text-[#d4c5b0]/55 mt-0.5 font-sans">Choose and Buy</span>
+          <span className="font-serif font-light text-2xl tracking-wider text-[#f5f0eb]">TnB</span>
+          <span className="text-[9px] uppercase tracking-widest text-[#d4c5b0]/55 mt-0.5 font-sans">Try & Buy</span>
         </div>
 
         {/* Enlaces del Footer */}
@@ -30,7 +30,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="text-xs text-[#d4c5b0]/50 tracking-wide font-light">
-          © 2025 CnB. Todos los derechos reservados.
+          © 2025 TnB. Todos los derechos reservados.
         </div>
 
       </div>

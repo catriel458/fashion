@@ -80,7 +80,7 @@ export default function NotificationsPage() {
         <div style={{ maxWidth: '700px', margin: '0 auto' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', color: '#fff', marginBottom: '16px', letterSpacing: '0.08em' }}>
-              CnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px' }}>Choose and Buy</span>
+              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px' }}>Try & Buy</span>
             </div>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>

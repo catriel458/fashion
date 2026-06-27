@@ -81,7 +81,7 @@ export default function ContactForm() {
                 </div>
                 <h3 className="font-serif text-2xl text-[#f5f0eb] mb-3">¡Consulta enviada!</h3>
                 <p className="text-[#d4c5b0]/75 text-sm max-w-md mx-auto leading-relaxed">
-                  Gracias por comunicarte con CnB. Recibimos tu mensaje correctamente y te responderemos al correo provisto a la brevedad.
+                  Gracias por comunicarte con TnB. Recibimos tu mensaje correctamente y te responderemos al correo provisto a la brevedad.
                 </p>
                 <button
                   onClick={() => setSuccess(false)}

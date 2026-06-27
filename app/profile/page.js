@@ -163,7 +163,7 @@ export default function ProfilePage() {
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = filename || 'cnb-look.png';
+      a.download = filename || 'tnb-look.png';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -172,7 +172,7 @@ export default function ProfilePage() {
       const a = document.createElement('a');
       a.href = imageUrl;
       a.target = '_blank';
-      a.download = filename || 'cnb-look.png';
+      a.download = filename || 'tnb-look.png';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -371,7 +371,7 @@ export default function ProfilePage() {
         <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px clamp(1.2rem, 4vw, 2.5rem)' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', letterSpacing: '0.08em', color: '#fff', marginBottom: '20px' }}>
-              CnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px', letterSpacing: '0.16em' }}>Choose and Buy</span>
+              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px', letterSpacing: '0.16em' }}>Try & Buy</span>
             </div>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

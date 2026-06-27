@@ -1,11 +1,11 @@
 ---
-name: project-cnb-ecommerce
-description: CnB Choose and Buy — ecommerce multi-tienda Next.js 14 con WhatsApp checkout, panel admin, panel superadmin
+name: project-tnb-ecommerce
+description: TnB Try & Buy — ecommerce multi-tienda Next.js 14 con WhatsApp checkout, panel admin, panel superadmin
 metadata:
   type: project
 ---
 
-Proyecto CnB (Choose and Buy) - ecommerce multi-tienda en Next.js 14.
+Proyecto TnB (Try & Buy) - ecommerce multi-tienda en Next.js 14.
 
 **Stack:** Next.js 14 App Router, NeonDB (Postgres serverless), @vercel/blob, NextAuth JWT, nodemailer Gmail
 

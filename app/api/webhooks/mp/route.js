@@ -155,7 +155,7 @@ export async function POST(req) {
 
           if (order) {
             const orderNumber = formatOrderNumber(order.id, order.created_at);
-            const storeName   = order.store_name || 'CnB';
+            const storeName   = order.store_name || 'TnB';
 
             // Generate invoice HTML and upload to Vercel Blob
             await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS factura_url TEXT`.catch(() => {});

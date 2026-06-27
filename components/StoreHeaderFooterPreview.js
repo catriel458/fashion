@@ -47,9 +47,9 @@ export default function StoreHeaderFooterPreview({ form }) {
           borderBottom: `0.5px solid ${headerText}15`,
           flexWrap: 'nowrap', overflow: 'hidden',
         }}>
-          {/* CnB logo */}
+          {/* TnB logo */}
           <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', fontWeight: 400, letterSpacing: '0.08em', color: headerText, whiteSpace: 'nowrap', flexShrink: 0 }}>
-            CnB
+            TnB
           </span>
           <span style={{ color: headerText, opacity: 0.3, fontSize: '0.9rem', flexShrink: 0 }}>/</span>
 
@@ -151,9 +151,9 @@ export default function StoreHeaderFooterPreview({ form }) {
 
           {/* Copyright bar */}
           <div style={{ borderTop: `0.5px solid ${footerText}20`, paddingTop: '12px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '0.85rem', color: footerText, opacity: 0.5 }}>CnB</span>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '0.85rem', color: footerText, opacity: 0.5 }}>TnB</span>
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', color: footerText, opacity: 0.4 }}>
-              © {new Date().getFullYear()} CnB · {storeName}
+              © {new Date().getFullYear()} TnB · {storeName}
             </span>
           </div>
         </div>

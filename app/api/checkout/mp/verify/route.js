@@ -161,7 +161,7 @@ export async function POST(req) {
 
         if (order) {
           const orderNumber = formatOrderNumber(order.id, order.created_at);
-          const storeName   = order.store_name || 'CnB';
+          const storeName   = order.store_name || 'TnB';
           const buyerName   = order.first_name
             ? `${order.first_name} ${order.last_name || ''}`.trim()
             : order.username;

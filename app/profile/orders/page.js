@@ -218,7 +218,7 @@ export default function OrdersPage() {
         <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px clamp(1.2rem, 4vw, 2.5rem)' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', letterSpacing: '0.08em', color: '#fff', marginBottom: '16px' }}>
-              CnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', letterSpacing: '0.18em', marginLeft: '6px' }}>Choose and Buy</span>
+              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', letterSpacing: '0.18em', marginLeft: '6px' }}>Try & Buy</span>
             </div>
           </Link>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: '1.6rem', color: '#fff', margin: '0 0 16px' }}>

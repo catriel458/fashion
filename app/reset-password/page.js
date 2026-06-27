@@ -48,7 +48,7 @@ function ResetPasswordForm() {
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', color: '#0f0f0f', letterSpacing: '0.08em' }}>
-              CnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', marginLeft: '4px' }}>Choose and Buy</span>
+              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', marginLeft: '4px' }}>Try & Buy</span>
             </div>
           </Link>
           <h1 style={{ fontSize: '1.1rem', fontWeight: 400, margin: '16px 0 4px' }}>Nueva contraseña</h1>

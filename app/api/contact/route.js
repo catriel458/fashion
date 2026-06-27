@@ -14,11 +14,11 @@ export async function POST(req) {
       console.warn('GMAIL_USER no está definido en las variables de entorno.');
     }
 
-    const subject = `[CnB Landing] Nueva consulta de ${name}`;
+    const subject = `[TnB Landing] Nueva consulta de ${name}`;
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #2a2a2a; border-radius: 8px; background-color: #0d0d0d; color: #f5f0eb;">
         <h2 style="border-bottom: 2px solid #8B2635; padding-bottom: 12px; font-family: Georgia, serif; color: #f5f0eb; font-weight: normal; margin-top: 0; font-size: 1.5rem; letter-spacing: 0.04em;">
-          Nueva Consulta en CnB
+          Nueva Consulta en TnB
         </h2>
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
           <tr>
@@ -48,13 +48,13 @@ export async function POST(req) {
         </div>
         <hr style="border: 0; border-top: 1px solid #2a2a2a; margin: 28px 0;" />
         <p style="font-size: 0.7rem; color: #d4c5b0; opacity: 0.5; text-align: center; margin: 0; letter-spacing: 0.04em;">
-          Este correo fue generado automáticamente desde el formulario de la Landing Page de CnB.
+          Este correo fue generado automáticamente desde el formulario de la Landing Page de TnB.
         </p>
       </div>
     `;
 
     await sendMail({
-      to: recipient || 'admin@chooseandbuy.com',
+      to: recipient || 'admin@tryandbuy.com',
       subject,
       html,
     });

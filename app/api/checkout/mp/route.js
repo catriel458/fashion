@@ -37,7 +37,7 @@ export async function POST(req) {
         },
         auto_return: 'approved',
         external_reference:  externalReference,
-        statement_descriptor: 'CnB Store',
+        statement_descriptor: 'TnB Store',
       }),
     });
 

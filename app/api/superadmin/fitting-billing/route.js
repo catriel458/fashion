@@ -60,7 +60,7 @@ export async function POST(req) {
 
         await sendMail({
           to,
-          subject: `Factura plan ${plan.toUpperCase()} - CnB`,
+          subject: `Factura plan ${plan.toUpperCase()} - TnB`,
           html: `<pre style="font-family:inherit;white-space:pre-wrap">${lines.join('\n')}</pre>`,
         }).catch(() => {});
       }
@@ -86,7 +86,7 @@ export async function POST(req) {
         },
         body: JSON.stringify({
           items: [{
-            title: `Plan ${plan} - CnB - ${store.name}`,
+            title: `Plan ${plan} - TnB - ${store.name}`,
             quantity: 1,
             unit_price: Number(amount_usd),
             currency_id: 'USD',

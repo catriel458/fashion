@@ -309,10 +309,10 @@ export default function StoreClient({ store, images, categories, products, store
 
         <div style={{ borderTop: '0.5px solid #e8e4df', marginTop: '2rem', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ fontFamily: 'var(--font-serif)', fontSize: '0.9rem', letterSpacing: '0.08em', color: 'var(--store-footer-text-color, #1a1a1a)', opacity: 0.6 }}>
-            CnB
+            TnB
           </div>
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: 'var(--store-footer-text-color, #bbb)', letterSpacing: '0.06em', opacity: 0.5 }}>
-            © {new Date().getFullYear()} CnB · {store.name}
+            © {new Date().getFullYear()} TnB · {store.name}
           </div>
         </div>
       </footer>

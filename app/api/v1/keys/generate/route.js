@@ -26,7 +26,7 @@ export async function POST(request) {
 
     // Si no se provee un cliente, se crea de forma automática para facilitar pruebas
     if (!clientUuid) {
-      const email = body.email || `api-merchant-${crypto.randomBytes(4).toString('hex')}@cnb.com`;
+      const email = body.email || `api-merchant-${crypto.randomBytes(4).toString('hex')}@tnb.com`;
       const clientName = name || 'Mercante API Autogenerado';
 
       const newClients = await sql`
@@ -50,15 +50,15 @@ export async function POST(request) {
       monthlyLimit = 999999;
     }
 
-    // Generación de key cnb_live_ + 32 caracteres hex
+    // Generación de key tnb_live_ + 32 caracteres hex
     const randomHex = crypto.randomBytes(16).toString('hex'); // 16 bytes = 32 caracteres hex
-    const rawKey = `cnb_live_${randomHex}`;
+    const rawKey = `tnb_live_${randomHex}`;
 
     // Hashear con SHA-256 para persistencia segura
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
     // Muestra abreviada de control
-    const keyPreview = `cnb_live_${randomHex.substring(0, 4)}...${randomHex.substring(28)}`;
+    const keyPreview = `tnb_live_${randomHex.substring(0, 4)}...${randomHex.substring(28)}`;
 
     const keyName = name || `API Key ${selectedPlan.toUpperCase()}`;
 

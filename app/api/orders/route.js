@@ -177,7 +177,7 @@ export async function POST(req) {
     const [store] = storeId
       ? await sql`SELECT id, name, whatsapp_number, whatsapp_message_template, address, pickup_info, contact_email FROM stores WHERE id = ${storeId}`
       : [null];
-    const storeName = store?.name || 'CnB';
+    const storeName = store?.name || 'TnB';
     const buyerName = user.first_name
       ? `${user.first_name} ${user.last_name || ''}`.trim()
       : user.username;

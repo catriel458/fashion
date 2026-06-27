@@ -6,7 +6,7 @@ import Link from 'next/link';
 const VISITOR_SECTIONS = [
   {
     id: 'explorar', icon: '🛍️', title: 'Explorar tiendas',
-    content: `CnB reúne múltiples tiendas de moda en un solo lugar. Desde la página principal podés ver todas las tiendas disponibles y acceder directamente a cada una.\n\nCada tienda tiene su propio estilo, catálogo y experiencia de compra.`,
+    content: `TnB reúne múltiples tiendas de moda en un solo lugar. Desde la página principal podés ver todas las tiendas disponibles y acceder directamente a cada una.\n\nCada tienda tiene su propio estilo, catálogo y experiencia de compra.`,
     link: '/', linkLabel: 'Ir al inicio',
   },
   {
@@ -167,7 +167,7 @@ export default function AyudaPage() {
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', color: '#fff', marginBottom: '16px', letterSpacing: '0.08em' }}>
-              CnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px' }}>Choose and Buy</span>
+              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px' }}>Try & Buy</span>
             </div>
           </Link>
           <h1 style={{ color: '#fff', fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.5rem,4vw,2rem)', margin: '0 0 16px' }}>

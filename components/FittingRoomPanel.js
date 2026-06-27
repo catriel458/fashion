@@ -43,7 +43,7 @@ export default function FittingRoomPanel({ storeId }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const shown = localStorage.getItem('cnb_tryon_tip_shown');
+      const shown = localStorage.getItem('tnb_tryon_tip_shown');
       if (!shown) {
         setShowTipBanner(true);
       }
@@ -54,7 +54,7 @@ export default function FittingRoomPanel({ storeId }) {
     setTipTransition(true);
     setTimeout(() => {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('cnb_tryon_tip_shown', 'true');
+        localStorage.setItem('tnb_tryon_tip_shown', 'true');
       }
       setShowTipBanner(false);
     }, 300);
@@ -180,7 +180,7 @@ export default function FittingRoomPanel({ storeId }) {
       if (res.ok) {
         setResult(data.image);
         // Refresh notifications to celebrate achievements (like first try-on coupon or level up)
-        window.dispatchEvent(new CustomEvent('cnb-refresh-notifications'));
+        window.dispatchEvent(new CustomEvent('tnb-refresh-notifications'));
         if (storeId) {
           fetch(`/api/tryon/usage-status?store_id=${storeId}`)
             .then(r => r.json())
@@ -203,7 +203,7 @@ export default function FittingRoomPanel({ storeId }) {
   const handleAddAllToCart = async () => {
     let savedMeasurements = null;
     try {
-      const data = localStorage.getItem('cnb_user_measurements');
+      const data = localStorage.getItem('tnb_user_measurements');
       if (data) savedMeasurements = JSON.parse(data);
     } catch {}
 

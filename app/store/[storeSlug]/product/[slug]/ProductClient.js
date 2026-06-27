@@ -72,7 +72,7 @@ export default function ProductClient({ product, storeSlug, storeId }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const data = localStorage.getItem('cnb_user_measurements');
+      const data = localStorage.getItem('tnb_user_measurements');
       if (data) {
         const parsed = JSON.parse(data);
         setSavedMeasurements(parsed);
@@ -769,7 +769,7 @@ export default function ProductClient({ product, storeSlug, storeId }) {
                   <button
                     onClick={() => {
                       const measurements = { height, weight, fit, size: sizerResult };
-                      localStorage.setItem('cnb_user_measurements', JSON.stringify(measurements));
+                      localStorage.setItem('tnb_user_measurements', JSON.stringify(measurements));
                       setSavedMeasurements(measurements);
                       if (availableSizes && availableSizes.includes(sizerResult)) {
                         setSelectedSize(sizerResult);

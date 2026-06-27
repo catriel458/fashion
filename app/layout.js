@@ -2,7 +2,7 @@ import './globals.css';
 import Providers from '@/components/Providers';
 import ChatBot from '@/components/ChatBot';
 
-export const metadata = { title: 'CnB — Choose and Buy' };
+export const metadata = { title: 'TnB — Try & Buy' };
 
 export default function RootLayout({ children }) {
   return (

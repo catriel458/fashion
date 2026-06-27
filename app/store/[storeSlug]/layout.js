@@ -20,8 +20,8 @@ async function getStore(slug) {
 export async function generateMetadata({ params }) {
   const store = await getStore(params.storeSlug);
   return {
-    title: `${store?.name || params.storeSlug} — CnB`,
-    description: store?.tagline || `Tienda en CnB`,
+    title: `${store?.name || params.storeSlug} — TnB`,
+    description: store?.tagline || `Tienda en TnB`,
   };
 }
 

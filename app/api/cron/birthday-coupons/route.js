@@ -36,7 +36,7 @@ export async function GET(req) {
       `;
 
       const store = await sql`SELECT name FROM stores WHERE id = ${config.store_id}`;
-      const storeName = store[0]?.name || 'CnB';
+      const storeName = store[0]?.name || 'TnB';
 
       for (const user of users) {
         const code = `BDAY-${user.id}-${new Date().getFullYear()}-${randomCode()}`;

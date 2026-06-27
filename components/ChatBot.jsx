@@ -8,9 +8,9 @@ function getGreeting(role, username) {
   }
   if (role === 'buyer') {
     const nameStr = username ? `, ${username}` : '';
-    return `¡Hola${nameStr}! Bienvenido de nuevo a CnB. Estoy a tu disposición para ayudarte a usar el probador virtual con IA, ver tus cupones de beneficios, configurar tu dirección geolocalizada o seguir el estado de tus compras. ¿En qué te puedo ayudar?`;
+    return `¡Hola${nameStr}! Bienvenido de nuevo a TnB. Estoy a tu disposición para ayudarte a usar el probador virtual con IA, ver tus cupones de beneficios, configurar tu dirección geolocalizada o seguir el estado de tus compras. ¿En qué te puedo ayudar?`;
   }
-  return '¡Bienvenido a CnB, el shopping virtual premium! 🛍️ Aquí puedes recorrer múltiples marcas y usar nuestro probador virtual con IA. Para empezar a probarte ropa, recuerda: Crea tu cuenta → Actívala por mail → Carga tu foto en Perfil → ¡Elige tus prendas favoritas! ¿Tienes alguna pregunta?';
+  return '¡Bienvenido a TnB, el shopping virtual premium! 🛍️ Aquí puedes recorrer múltiples marcas y usar nuestro probador virtual con IA. Para empezar a probarte ropa, recuerda: Crea tu cuenta → Actívala por mail → Carga tu foto en Perfil → ¡Elige tus prendas favoritas! ¿Tienes alguna pregunta?';
 }
 
 export default function ChatBot() {
@@ -224,7 +224,7 @@ export default function ChatBot() {
                 }}
               />
               <div>
-                <div style={{ fontWeight: '600', fontSize: '0.88rem', letterSpacing: '0.04em' }}>Asistente CnB</div>
+                <div style={{ fontWeight: '600', fontSize: '0.88rem', letterSpacing: '0.04em' }}>Asistente TnB</div>
                 <div style={{ fontSize: '0.7rem', opacity: 0.75, textTransform: 'capitalize' }}>
                   Modo {role === 'buyer' ? 'Comprador' : role === 'admin' ? 'Administrador' : 'Invitado'}
                 </div>

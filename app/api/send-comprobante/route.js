@@ -38,8 +38,8 @@ export async function POST(req) {
 <body style="margin:0;padding:0;background:#f5f3f0;font-family:Arial,sans-serif;">
   <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:6px;border:1px solid #e0dbd4;overflow:hidden;">
     <div style="background:#0f0f0f;padding:20px 32px;">
-      <p style="color:#fff;font-size:1.2rem;letter-spacing:0.08em;margin:0;">CnB</p>
-      <p style="color:#6b6560;font-size:0.7rem;letter-spacing:0.16em;margin:2px 0 0;">Choose and Buy</p>
+      <p style="color:#fff;font-size:1.2rem;letter-spacing:0.08em;margin:0;">TnB</p>
+      <p style="color:#6b6560;font-size:0.7rem;letter-spacing:0.16em;margin:2px 0 0;">Try & Buy</p>
     </div>
     <div style="padding:32px;color:#0f0f0f;">
       <h2 style="font-size:1.2rem;font-weight:400;margin:0 0 16px;">Comprobante de pago</h2>
@@ -52,7 +52,7 @@ export async function POST(req) {
       </p>
     </div>
     <div style="background:#f5f3f0;padding:16px 32px;text-align:center;font-size:0.65rem;color:#aaa;border-top:1px solid #e0dbd4;">
-      © CnB - Choose and Buy | cnbappstore@gmail.com
+      © TnB - Try & Buy | tnbappstore@gmail.com
     </div>
   </div>
 </body></html>`;

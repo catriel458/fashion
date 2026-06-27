@@ -51,7 +51,7 @@ export default function Hero() {
           style={{ textShadow: '0 1px 10px rgba(0,0,0,0.8)' }}
           className="block font-sans text-xs tracking-[0.28em] text-[#d4c5b0] uppercase mb-4"
         >
-          CHOOSE AND BUY
+          TRY & BUY
         </span>
 
         {/* Título Principal */}
@@ -59,7 +59,7 @@ export default function Hero() {
           style={{ textShadow: '0 2px 30px rgba(0,0,0,0.9)' }}
           className="font-serif text-6xl sm:text-8xl md:text-9xl font-light tracking-wide text-[#f5f0eb] select-none mb-8"
         >
-          CnB
+          TnB
         </h1>
 
         {/* Leyenda y Tagline Premium */}
@@ -70,7 +70,7 @@ export default function Hero() {
           style={{ textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}
           className="font-sans text-base md:text-xl text-[#e8ddd0] font-light tracking-wide max-w-3xl mx-auto mb-16 leading-relaxed"
         >
-          Transformá tu forma de comprar en línea con nuestra experiencia de compra o revolucioná tu negocio con nuestra API "probador virtual" de última tecnología
+          Viví la experiencia de nuestro Shopping Virtual o integrá el Probador Inteligente a tu tienda.
         </motion.p>
 
         {/* Botones de Acción */}
@@ -82,13 +82,13 @@ export default function Hero() {
         >
           <Link href="/stores">
             <span className="w-56 text-center py-4 px-8 text-xs font-bold tracking-[0.2em] text-[#f5f0eb] uppercase border border-[#8B2635] bg-black/40 backdrop-blur-sm hover:bg-black/70 rounded-sm transition-all duration-300 cursor-pointer">
-              Crear mi experiencia de compra
+              Explorar Shopping Virtual
             </span>
           </Link>
 
           <a href="#api-section">
             <span className="w-56 text-center py-4 px-8 text-xs font-bold tracking-[0.2em] text-[#d4c5b0] uppercase border border-[#2a2a2a] bg-black/40 backdrop-blur-sm hover:text-[#f5f0eb] hover:bg-black/70 rounded-sm transition-all duration-300 cursor-pointer">
-              Ver la API
+              Integrar a mi tienda
             </span>
           </a>
         </motion.div>

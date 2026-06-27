@@ -4,7 +4,7 @@ import TestConsole from '@/components/api-docs/TestConsole';
 
 export default function ApiDocs() {
   const codeFetch = `
-fetch("https://api.cnb.com/v1/fitting/try-on", {
+fetch("https://api.tnb.com/v1/fitting/try-on", {
   method: "POST",
   headers: {
     "Authorization": "Bearer TU_API_KEY",
@@ -25,7 +25,7 @@ fetch("https://api.cnb.com/v1/fitting/try-on", {
   const codePython = `
 import requests
 
-url = "https://api.cnb.com/v1/fitting/try-on"
+url = "https://api.tnb.com/v1/fitting/try-on"
 headers = {
     "Authorization": "Bearer TU_API_KEY",
     "Content-Type": "application/json"
@@ -48,7 +48,7 @@ print(response.json())
       <header className="border-b border-[#2a2a2a] bg-[#0a0a0a]/85 sticky top-0 z-50 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <span className="font-serif font-light text-2xl tracking-wider text-[#f5f0eb]">CnB</span>
+            <span className="font-serif font-light text-2xl tracking-wider text-[#f5f0eb]">TnB</span>
             <span className="text-[10px] text-[#d4c5b0]/55 font-mono group-hover:text-[#8B2635] transition-colors hidden xs:inline">← Inicio</span>
           </Link>
           <div className="flex gap-4 text-xs font-semibold uppercase tracking-wider text-[#d4c5b0]/75 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
@@ -87,7 +87,7 @@ print(response.json())
               Documentación de la API de Vestidor Virtual
             </h1>
             <p className="text-[#d4c5b0]/80 text-sm md:text-base leading-relaxed mb-6 font-light">
-              La API de vestidor virtual de CnB permite a marcas y e-commerce de terceros integrar nuestro procesador de probador de ropa inteligente mediante llamados REST HTTPS. Enviando una foto de cuerpo completo del usuario y fotos claras de las prendas, nuestra IA genera una imagen realista del cliente vistiendo dichas prendas de manera instantánea.
+              La API de vestidor virtual de TnB permite a marcas y e-commerce de terceros integrar nuestro procesador de probador de ropa inteligente mediante llamados REST HTTPS. Enviando una foto de cuerpo completo del usuario y fotos claras de las prendas, nuestra IA genera una imagen realista del cliente vistiendo dichas prendas de manera instantánea.
             </p>
             <div className="p-4 bg-[#8B2635]/10 border border-[#8B2635]/30 rounded-sm text-[#e8ddd0] text-sm">
               💡 <strong>¿Qué es la IA de Probador?</strong> Es un modelo interno optimizado para ajustar, doblar y superponer prendas sobre fotos humanas conservando texturas, logos y detalles físicos.
@@ -104,10 +104,10 @@ print(response.json())
           <div id="auth" className="scroll-mt-24 border-t border-[#2a2a2a] pt-10">
             <h2 className="text-2xl font-serif font-light text-[#f5f0eb] tracking-wide mb-4">2. Autenticación</h2>
             <p className="text-sm leading-relaxed mb-4">
-              Cada solicitud que realices a la API de CnB debe estar firmada incluyendo tu API Key provista en el encabezado <code className="bg-[#111111] px-1.5 py-0.5 rounded text-[#8B2635] font-mono">Authorization</code> como un Token Bearer.
+              Cada solicitud que realices a la API de TnB debe estar firmada incluyendo tu API Key provista en el encabezado <code className="bg-[#111111] px-1.5 py-0.5 rounded text-[#8B2635] font-mono">Authorization</code> como un Token Bearer.
             </p>
             <div className="bg-[#111111] border border-[#2a2a2a] p-4 rounded-sm font-mono text-xs text-[#e8ddd0]">
-              Authorization: Bearer cnb_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+              Authorization: Bearer tnb_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
             </div>
             <p className="text-xs text-[#d4c5b0]/50 mt-3">
               ⚠️ Las claves API deben resguardarse en el backend de tu servidor y nunca exponerse en código cliente front-end expuesto en navegadores.
@@ -257,7 +257,7 @@ print(response.json())
       {/* Footer */}
       <footer className="border-t border-[#2a2a2a] bg-[#0a0a0a]/80 py-12 px-4 text-center text-[#d4c5b0]/40 text-xs">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <span className="font-semibold">© 2025 CnB. Todos los derechos reservados.</span>
+          <span className="font-semibold">© 2025 TnB. Todos los derechos reservados.</span>
           <div className="flex gap-4">
             <Link href="/" className="hover:text-[#f5f0eb] transition-colors">Volver al Inicio</Link>
             <Link href="/stores" className="hover:text-[#f5f0eb] transition-colors">Ver Experiencias de compra</Link>

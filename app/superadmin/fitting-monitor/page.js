@@ -508,11 +508,11 @@ export default function FittingMonitorPage() {
             </button>
             <h3 style={{ margin: '0 0 14px', fontSize: '1.1rem', fontWeight: 600 }}>Ofrecer upgrade</h3>
             <p style={{ margin: '0 0 20px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
-              {`Hola ${upgradeStore.name}! Agotaste tus 20 probadas gratuitas este mes en CnB. Con el plan Starter por USD 9/mes tenes 100 probadas mensuales. Te lo activo hoy si queres.`}
+              {`Hola ${upgradeStore.name}! Agotaste tus 20 probadas gratuitas este mes en TnB. Con el plan Starter por USD 9/mes tenes 100 probadas mensuales. Te lo activo hoy si queres.`}
             </p>
             <button
               onClick={() => {
-                const msg = `Hola ${upgradeStore.name}! Agotaste tus 20 probadas gratuitas este mes en CnB. Con el plan Starter por USD 9/mes tenes 100 probadas mensuales. Te lo activo hoy si queres.`;
+                const msg = `Hola ${upgradeStore.name}! Agotaste tus 20 probadas gratuitas este mes en TnB. Con el plan Starter por USD 9/mes tenes 100 probadas mensuales. Te lo activo hoy si queres.`;
                 window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
               }}
               style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', background: '#22c55e', color: '#0a0a0a', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}

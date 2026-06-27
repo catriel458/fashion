@@ -57,9 +57,9 @@ export default function StoreNavbar({
       gap: '12px',
     }}>
 
-      {/* CnB logo — siempre contrasta con el fondo del header */}
+      {/* TnB logo — siempre contrasta con el fondo del header */}
       <Link href="/" style={{ textDecoration: 'none', color: textColor, fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.15rem', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
-        CnB
+        TnB
       </Link>
 
       <span style={{ color: textColor, opacity: 0.3, fontWeight: 300, fontSize: '1rem' }}>/</span>

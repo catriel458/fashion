@@ -50,7 +50,7 @@ export default function VirtualFittingRoomApi() {
           transition={{ delay: 0.35, duration: 0.8 }}
           className="text-[#d4c5b0]/85 text-sm md:text-lg max-w-3xl mx-auto font-light leading-relaxed mb-12"
         >
-          CnB pone a tu disposición una API de vestidor virtual de última tecnología, especializada y refinada para esta tarea. 
+          TnB pone a tu disposición una API de vestidor virtual de última tecnología, especializada y refinada para esta tarea. 
           Al enviarnos imágenes de tu catálogo y la foto de tus clientes, la IA procesa y genera la imagen del usuario vistiendo las prendas de inmediato. 
           Es la solución ideal para que tus clientes descubran cómo les quedan las prendas sin tener que ir a probárselas, optimizando las conversiones y redefiniendo la experiencia de compra.
         </motion.p>

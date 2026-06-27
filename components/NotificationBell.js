@@ -50,15 +50,15 @@ function triggerConfetti() {
     p.style.background = color;
     p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
     p.style.opacity = '0.9';
-    p.style.animation = `cnbConfettiFall ${duration}s linear ${delay}s forwards`;
+    p.style.animation = `tnbConfettiFall ${duration}s linear ${delay}s forwards`;
     
     container.appendChild(p);
   }
 
   const style = document.createElement('style');
-  style.id = 'cnb-confetti-keyframes';
+  style.id = 'tnb-confetti-keyframes';
   style.innerHTML = `
-    @keyframes cnbConfettiFall {
+    @keyframes tnbConfettiFall {
       0% {
         transform: translateY(0) rotate(0deg);
         opacity: 0.9;
@@ -69,7 +69,7 @@ function triggerConfetti() {
       }
     }
   `;
-  if (!document.getElementById('cnb-confetti-keyframes')) {
+  if (!document.getElementById('tnb-confetti-keyframes')) {
     document.head.appendChild(style);
   }
 
@@ -102,8 +102,8 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
 
   useEffect(() => {
     const handleRefresh = () => loadNotifications();
-    window.addEventListener('cnb-refresh-notifications', handleRefresh);
-    return () => window.removeEventListener('cnb-refresh-notifications', handleRefresh);
+    window.addEventListener('tnb-refresh-notifications', handleRefresh);
+    return () => window.removeEventListener('tnb-refresh-notifications', handleRefresh);
   }, []);
 
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
 
         // Check for achievements to celebrate
         if (d.notifications && d.notifications.length > 0) {
-          const celebratedIds = JSON.parse(localStorage.getItem('cnb_celebrated_notifs') || '[]');
+          const celebratedIds = JSON.parse(localStorage.getItem('tnb_celebrated_notifs') || '[]');
           const toCelebrate = d.notifications.find(n => 
             !n.read && 
             ['level_up', 'welcome_coupon', 'first_tryon_coupon'].includes(n.type) &&
@@ -138,7 +138,7 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
               message: toCelebrate.message,
             });
             celebratedIds.push(toCelebrate.id);
-            localStorage.setItem('cnb_celebrated_notifs', JSON.stringify(celebratedIds));
+            localStorage.setItem('tnb_celebrated_notifs', JSON.stringify(celebratedIds));
             // Mark as read in backend
             markRead(toCelebrate.id);
           }
@@ -176,19 +176,19 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
           background: 'rgba(15,15,15,0.85)', backdropFilter: 'blur(8px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 9999, padding: '24px',
-          animation: 'cnbFadeIn 0.3s ease-out'
+          animation: 'tnbFadeIn 0.3s ease-out'
         }}>
           <style>{`
-            @keyframes cnbFadeIn {
+            @keyframes tnbFadeIn {
               from { opacity: 0; }
               to { opacity: 1; }
             }
-            @keyframes cnbPopIn {
+            @keyframes tnbPopIn {
               0% { transform: scale(0.85); opacity: 0; }
               70% { transform: scale(1.05); }
               100% { transform: scale(1); opacity: 1; }
             }
-            @keyframes cnbFloat {
+            @keyframes tnbFloat {
               0% { transform: translateY(0px); }
               50% { transform: translateY(-10px); }
               100% { transform: translateY(0px); }
@@ -204,7 +204,7 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
             width: '100%',
             textAlign: 'center',
             boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
-            animation: 'cnbPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            animation: 'tnbPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -220,7 +220,7 @@ export default function NotificationBell({ textColor = '#0f0f0f' }) {
               <div style={{
                 fontSize: '3.5rem',
                 marginBottom: '16px',
-                animation: 'cnbFloat 3s ease-in-out infinite',
+                animation: 'tnbFloat 3s ease-in-out infinite',
                 display: 'inline-block'
               }}>
                 {celebration.type === 'level_up' ? '👑' : celebration.type === 'welcome_coupon' ? '🎁' : '🎫'}

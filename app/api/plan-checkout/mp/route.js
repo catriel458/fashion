@@ -29,7 +29,7 @@ export async function POST(req) {
       },
       body: JSON.stringify({
         items: [{
-          title: `Plan ${plan.name} - CnB`,
+          title: `Plan ${plan.name} - TnB`,
           quantity: 1,
           unit_price: plan.price_usd,
           currency_id: 'USD',

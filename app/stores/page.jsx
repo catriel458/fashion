@@ -84,9 +84,9 @@ export default function Home() {
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
           <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 22, fontWeight: 400, letterSpacing: '0.08em' }}>CnB</span>
+            <span style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 22, fontWeight: 400, letterSpacing: '0.08em' }}>TnB</span>
           </Link>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)', marginTop: 1 }}>Choose and Buy</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)', marginTop: 1 }}>Try & Buy</span>
         </div>
 
         {/* Links desktop */}
@@ -158,7 +158,7 @@ export default function Home() {
                 fontSize: 10, letterSpacing: '0.25em', textTransform: 'uppercase',
                 marginBottom: 14, opacity: 0.7, fontFamily: 'var(--font-sans)',
               }}>
-                Choose and Buy
+                Try & Buy
               </p>
               <h1 style={{
                 fontFamily: 'var(--font-serif)',
@@ -264,8 +264,8 @@ export default function Home() {
         background: 'var(--white)',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 400, letterSpacing: '0.08em', color: '#1a1a1a' }}>CnB</span>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>Choose and Buy</span>
+          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 400, letterSpacing: '0.08em', color: '#1a1a1a' }}>TnB</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>Try & Buy</span>
         </div>
 
         <div style={{ display: 'flex', gap: '2rem', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>
@@ -274,7 +274,7 @@ export default function Home() {
         </div>
 
         <div style={{ fontSize: 11, color: '#bbb', letterSpacing: '0.06em' }}>
-          © {new Date().getFullYear()} CnB
+          © {new Date().getFullYear()} TnB
         </div>
       </footer>
 
