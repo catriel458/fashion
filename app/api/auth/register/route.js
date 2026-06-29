@@ -9,7 +9,7 @@ import { addPoints } from '@/lib/points';
 
 export async function POST(req) {
   try {
-    const { username, email, password } = await req.json();
+    const { username, email, password, referralStoreId } = await req.json();
     if (!username?.trim() || !email?.trim() || !password) {
       return NextResponse.json({ error: 'Todos los campos son requeridos' }, { status: 400 });
     }
@@ -26,6 +26,13 @@ export async function POST(req) {
       VALUES (${username.trim()}, ${email.toLowerCase()}, ${passwordHash}, 'visitor', false)
       RETURNING id, username, email, role
     `;
+
+    if (referralStoreId) {
+      await sql`
+        UPDATE users SET referral_store_id = ${referralStoreId}
+        WHERE id = ${user.id}
+      `;
+    }
 
     // Enviar verificación de email (no bloquea el registro si falla)
     try {

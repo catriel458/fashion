@@ -52,6 +52,9 @@ export default function AdminSettingsPage() {
   const [template,       setTemplate]           = useState(DEFAULT_TEMPLATE);
   const [hours,          setHours]              = useState(DEFAULT_HOURS);
   const [pickupPoints,   setPickupPoints]       = useState([]);
+  const [storeId,        setStoreId]            = useState(null);
+  const [welcomePopupEnabled, setWelcomePopupEnabled] = useState(false);
+  const [welcomePopupDiscount, setWelcomePopupDiscount] = useState(10);
   const [newPoint,       setNewPoint]           = useState({ name: '', address: '', description: '' });
   const [addingPoint,    setAddingPoint]        = useState(false);
 
@@ -129,6 +132,9 @@ export default function AdminSettingsPage() {
       fetch('/api/admin/pickup-points').then(r => r.json()).catch(() => []),
     ]).then(([data, points]) => {
       if (data.error) { setError(data.error); return; }
+      setStoreId(data.id || null);
+      setWelcomePopupEnabled(data.welcome_popup_enabled ?? false);
+      setWelcomePopupDiscount(data.welcome_popup_discount ?? 10);
       setWhatsappNumber(data.whatsapp_number || '');
       setTemplate(data.whatsapp_message_template || DEFAULT_TEMPLATE);
       if (data.hours?.length === 7) {
@@ -174,6 +180,20 @@ export default function AdminSettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+
+      if (storeId) {
+        const patchRes = await fetch(`/api/admin/stores/${storeId}/settings`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            welcome_popup_enabled: welcomePopupEnabled,
+            welcome_popup_discount: parseInt(welcomePopupDiscount, 10),
+          }),
+        });
+        const patchData = await patchRes.json();
+        if (!patchRes.ok) throw new Error(patchData.error);
+      }
+
       setSuccess('Configuración guardada correctamente');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) { setError(err.message); }
@@ -317,6 +337,43 @@ export default function AdminSettingsPage() {
               {buildPreview(template)}
             </pre>
           </div>
+        </div>
+
+        {/* Popup de bienvenida */}
+        <div style={section}>
+          <h2 style={h2s}>Popup de bienvenida</h2>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={welcomePopupEnabled}
+                onChange={e => setWelcomePopupEnabled(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.875rem', fontWeight: 500 }}>
+                Mostrar popup de bienvenida
+              </span>
+            </label>
+          </div>
+
+          {welcomePopupEnabled && (
+            <div style={{ marginBottom: '16px', maxWidth: '280px' }}>
+              <label style={lbl}>Porcentaje de descuento</label>
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={welcomePopupDiscount}
+                onChange={e => setWelcomePopupDiscount(e.target.value)}
+                style={inp}
+              />
+            </div>
+          )}
+
+          <p style={{ fontSize: '0.68rem', color: '#6b6560', margin: '8px 0 0', lineHeight: 1.5 }}>
+            Los visitantes sin cuenta verán este popup al entrar a tu tienda.
+            Si tenés el mayor descuento activo, también aparecerá en el shopping general.
+          </p>
         </div>
 
         {/* Horarios */}

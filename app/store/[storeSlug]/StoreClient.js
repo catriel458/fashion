@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
 import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
 import StoreStatusBadge from '@/components/StoreStatusBadge';
+import WelcomePopupStore from '@/components/WelcomePopupStore';
 
 const CATEGORY_ICONS = {
   remeras: '👕', pantalones: '👖', abrigos: '🧥',
@@ -316,6 +317,16 @@ export default function StoreClient({ store, images, categories, products, store
           </div>
         </div>
       </footer>
+
+      {store.welcome_popup_enabled && (
+        <WelcomePopupStore
+          storeId={store.id}
+          storeName={store.name}
+          discountPercent={store.welcome_popup_discount}
+          primaryColor={store.primary_color}
+        />
+      )}
+
     </div>
   );
 }

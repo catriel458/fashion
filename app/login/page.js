@@ -27,6 +27,7 @@ function LoginForm() {
   const [tab, setTab]             = useState(defaultTab);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [regForm, setRegForm]     = useState({ username: '', email: '', password: '', confirm: '' });
+  const [referralStoreId, setReferralStoreId] = useState(searchParams.get('referralStoreId') || '');
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
 
@@ -52,7 +53,7 @@ function LoginForm() {
     try {
       const res  = await fetch('/api/auth/register', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: regForm.username, email: regForm.email, password: regForm.password }),
+        body: JSON.stringify({ username: regForm.username, email: regForm.email, password: regForm.password, referralStoreId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al registrarse');
@@ -181,6 +182,7 @@ function LoginForm() {
               </form>
             ) : (
               <form onSubmit={handleRegister} noValidate>
+                <input type="hidden" name="referralStoreId" value={referralStoreId} />
                 <div style={{ marginBottom: '14px' }}>
                   <label style={labelStyle}>Nombre de usuario</label>
                   <input type="text" required autoFocus

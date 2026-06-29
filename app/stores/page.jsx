@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import UserButton from '@/components/UserButton';
+import WelcomePopupGeneral from '@/components/WelcomePopupGeneral';
 
 const CAROUSEL_ITEMS = [
   { gif: '/gifs/1.gif', label: 'Nueva colección' },
@@ -49,11 +50,17 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [stores,   setStores]   = useState([]);
+  const [topPopup, setTopPopup] = useState(null);
 
   useEffect(() => {
     fetch(`/api/stores?_=${Date.now()}`, { cache: 'no-store' })
       .then(r => r.json())
       .then(d => setStores(Array.isArray(d) ? d : []))
+      .catch(() => {});
+
+    fetch(`/api/stores/top-popup?_=${Date.now()}`, { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setTopPopup(data); })
       .catch(() => {});
   }, []);
 
@@ -277,6 +284,16 @@ export default function Home() {
           © {new Date().getFullYear()} TnB
         </div>
       </footer>
+
+      {topPopup && (
+        <WelcomePopupGeneral
+          storeId={topPopup.id}
+          storeName={topPopup.name}
+          discountPercent={topPopup.welcome_popup_discount}
+          storeSlug={topPopup.slug}
+          primaryColor={topPopup.primary_color}
+        />
+      )}
 
     </div>
   );
