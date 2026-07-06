@@ -84,7 +84,7 @@ export default function UserButton() {
             </Link>
           )}
           <button
-            onClick={() => { signOut({ callbackUrl: '/' }); setShowDropdown(false); }}
+            onClick={() => { signOut({ callbackUrl: '/stores' }); setShowDropdown(false); }}
             style={{
               ...itemStyle, display: 'block', width: '100%', textAlign: 'left',
               border: 'none', cursor: 'pointer',

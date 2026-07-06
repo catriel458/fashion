@@ -5,6 +5,18 @@ import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { useFittingRoom } from './FittingRoomContext';
 import { useCart } from './CartContext';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const COMPLIMENTS = [
+  "¡Te queda genial! 😎 👏",
+  "¡Te ves súper cool! 😎 👏",
+  "¡Ese look te sienta increíble! 😎 👏",
+  "¡Qué fachero! 😎 👏",
+  "¡Estilo puro! 😎 👏",
+  "¡Increíble outfit! 😎 👏",
+  "¡Tirando facha! 😎 👏",
+  "¡Te ves espectacular! 😎 👏"
+];
 
 const ZONE_CONFIG = [
   { category: 'gorro',      label: 'Gorro',      pos: { top: 2,   left: 76  } },
@@ -40,6 +52,9 @@ export default function FittingRoomPanel({ storeId }) {
   const lightboxRef    = useRef(null);
   const [showTipBanner, setShowTipBanner] = useState(false);
   const [tipTransition, setTipTransition] = useState(false);
+  const [showCompliment, setShowCompliment] = useState(false);
+  const [complimentText, setComplimentText] = useState('');
+  const [particles, setParticles]           = useState([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -179,6 +194,23 @@ export default function FittingRoomPanel({ storeId }) {
       const data = await res.json();
       if (res.ok) {
         setResult(data.image);
+        
+        // Show compliment and particle burst
+        const randomMsg = COMPLIMENTS[Math.floor(Math.random() * COMPLIMENTS.length)];
+        setComplimentText(randomMsg);
+        setShowCompliment(true);
+        const newParticles = Array.from({ length: 15 }).map((_, i) => ({
+          id: Math.random(),
+          emoji: ['👏', '😎', '✨', '🔥', '🙌'][i % 5],
+          left: Math.random() * 80 + 10,
+          delay: Math.random() * 0.4,
+          duration: 2 + Math.random() * 1.5,
+        }));
+        setParticles(newParticles);
+        
+        setTimeout(() => setShowCompliment(false), 5000);
+        setTimeout(() => setParticles([]), 5000);
+
         // Refresh notifications to celebrate achievements (like first try-on coupon or level up)
         window.dispatchEvent(new CustomEvent('tnb-refresh-notifications'));
         if (storeId) {
@@ -667,6 +699,75 @@ export default function FittingRoomPanel({ storeId }) {
           )}
 
           <style>{`@keyframes frSpin { to { transform: rotate(360deg); } }`}</style>
+
+          {/* Particles overlay */}
+          <AnimatePresence>
+            {particles.map(p => (
+              <motion.div
+                key={p.id}
+                initial={{ y: 300, opacity: 0, scale: 0.5 }}
+                animate={{
+                  y: -500,
+                  opacity: [0, 1, 1, 0],
+                  scale: [0.5, 1.4, 1.4, 0.8],
+                  x: [0, Math.random() * 50 - 25, Math.random() * 50 - 25],
+                }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  duration: p.duration,
+                  delay: p.delay,
+                  ease: 'easeOut',
+                }}
+                style={{
+                  position: 'absolute',
+                  left: `${p.left}%`,
+                  bottom: '15%',
+                  fontSize: '28px',
+                  zIndex: 1010,
+                  pointerEvents: 'none',
+                }}
+              >
+                {p.emoji}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Compliment Popup overlay */}
+          <AnimatePresence>
+            {showCompliment && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                transition={{ type: 'spring', damping: 15 }}
+                style={{
+                  position: 'absolute',
+                  top: '80px',
+                  left: '16px',
+                  right: '16px',
+                  background: 'rgba(255, 255, 255, 0.98)',
+                  border: '1px solid #1a1a1a',
+                  borderRadius: '10px',
+                  padding: '20px 16px',
+                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+                  textAlign: 'center',
+                  zIndex: 1009,
+                  pointerEvents: 'none',
+                }}
+              >
+                <div style={{ fontSize: '32px', marginBottom: '8px', animation: 'clapJump 0.5s ease infinite alternate' }}>🎉 👏 🥳</div>
+                <h4 style={{ margin: 0, fontFamily: 'var(--font-serif)', color: '#1a1a1a', fontSize: '18px', fontWeight: 500, letterSpacing: '0.04em' }}>
+                  {complimentText}
+                </h4>
+                <style>{`
+                  @keyframes clapJump {
+                    from { transform: translateY(0) scale(1); }
+                    to { transform: translateY(-5px) scale(1.1); }
+                  }
+                `}</style>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

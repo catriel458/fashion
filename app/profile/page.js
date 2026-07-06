@@ -351,7 +351,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch('/api/profile', { method: 'DELETE' });
       if (!res.ok) throw new Error((await res.json()).error || 'Error al eliminar');
-      await signOut({ callbackUrl: '/' });
+      await signOut({ callbackUrl: '/stores' });
     } catch {
       showToast('No se pudo eliminar la cuenta', 'error');
       setDeletingAccount(false);

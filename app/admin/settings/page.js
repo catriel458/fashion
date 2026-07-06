@@ -7,32 +7,11 @@ const MapWithRadius = dynamic(() => import('@/components/MapWithRadius'), { ssr:
 
 
 const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const DEFAULT_TEMPLATE = 'Hola! Quiero realizar el pedido #{{order_id}}\n\nProductos:\n{{productos}}\n\nTotal: ${{total}}\n\nMis datos:\nNombre: {{nombre_cliente}}\nEmail: {{email_cliente}}\nPunto de retiro: {{punto_retiro}}';
 
 const lbl = { display: 'block', marginBottom: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560' };
 const inp = { width: '100%', padding: '9px 11px', border: '0.5px solid #e0dbd4', background: '#fafaf8', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', outline: 'none', borderRadius: '2px', boxSizing: 'border-box', color: '#0f0f0f' };
 const section = { background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '4px', padding: '28px', marginBottom: '24px' };
 const h2s = { fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: '1.2rem', margin: '0 0 20px' };
-
-const EXAMPLE_MESSAGE_DATA = {
-  order_id:       '1234',
-  productos:      '2x Remera Azul - $5000\n1x Pantalón - $8000',
-  total:          '18000',
-  nombre_cliente: 'Juan García',
-  email_cliente:  'juan@ejemplo.com',
-  punto_retiro:   'Local Centro',
-};
-
-function buildPreview(template) {
-  const tpl = template || DEFAULT_TEMPLATE;
-  return tpl
-    .replace(/\{\{order_id\}\}/g, EXAMPLE_MESSAGE_DATA.order_id)
-    .replace(/\{\{productos\}\}/g, EXAMPLE_MESSAGE_DATA.productos)
-    .replace(/\{\{total\}\}/g, EXAMPLE_MESSAGE_DATA.total)
-    .replace(/\{\{nombre_cliente\}\}/g, EXAMPLE_MESSAGE_DATA.nombre_cliente)
-    .replace(/\{\{email_cliente\}\}/g, EXAMPLE_MESSAGE_DATA.email_cliente)
-    .replace(/\{\{punto_retiro\}\}/g, EXAMPLE_MESSAGE_DATA.punto_retiro);
-}
 
 const DEFAULT_HOURS = Array.from({ length: 7 }, (_, i) => ({
   day_of_week: i,
@@ -49,7 +28,6 @@ export default function AdminSettingsPage() {
   const [success,  setSuccess]  = useState('');
 
   const [whatsappNumber, setWhatsappNumber]     = useState('');
-  const [template,       setTemplate]           = useState(DEFAULT_TEMPLATE);
   const [hours,          setHours]              = useState(DEFAULT_HOURS);
   const [pickupPoints,   setPickupPoints]       = useState([]);
   const [storeId,        setStoreId]            = useState(null);
@@ -136,7 +114,6 @@ export default function AdminSettingsPage() {
       setWelcomePopupEnabled(data.welcome_popup_enabled ?? false);
       setWelcomePopupDiscount(data.welcome_popup_discount ?? 10);
       setWhatsappNumber(data.whatsapp_number || '');
-      setTemplate(data.whatsapp_message_template || DEFAULT_TEMPLATE);
       if (data.hours?.length === 7) {
         setHours(data.hours.map(h => ({
           day_of_week: h.day_of_week,
@@ -174,7 +151,6 @@ export default function AdminSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           whatsapp_number:           whatsappNumber.trim(),
-          whatsapp_message_template: template,
           hours,
         }),
       });
@@ -295,7 +271,7 @@ export default function AdminSettingsPage() {
           <h2 style={h2s}>Contacto y WhatsApp</h2>
 
           <div style={{ marginBottom: '16px' }}>
-            <label style={lbl}>Número de WhatsApp</label>
+            <label style={lbl}>Número de WhatsApp de la tienda</label>
             <input
               type="text"
               value={whatsappNumber}
@@ -306,36 +282,9 @@ export default function AdminSettingsPage() {
             <p style={{ fontSize: '0.68rem', color: '#6b6560', margin: '5px 0 0' }}>
               Formato: código de país + número, sin espacios ni +. Ej: 5491112345678
             </p>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label style={lbl}>Template del mensaje de WhatsApp</label>
-            <p style={{ fontSize: '0.68rem', color: '#6b6560', margin: '0 0 8px' }}>
-              Variables: <code>{'{{order_id}}'}</code>, <code>{'{{productos}}'}</code>, <code>{'{{total}}'}</code>, <code>{'{{nombre_cliente}}'}</code>, <code>{'{{email_cliente}}'}</code>, <code>{'{{punto_retiro}}'}</code>
+            <p style={{ fontSize: '0.68rem', color: '#6b6560', margin: '8px 0 0', lineHeight: 1.4 }}>
+              Este número se utilizará para que los clientes puedan enviarte un mensaje directo a través del botón flotante de WhatsApp en la tienda.
             </p>
-            <textarea
-              value={template}
-              onChange={e => setTemplate(e.target.value)}
-              rows={10}
-              style={{ ...inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.8rem' }}
-            />
-            <button
-              type="button"
-              onClick={() => setTemplate(DEFAULT_TEMPLATE)}
-              style={{ marginTop: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', fontSize: '0.65rem', padding: 0, textDecoration: 'underline' }}
-            >
-              Restablecer template por defecto
-            </button>
-          </div>
-
-          {/* Preview del mensaje */}
-          <div style={{ background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px' }}>
-            <p style={{ fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#166534', margin: '0 0 8px' }}>
-              Vista previa del mensaje (con datos de ejemplo)
-            </p>
-            <pre style={{ fontSize: '0.78rem', whiteSpace: 'pre-wrap', margin: 0, color: '#0f0f0f', fontFamily: 'var(--font-sans)', lineHeight: 1.6 }}>
-              {buildPreview(template)}
-            </pre>
           </div>
         </div>
 

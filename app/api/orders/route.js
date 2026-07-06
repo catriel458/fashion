@@ -105,12 +105,27 @@ export async function POST(req) {
 
     let appliedCoupon = null;
     if (coupon_id) {
-      const coupons = await sql`
-        SELECT * FROM coupons WHERE id = ${coupon_id} AND user_id = ${userId} AND used = false AND expires_at > NOW()
-      `;
-      if (coupons.length > 0) {
-        appliedCoupon = coupons[0];
-        subtotal = subtotal * (1 - appliedCoupon.discount_percentage / 100);
+      if (coupon_id === -999 || coupon_id === '-999') {
+        const [config] = await sql`
+          SELECT hotsale_enabled, hotsale_coupon_code, hotsale_discount_percent
+          FROM superadmin_config WHERE id = 1
+        `.catch(() => [null]);
+        if (config && config.hotsale_enabled) {
+          appliedCoupon = {
+            id: -999,
+            code: config.hotsale_coupon_code,
+            discount_percentage: config.hotsale_discount_percent,
+          };
+          subtotal = subtotal * (1 - appliedCoupon.discount_percentage / 100);
+        }
+      } else {
+        const coupons = await sql`
+          SELECT * FROM coupons WHERE id = ${coupon_id} AND user_id = ${userId} AND used = false AND expires_at > NOW()
+        `;
+        if (coupons.length > 0) {
+          appliedCoupon = coupons[0];
+          subtotal = subtotal * (1 - appliedCoupon.discount_percentage / 100);
+        }
       }
     }
 
@@ -161,7 +176,7 @@ export async function POST(req) {
       await addPoints(userId, storeId, 'purchase').catch(() => {});
     }
 
-    if (appliedCoupon) {
+    if (appliedCoupon && appliedCoupon.id !== -999) {
       await sql`UPDATE coupons SET used = true WHERE id = ${appliedCoupon.id}`;
     }
 

@@ -3,6 +3,7 @@ import StoreNavbar from '@/components/StoreNavbar';
 import CartSidebar from '@/components/CartSidebar';
 import FittingRoomPanel from '@/components/FittingRoomPanel';
 import StoreThemeProvider from '@/components/StoreThemeProvider';
+import WhatsAppFloatingButton from '@/components/WhatsAppFloatingButton';
 import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
 
@@ -46,6 +47,7 @@ export default async function StoreLayout({ children, params }) {
       <CartSidebar storeSlug={storeSlug} />
       <FittingRoomPanel storeId={store.id} />
       {children}
+      <WhatsAppFloatingButton whatsappNumber={store.whatsapp_number} storeName={store.name} />
     </CartProvider>
   );
 }

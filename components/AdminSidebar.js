@@ -92,7 +92,7 @@ export default function AdminSidebar() {
               {session.user.username || session.user.email}
             </div>
           )}
-          <button onClick={() => signOut({ callbackUrl: '/' })} style={{
+          <button onClick={() => signOut({ callbackUrl: '/stores' })} style={{
             background: 'none', border: '0.5px solid rgba(255,255,255,0.18)',
             color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
             fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase',

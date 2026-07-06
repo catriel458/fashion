@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 
 function getGreeting(role, username) {
   if (role === 'admin') {
@@ -14,6 +15,7 @@ function getGreeting(role, username) {
 }
 
 export default function ChatBot() {
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [role, setRole] = useState('guest');
@@ -114,6 +116,8 @@ export default function ChatBot() {
       handleSendMessage();
     }
   };
+
+  if (pathname === '/') return null;
 
   return (
     <>

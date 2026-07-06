@@ -49,7 +49,6 @@ export default function EditStorePage({ params }) {
   const [adminForm,    setAdminForm]    = useState({ username: '', email: '', password: '', store_id: id });
   const [savingAdmin,  setSavingAdmin]  = useState(false);
   const [waNumber,     setWaNumber]     = useState('');
-  const [waTemplate,   setWaTemplate]   = useState('');
   const [waAddress,    setWaAddress]    = useState('');
   const [waPickup,     setWaPickup]     = useState('');
   const [storeHours,   setStoreHours]   = useState(DEFAULT_HOURS_SA);
@@ -64,7 +63,6 @@ export default function EditStorePage({ params }) {
         setImages(data.images || []);
         setAdmin(data.admin || null);
         setWaNumber(data.whatsapp_number || '');
-        setWaTemplate(data.whatsapp_message_template || '');
         setWaAddress(data.address || '');
         setWaPickup(data.pickup_info || '');
         if (data.hours?.length === 7) {
@@ -228,7 +226,6 @@ export default function EditStorePage({ params }) {
         body: JSON.stringify({
           ...form,
           whatsapp_number:          waNumber.trim(),
-          whatsapp_message_template: waTemplate,
           address:                  waAddress.trim(),
           pickup_info:              waPickup.trim(),
           hours:                    storeHours,
@@ -582,14 +579,9 @@ export default function EditStorePage({ params }) {
         {successWa && <div style={{ background: '#e8f5e9', border: '0.5px solid #a5d6a7', padding: '10px 14px', borderRadius: '3px', marginBottom: '14px', color: '#2e7d32', fontSize: '0.78rem' }}>{successWa}</div>}
 
         <div style={{ marginBottom: '14px' }}>
-          <label style={lbl}>Número de WhatsApp</label>
+          <label style={lbl}>Número de WhatsApp de la tienda</label>
           <input type="text" value={waNumber} onChange={e => setWaNumber(e.target.value)} style={inp} placeholder="5491112345678" />
           <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Sin espacios ni +. Ej: 5491112345678</p>
-        </div>
-        <div style={{ marginBottom: '14px' }}>
-          <label style={lbl}>Template de WhatsApp</label>
-          <textarea value={waTemplate} onChange={e => setWaTemplate(e.target.value)} rows={6} style={{ ...inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.78rem' }} placeholder={'Hola! Quiero realizar el pedido #{{order_id}}\n\nProductos:\n{{productos}}\n\nTotal: ${{total}}'} />
-          <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Variables: {'{{order_id}}'}, {'{{productos}}'}, {'{{total}}'}, {'{{nombre_cliente}}'}</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
           <div>

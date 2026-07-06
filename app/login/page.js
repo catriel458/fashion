@@ -21,7 +21,7 @@ const inputStyle = {
 function LoginForm() {
   const router      = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl = searchParams.get('callbackUrl') || '/stores';
   const defaultTab  = searchParams.get('tab') === 'register' ? 'register' : 'login';
 
   const [tab, setTab]             = useState(defaultTab);

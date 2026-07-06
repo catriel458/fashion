@@ -292,6 +292,9 @@ export default function Home() {
           discountPercent={topPopup.welcome_popup_discount}
           storeSlug={topPopup.slug}
           primaryColor={topPopup.primary_color}
+          isHotsale={topPopup.is_hotsale}
+          hotsaleCouponCode={topPopup.hotsale_coupon_code}
+          hotsaleCouponText={topPopup.hotsale_coupon_text}
         />
       )}
 

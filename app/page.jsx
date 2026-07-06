@@ -5,6 +5,7 @@ import CtaBanner from '@/components/landing/CtaBanner';
 import VirtualShopping from '@/components/landing/VirtualShopping';
 import VirtualFittingRoomApi from '@/components/landing/VirtualFittingRoomApi';
 import Plans from '@/components/landing/Plans';
+import OwnShoppingService from '@/components/landing/OwnShoppingService';
 import ContactForm from '@/components/landing/ContactForm';
 import Footer from '@/components/landing/Footer';
 
@@ -26,6 +27,9 @@ export default function LandingPage() {
 
       {/* 5. Sección de Planes */}
       <Plans />
+
+      {/* 5.2. Sección de Shopping Propio (Bespoke) */}
+      <OwnShoppingService />
 
       {/* 5.5. Formulario de Contacto */}
       <ContactForm />

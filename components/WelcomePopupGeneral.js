@@ -3,13 +3,23 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function WelcomePopupGeneral({ storeId, storeName, discountPercent, storeSlug, primaryColor }) {
+export default function WelcomePopupGeneral({
+  storeId,
+  storeName,
+  discountPercent,
+  storeSlug,
+  primaryColor,
+  isHotsale = false,
+  hotsaleCouponCode = '',
+  hotsaleCouponText = '',
+}) {
   const { data: session, status } = useSession();
   const [isVisible, setIsVisible] = useState(false);
   const [isBtnHovered, setIsBtnHovered] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') return;
+    if (!isHotsale && status === 'authenticated') return;
     if (typeof window !== 'undefined') {
       const shown = localStorage.getItem('tnb_popup_' + storeId);
       if (shown === '1') return;
@@ -20,9 +30,10 @@ export default function WelcomePopupGeneral({ storeId, storeName, discountPercen
 
       return () => clearTimeout(timer);
     }
-  }, [storeId, status]);
+  }, [storeId, status, isHotsale]);
 
-  if (!isVisible || status === 'loading' || status === 'authenticated') return null;
+  const shouldHide = !isHotsale && (status === 'loading' || status === 'authenticated');
+  if (!isVisible || shouldHide) return null;
 
   const handleClose = () => {
     if (typeof window !== 'undefined') {
@@ -31,7 +42,7 @@ export default function WelcomePopupGeneral({ storeId, storeName, discountPercen
     setIsVisible(false);
   };
 
-  const stripeColor = primaryColor || '#009aae';
+  const stripeColor = isHotsale ? '#ff3333' : (primaryColor || '#009aae');
 
   return (
     <AnimatePresence>
@@ -111,7 +122,7 @@ export default function WelcomePopupGeneral({ storeId, storeName, discountPercen
                 marginBottom: 10,
               }}
             >
-              OFERTA DE BIENVENIDA
+              {isHotsale ? 'HOT SALE EXCLUSIVO' : 'OFERTA DE BIENVENIDA'}
             </div>
 
             {/* Nombre de tienda */}
@@ -125,7 +136,7 @@ export default function WelcomePopupGeneral({ storeId, storeName, discountPercen
                 margin: '0 0 4px 0',
               }}
             >
-              {storeName}
+              {isHotsale ? 'HOT SALE' : storeName}
             </h3>
 
             {/* Descuento destacado */}
@@ -164,36 +175,68 @@ export default function WelcomePopupGeneral({ storeId, storeName, discountPercen
                 marginLeft: 0,
               }}
             >
-              Creá tu cuenta gratis y recibí tu código de descuento en el email de confirmación de tu registro.
+              {isHotsale ? hotsaleCouponText : 'Creá tu cuenta gratis y recibí tu código de descuento en el email de confirmación de tu registro.'}
             </p>
 
             {/* Botón CTA */}
-            <button
-              onClick={() => {
-                handleClose();
-                window.location.href = `/register?referralStoreId=${storeId}`;
-              }}
-              onMouseEnter={() => setIsBtnHovered(true)}
-              onMouseLeave={() => setIsBtnHovered(false)}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '14px',
-                fontSize: 11,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: '#fff',
-                background: isBtnHovered ? '#333' : '#1a1a1a',
-                border: 'none',
-                borderRadius: 6,
-                cursor: 'pointer',
-                marginBottom: 12,
-                fontFamily: 'var(--font-sans)',
-                transition: 'background 0.2s',
-              }}
-            >
-              QUIERO MI {discountPercent}% DE DESCUENTO
-            </button>
+            {isHotsale ? (
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(hotsaleCouponCode);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  } catch {}
+                }}
+                onMouseEnter={() => setIsBtnHovered(true)}
+                onMouseLeave={() => setIsBtnHovered(false)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '14px',
+                  fontSize: 11,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: '#fff',
+                  background: isBtnHovered ? '#d63031' : '#ff3333',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  marginBottom: 12,
+                  fontFamily: 'var(--font-sans)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                {copied ? '¡CÓDIGO COPIADO!' : `COPIAR CUPÓN: ${hotsaleCouponCode}`}
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  handleClose();
+                  window.location.href = `/register?referralStoreId=${storeId}`;
+                }}
+                onMouseEnter={() => setIsBtnHovered(true)}
+                onMouseLeave={() => setIsBtnHovered(false)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '14px',
+                  fontSize: 11,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: '#fff',
+                  background: isBtnHovered ? '#333' : '#1a1a1a',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  marginBottom: 12,
+                  fontFamily: 'var(--font-sans)',
+                  transition: 'background 0.2s',
+                }}
+              >
+                QUIERO MI {discountPercent}% DE DESCUENTO
+              </button>
+            )}
 
             {/* Link secundario */}
             <div
@@ -204,17 +247,23 @@ export default function WelcomePopupGeneral({ storeId, storeName, discountPercen
                 letterSpacing: '0.08em',
               }}
             >
-              ¿Ya tenés cuenta?{' '}
-              <a
-                href="/login"
-                style={{
-                  color: '#1a1a1a',
-                  textDecoration: 'underline',
-                  fontWeight: 500,
-                }}
-              >
-                Iniciá sesión
-              </a>
+              {isHotsale ? (
+                <span style={{ color: '#999' }}>Válido en todas las tiendas del shopping</span>
+              ) : (
+                <>
+                  ¿Ya tenés cuenta?{' '}
+                  <a
+                    href="/login"
+                    style={{
+                      color: '#1a1a1a',
+                      textDecoration: 'underline',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Iniciá sesión
+                  </a>
+                </>
+              )}
             </div>
           </motion.div>
         </motion.div>

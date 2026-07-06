@@ -15,6 +15,21 @@ export async function POST(req) {
     if (stores.length === 0) return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 });
     const storeId = stores[0].id;
 
+    // Check for global hotsale coupon
+    const [config] = await sql`
+      SELECT hotsale_enabled, hotsale_coupon_code, hotsale_discount_percent
+      FROM superadmin_config WHERE id = 1
+    `.catch(() => [null]);
+
+    if (config && config.hotsale_enabled && config.hotsale_coupon_code &&
+        code.trim().toUpperCase() === config.hotsale_coupon_code.trim().toUpperCase()) {
+      return NextResponse.json({
+        discount_percentage: config.hotsale_discount_percent,
+        coupon_id: -999,
+        message: `¡Cupón HOT SALE aplicado! ${config.hotsale_discount_percent}% de descuento`,
+      });
+    }
+
     const coupons = await sql`
       SELECT * FROM coupons
       WHERE UPPER(code) = UPPER(${code.trim()})
