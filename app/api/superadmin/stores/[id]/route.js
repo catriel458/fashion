@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth';
 import { del } from '@vercel/blob';
 import sql from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 async function checkSuperadmin() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== 'superadmin') return null;

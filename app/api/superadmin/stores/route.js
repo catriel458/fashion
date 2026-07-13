@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import sql from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
+export const dynamic = 'force-dynamic';
+
 function slugify(text) {
   return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
 }
