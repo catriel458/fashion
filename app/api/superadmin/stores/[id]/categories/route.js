@@ -16,8 +16,9 @@ function slugify(text) {
 export async function GET(req, { params }) {
   if (!await checkSuperadmin()) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
   try {
+    const storeId = parseInt(params.id);
     const categories = await sql`
-      SELECT * FROM categories WHERE store_id = ${params.id} ORDER BY name
+      SELECT * FROM categories WHERE store_id = ${storeId} ORDER BY name
     `;
     return NextResponse.json(categories);
   } catch (error) {
@@ -31,13 +32,14 @@ export async function POST(req, { params }) {
     const { name } = await req.json();
     if (!name?.trim()) return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });
 
+    const storeId = parseInt(params.id);
     const slug = slugify(name);
-    const existing = await sql`SELECT id FROM categories WHERE store_id = ${params.id} AND slug = ${slug}`;
+    const existing = await sql`SELECT id FROM categories WHERE store_id = ${storeId} AND slug = ${slug}`;
     if (existing.length > 0) return NextResponse.json({ error: 'Ya existe una categoría con ese nombre' }, { status: 409 });
 
     const [cat] = await sql`
       INSERT INTO categories (name, slug, store_id)
-      VALUES (${name.trim()}, ${slug}, ${params.id})
+      VALUES (${name.trim()}, ${slug}, ${storeId})
       RETURNING *
     `;
     return NextResponse.json(cat, { status: 201 });
