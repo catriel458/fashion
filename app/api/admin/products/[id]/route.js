@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { put, del } from '@vercel/blob';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { revalidatePath } from 'next/cache';
 import sql from '@/lib/db';
 import { createNotification } from '@/lib/notify';
 
@@ -108,6 +109,15 @@ export async function PUT(request, { params }) {
       }
     }
 
+    // Revalidar caché de la tienda para reflejar los cambios en producción inmediatamente
+    if (product.store_id) {
+      const [store] = await sql`SELECT slug FROM stores WHERE id = ${product.store_id}`;
+      if (store) {
+        revalidatePath(`/store/${store.slug}`);
+        revalidatePath(`/store/${store.slug}/category/[slug]`, 'layout');
+      }
+    }
+
     return NextResponse.json(product);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -121,11 +131,11 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
     const { id } = params;
-    const existing = await sql`SELECT image_url, image_urls FROM products WHERE id = ${id}`;
+    const existing = await sql`SELECT store_id, image_url, image_urls FROM products WHERE id = ${id}`;
     if (!existing.length) {
       return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
     }
-    const { image_url: imageUrl, image_urls: imageUrls } = existing[0];
+    const { store_id: storeId, image_url: imageUrl, image_urls: imageUrls } = existing[0];
     await sql`DELETE FROM products WHERE id = ${id}`;
 
     const allUrls = imageUrls && imageUrls.length > 0
@@ -137,6 +147,16 @@ export async function DELETE(request, { params }) {
         try { await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
       }
     }
+
+    // Revalidar caché de la tienda para reflejar la eliminación inmediatamente
+    if (storeId) {
+      const [store] = await sql`SELECT slug FROM stores WHERE id = ${storeId}`;
+      if (store) {
+        revalidatePath(`/store/${store.slug}`);
+        revalidatePath(`/store/${store.slug}/category/[slug]`, 'layout');
+      }
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

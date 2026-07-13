@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getAdminStoreId } from '@/lib/admin-store';
 import { put } from '@vercel/blob';
+import { revalidatePath } from 'next/cache';
 import sql from '@/lib/db';
 
 function slugify(text) {
@@ -104,6 +105,13 @@ export async function POST(request) {
       )
       RETURNING *
     `;
+
+    // Revalidar caché de la tienda para reflejar el nuevo producto en producción inmediatamente
+    const [store] = await sql`SELECT slug FROM stores WHERE id = ${storeId}`;
+    if (store) {
+      revalidatePath(`/store/${store.slug}`);
+      revalidatePath(`/store/${store.slug}/category/[slug]`, 'layout');
+    }
 
     return NextResponse.json(product[0], { status: 201 });
   } catch (error) {

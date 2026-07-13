@@ -24,6 +24,7 @@ export default function StoreNavbar({
   headerFont   = null,
   headerFontSize = null,
   primaryColor = '#009aae',
+  categories   = [],
 }) {
   const { itemCount, setIsOpen } = useCart();
   const { items: fittingItems, setIsPanelOpen } = useFittingRoom();
@@ -31,6 +32,10 @@ export default function StoreNavbar({
   const [isMobile, setIsMobile]     = useState(false);
   const [menuOpen, setMenuOpen]     = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const navItems = categories && categories.length > 0
+    ? categories.map(c => ({ label: c.name, slug: c.slug }))
+    : NAV_CATEGORIES;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -83,7 +88,7 @@ export default function StoreNavbar({
       {/* Category links desktop */}
       {!isMobile && (
         <div style={{ display: 'flex', gap: '20px', marginLeft: '16px', flex: 1 }}>
-          {NAV_CATEGORIES.map(cat => (
+          {navItems.map(cat => (
             <Link
               key={cat.slug}
               href={`/store/${storeSlug}/category/${cat.slug}`}
@@ -208,7 +213,7 @@ export default function StoreNavbar({
 
       {isMobile && menuOpen && (
         <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, background: bg, backdropFilter: 'blur(12px)', borderBottom: '0.5px solid rgba(128,128,128,0.15)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: 16, zIndex: 99 }}>
-          {NAV_CATEGORIES.map(cat => (
+          {navItems.map(cat => (
             <Link key={cat.slug} href={`/store/${storeSlug}/category/${cat.slug}`} onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', color: textColor, fontFamily: font, fontSize: '0.8rem', letterSpacing: '0.16em', textTransform: 'uppercase', borderBottom: `0.5px solid ${textColor}20`, paddingBottom: 14 }}>
               {cat.label}
             </Link>

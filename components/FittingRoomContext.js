@@ -8,13 +8,19 @@ const STORAGE_KEY = 'fitting_room';
 export const VALID_CATEGORIES = ['remera', 'pantalon', 'abrigo', 'camisa', 'zapatillas', 'gorro', 'accesorio'];
 
 export const CATEGORY_MAP = {
-  remeras:    'remera',
-  pantalones: 'pantalon',
-  abrigos:    'abrigo',
-  camisas:    'camisa',
-  zapatillas: 'zapatillas',
-  gorros:     'gorro',
-  accesorios: 'accesorio',
+  remeras:            'remera',
+  pantalones:         'pantalon',
+  abrigos:            'abrigo',
+  camisas:            'camisa',
+  zapatillas:         'zapatillas',
+  gorros:             'gorro',
+  accesorios:         'accesorio',
+  // Variantes para otras tiendas del sistema
+  'hoodies-buzos':    'abrigo',
+  'camperas':         'abrigo',
+  'pantalones-jeans': 'pantalon',
+  'shorts':           'pantalon',
+  'buzos':            'abrigo',
 };
 
 export function FittingRoomProvider({ children }) {
