@@ -48,7 +48,7 @@ export async function POST(request) {
 
     const result = await sql`
       INSERT INTO categories (name, slug, store_id) VALUES (${name.trim()}, ${slug}, ${storeId})
-      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+      ON CONFLICT (store_id, slug) DO UPDATE SET name = EXCLUDED.name
       RETURNING *
     `;
     return NextResponse.json(result[0], { status: 201 });

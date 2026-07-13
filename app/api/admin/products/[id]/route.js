@@ -8,6 +8,9 @@ import { createNotification } from '@/lib/notify';
 export async function PUT(request, { params }) {
   try {
     const session = await getServerSession(authOptions);
+    if (!session || !['admin', 'superadmin'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
     const { id } = params;
     const formData = await request.formData();
 
@@ -113,6 +116,10 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session || !['admin', 'superadmin'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
     const { id } = params;
     const existing = await sql`SELECT image_url, image_urls FROM products WHERE id = ${id}`;
     if (!existing.length) {
