@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
-import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
+import { useFittingRoom, getFittingCategory } from '@/components/FittingRoomContext';
 
 export default function CategoryClient({ storeSlug, category, slug, products, categories = [], primaryColor = '#009aae', accentColor = '#0f0f0f', buttonStyle = 'rounded' }) {
   const [search, setSearch] = useState('');
@@ -126,7 +126,7 @@ function ProductCard({ product, storeSlug, accent, radius }) {
         <button
           onClick={async (e) => {
             e.preventDefault();
-            const category = CATEGORY_MAP[product.category_slug] || product.category_slug;
+            const category = getFittingCategory(product.category_slug, product.category_name);
             const hasSizes = ['remera', 'pantalon', 'abrigo', 'camisa', 'zapatillas'].includes(category);
             if (hasSizes) {
               window.location.href = `/store/${storeSlug}/product/${product.slug}`;
@@ -140,7 +140,7 @@ function ProductCard({ product, storeSlug, accent, radius }) {
           Agregar al carrito
         </button>
         <button
-          onClick={(e) => { e.preventDefault(); const cat = CATEGORY_MAP[product.category_slug] || product.category_slug; addToFittingRoom({ id: product.id, name: product.name, category: cat, image_url: product.image_url, slug: product.slug }); setAddedToRoom(true); setTimeout(() => setAddedToRoom(false), 2000); }}
+          onClick={(e) => { e.preventDefault(); const cat = getFittingCategory(product.category_slug, product.category_name); addToFittingRoom({ id: product.id, name: product.name, category: cat, image_url: product.image_url, slug: product.slug }); setAddedToRoom(true); setTimeout(() => setAddedToRoom(false), 2000); }}
           style={{ width: '100%', padding: '7px', background: addedToRoom ? '#4a7c59' : 'transparent', color: addedToRoom ? '#fff' : '#6b6560', border: `0.5px solid ${addedToRoom ? '#4a7c59' : '#d4cfc8'}`, fontFamily: 'var(--font-sans)', fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', borderRadius: radius, transition: 'all 0.25s' }}
         >
           {addedToRoom ? '✓ En el vestidor' : '🧥 Al vestidor'}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
-import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
+import { useFittingRoom, getFittingCategory } from '@/components/FittingRoomContext';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 
@@ -173,7 +173,7 @@ export default function ProductClient({ product, storeSlug, storeId }) {
   };
 
   const handleAddToFittingRoom = () => {
-    const category = CATEGORY_MAP[product.category_slug] || product.category_slug;
+    const category = getFittingCategory(product.category_slug, product.category_name);
     addToFittingRoom({ id: product.id, name: product.name, category, image_url: product.image_url, slug: product.slug });
     setAddedToRoom(true);
     setTimeout(() => setAddedToRoom(false), 2000);

@@ -109,12 +109,19 @@ export async function PUT(request, { params }) {
       }
     }
 
-    // Revalidar caché de la tienda para reflejar los cambios en producción inmediatamente
+    // Revalidar caché de la tienda y categorías para reflejar los cambios en producción inmediatamente
     if (product.store_id) {
       const [store] = await sql`SELECT slug FROM stores WHERE id = ${product.store_id}`;
       if (store) {
         revalidatePath(`/store/${store.slug}`);
-        revalidatePath(`/store/${store.slug}/category/[slug]`, 'layout');
+        if (product.category_id) {
+          const [cat] = await sql`SELECT slug FROM categories WHERE id = ${product.category_id}`;
+          if (cat) revalidatePath(`/store/${store.slug}/category/${cat.slug}`);
+        }
+        if (prev.category_id && prev.category_id !== product.category_id) {
+          const [oldCat] = await sql`SELECT slug FROM categories WHERE id = ${prev.category_id}`;
+          if (oldCat) revalidatePath(`/store/${store.slug}/category/${oldCat.slug}`);
+        }
       }
     }
 
@@ -148,12 +155,15 @@ export async function DELETE(request, { params }) {
       }
     }
 
-    // Revalidar caché de la tienda para reflejar la eliminación inmediatamente
+    // Revalidar caché de la tienda y categoría para reflejar la eliminación inmediatamente
     if (storeId) {
       const [store] = await sql`SELECT slug FROM stores WHERE id = ${storeId}`;
       if (store) {
         revalidatePath(`/store/${store.slug}`);
-        revalidatePath(`/store/${store.slug}/category/[slug]`, 'layout');
+        if (existing[0].category_id) {
+          const [cat] = await sql`SELECT slug FROM categories WHERE id = ${existing[0].category_id}`;
+          if (cat) revalidatePath(`/store/${store.slug}/category/${cat.slug}`);
+        }
       }
     }
 

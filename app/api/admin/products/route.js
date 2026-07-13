@@ -106,11 +106,16 @@ export async function POST(request) {
       RETURNING *
     `;
 
-    // Revalidar caché de la tienda para reflejar el nuevo producto en producción inmediatamente
+    // Revalidar caché de la tienda y categoría específica para reflejar el nuevo producto en producción inmediatamente
     const [store] = await sql`SELECT slug FROM stores WHERE id = ${storeId}`;
     if (store) {
       revalidatePath(`/store/${store.slug}`);
-      revalidatePath(`/store/${store.slug}/category/[slug]`, 'layout');
+      if (finalCategoryId) {
+        const [cat] = await sql`SELECT slug FROM categories WHERE id = ${finalCategoryId}`;
+        if (cat) {
+          revalidatePath(`/store/${store.slug}/category/${cat.slug}`);
+        }
+      }
     }
 
     return NextResponse.json(product[0], { status: 201 });

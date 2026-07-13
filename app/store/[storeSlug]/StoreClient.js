@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/components/CartContext';
-import { useFittingRoom, CATEGORY_MAP } from '@/components/FittingRoomContext';
+import { useFittingRoom, getFittingCategory } from '@/components/FittingRoomContext';
 import StoreStatusBadge from '@/components/StoreStatusBadge';
 import WelcomePopupStore from '@/components/WelcomePopupStore';
 
@@ -440,7 +440,7 @@ function ProductCard({ product, storeSlug, accent, radius }) {
         <button
           onClick={async (e) => {
             e.preventDefault();
-            const category = CATEGORY_MAP[product.category_slug] || product.category_slug;
+            const category = getFittingCategory(product.category_slug, product.category_name);
             const hasSizes = ['remera', 'pantalon', 'abrigo', 'camisa', 'zapatillas'].includes(category);
             if (hasSizes) {
               window.location.href = `/store/${storeSlug}/product/${product.slug}`;
@@ -464,7 +464,7 @@ function ProductCard({ product, storeSlug, accent, radius }) {
         <button
           onClick={(e) => {
             e.preventDefault();
-            const category = CATEGORY_MAP[product.category_slug] || product.category_slug;
+            const category = getFittingCategory(product.category_slug, product.category_name);
             addToFittingRoom({ id: product.id, name: product.name, category, image_url: product.image_url, slug: product.slug });
             setAddedToRoom(true);
             setTimeout(() => setAddedToRoom(false), 2000);
