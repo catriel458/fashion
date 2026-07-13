@@ -100,6 +100,7 @@ export async function PUT(request, { params }) {
     }
 
     revalidatePath(`/store/${store[0].slug}`);
+    revalidatePath('/stores');
     return NextResponse.json(store[0]);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -130,6 +131,7 @@ export async function DELETE(request, { params }) {
       try { await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch {}
     }
 
+    revalidatePath('/stores');
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
