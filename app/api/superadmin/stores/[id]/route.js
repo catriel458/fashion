@@ -34,7 +34,7 @@ export async function PUT(request, { params }) {
     const { id } = params;
     const body = await request.json();
     const {
-      name, tagline, primary_color, secondary_color, accent_color, font_family,
+      name, slug, tagline, primary_color, secondary_color, accent_color, font_family,
       button_style, hero_title, hero_subtitle, hero_button_text, hero_season, about_text,
       social_instagram, social_whatsapp, social_facebook, contact_email, contact_phone, active,
       header_color, footer_color,
@@ -45,6 +45,7 @@ export async function PUT(request, { params }) {
     } = body;
 
     const cleanWa = whatsapp_number ? whatsapp_number.replace(/\D/g, '') || null : undefined;
+    const cleanSlug = slug ? slug.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim() : undefined;
 
     const existing = await sql`SELECT * FROM stores WHERE id = ${id}`;
     if (existing.length === 0) return NextResponse.json({ error: 'No encontrada' }, { status: 404 });
@@ -53,6 +54,7 @@ export async function PUT(request, { params }) {
     const store = await sql`
       UPDATE stores SET
         name             = ${name             ?? prev.name},
+        slug             = ${cleanSlug        ?? prev.slug},
         tagline          = ${tagline          ?? prev.tagline},
         primary_color    = ${primary_color    ?? prev.primary_color},
         secondary_color  = ${secondary_color  ?? prev.secondary_color},

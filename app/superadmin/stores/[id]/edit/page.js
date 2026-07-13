@@ -75,6 +75,7 @@ export default function EditStorePage({ params }) {
         }
         setForm({
           name:             data.name            || '',
+          slug:             data.slug            || '',
           tagline:          data.tagline          || '',
           primary_color:    data.primary_color    || '#009aae',
           secondary_color:  data.secondary_color  || '#ffffff',
@@ -277,8 +278,9 @@ export default function EditStorePage({ params }) {
       <form onSubmit={handleSave} style={card}>
         <h2 style={h2s}>Identidad y colores</h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
           <div><label style={lbl}>Nombre *</label><input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inp} /></div>
+          <div><label style={lbl}>Dirección URL (Slug) *</label><input type="text" required value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} style={inp} placeholder="zara, bloom-co..." /></div>
           <div><label style={lbl}>Tagline</label><input type="text" value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} style={inp} placeholder="Moda para todos" /></div>
         </div>
 
