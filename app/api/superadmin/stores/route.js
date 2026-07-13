@@ -42,11 +42,13 @@ export async function POST(req) {
       header_color, footer_color,
       header_font, header_font_size, header_text_color,
       footer_font, footer_font_size, footer_text_color,
+      whatsapp_number, address, pickup_info, hours,
       initial_categories,
     } = body;
     if (!name?.trim()) return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });
 
     const slug = slugify(name);
+    const cleanWa = whatsapp_number ? whatsapp_number.replace(/\D/g, '') || null : null;
 
     const store = await sql`
       INSERT INTO stores (
@@ -56,6 +58,7 @@ export async function POST(req) {
         header_color, footer_color,
         header_font, header_font_size, header_text_color,
         footer_font, footer_font_size, footer_text_color,
+        whatsapp_number, address, pickup_info,
         fitting_plan, fitting_monthly_limit, fitting_daily_limit_per_user, fitting_month_reset_at, plan_status
       )
       VALUES (
@@ -85,6 +88,9 @@ export async function POST(req) {
         ${footer_font || null},
         ${footer_font_size || null},
         ${footer_text_color || null},
+        ${cleanWa},
+        ${address || null},
+        ${pickup_info || null},
         'free',
         20,
         2,
@@ -93,6 +99,18 @@ export async function POST(req) {
       )
       RETURNING *
     `;
+
+    // Upsert horarios si se enviaron
+    if (Array.isArray(hours)) {
+      for (const h of hours) {
+        await sql`
+          INSERT INTO store_hours (store_id, day_of_week, is_open, open_time, close_time)
+          VALUES (${store[0].id}, ${h.day_of_week}, ${h.is_open}, ${h.open_time || null}, ${h.close_time || null})
+          ON CONFLICT (store_id, day_of_week)
+          DO UPDATE SET is_open = EXCLUDED.is_open, open_time = EXCLUDED.open_time, close_time = EXCLUDED.close_time
+        `.catch(() => {});
+      }
+    }
 
     // Crear categorías iniciales si fueron especificadas
     if (Array.isArray(initial_categories) && initial_categories.length > 0) {

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import StoreHeaderFooterPreview from '@/components/StoreHeaderFooterPreview';
 
 const FONTS = ['Inter', 'Roboto', 'Playfair Display', 'Montserrat', 'Poppins', 'Raleway', 'Open Sans', 'Lato', 'Nunito', 'Oswald'];
 const BUTTON_STYLES = [
@@ -8,6 +9,14 @@ const BUTTON_STYLES = [
   { value: 'rounded', label: 'Rounded (redondeado)' },
   { value: 'pill',    label: 'Pill (cápsula)' },
 ];
+
+const DAY_NAMES_SA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DEFAULT_HOURS_SA = Array.from({ length: 7 }, (_, i) => ({
+  day_of_week: i,
+  is_open: i !== 0,
+  open_time: '09:00',
+  close_time: '18:00',
+}));
 
 const EMPTY = {
   name: '', slug: '', tagline: '', about_text: '', active: true,
@@ -45,20 +54,26 @@ function slugify(name) {
 
 export default function NewStorePage() {
   const router = useRouter();
-  const [form,          setForm]        = useState(EMPTY);
-  const [saving,        setSaving]      = useState(false);
-  const [error,         setError]       = useState('');
-  const [categories,    setCategories]  = useState([]);
-  const [catInput,      setCatInput]    = useState('');
-  const [logoFile,      setLogoFile]    = useState(null);
-  const [logoPreview,   setLogoPreview] = useState(null);
+  const [form,          setForm]          = useState(EMPTY);
+  const [saving,        setSaving]        = useState(false);
+  const [error,         setError]         = useState('');
+  const [categories,    setCategories]    = useState([]);
+  const [catInput,      setCatInput]      = useState('');
+  const [logoFile,      setLogoFile]      = useState(null);
+  const [logoPreview,   setLogoPreview]   = useState(null);
   const [carouselFiles, setCarouselFiles] = useState([]);
-  const [adminMode,     setAdminMode]   = useState('new');
-  const [adminForm,     setAdminForm]   = useState({ username: '', email: '', password: '' });
-  const [freeAdmins,    setFreeAdmins]  = useState([]);
+  const [adminMode,     setAdminMode]     = useState('new');
+  const [adminForm,     setAdminForm]     = useState({ username: '', email: '', password: '' });
+  const [freeAdmins,    setFreeAdmins]    = useState([]);
   const [assignAdminId, setAssignAdminId] = useState('');
-  const [slugManual,    setSlugManual]  = useState(false);
+  const [slugManual,    setSlugManual]    = useState(false);
   const carouselRef = useRef(null);
+
+  // Nuevos estados para contacto y horarios
+  const [waNumber,     setWaNumber]     = useState('');
+  const [waAddress,    setWaAddress]    = useState('');
+  const [waPickup,     setWaPickup]     = useState('');
+  const [storeHours,   setStoreHours]   = useState(DEFAULT_HOURS_SA);
 
   useEffect(() => {
     fetch('/api/superadmin/users?role=admin&no_store=1')
@@ -83,23 +98,48 @@ export default function NewStorePage() {
 
   function handleCarouselChange(e) {
     const files = Array.from(e.target.files);
-    setCarouselFiles(prev => [...prev, ...files.map(f => ({ file: f, preview: URL.createObjectURL(f) }))]);
+    setCarouselFiles(prev => [...prev, ...files.map(f => ({ file: f, preview: URL.createObjectURL(f), caption: '' }))]);
+  }
+
+  function handleCarouselCaptionChange(idx, val) {
+    setCarouselFiles(prev => prev.map((item, i) => i === idx ? { ...item, caption: val } : item));
   }
 
   function removeCarouselFile(idx) {
-    setCarouselFiles(prev => prev.filter((_, i) => i !== idx));
+    setCarouselFiles(prev => {
+      const target = prev[idx];
+      if (target && target.preview) {
+        URL.revokeObjectURL(target.preview);
+      }
+      return prev.filter((_, i) => i !== idx);
+    });
   }
 
   function addCategory(e) {
     e.preventDefault();
     const name = catInput.trim();
-    if (!name || categories.includes(name)) return;
-    setCategories(prev => [...prev, name]);
+    if (!name || categories.some(c => c.name.toLowerCase() === name.toLowerCase())) return;
+    setCategories(prev => [...prev, { tempId: Math.random().toString(36).substr(2, 9), name, imageFile: null, imagePreview: null }]);
     setCatInput('');
   }
 
-  function removeCategory(name) {
-    setCategories(prev => prev.filter(c => c !== name));
+  function handleCategoryImageChange(tempId, file) {
+    if (!file) return;
+    setCategories(prev => prev.map(c => {
+      if (c.tempId !== tempId) return c;
+      if (c.imagePreview) URL.revokeObjectURL(c.imagePreview);
+      return { ...c, imageFile: file, imagePreview: URL.createObjectURL(file) };
+    }));
+  }
+
+  function removeCategory(tempId) {
+    setCategories(prev => {
+      const target = prev.find(c => c.tempId === tempId);
+      if (target && target.imagePreview) {
+        URL.revokeObjectURL(target.imagePreview);
+      }
+      return prev.filter(c => c.tempId !== tempId);
+    });
   }
 
   async function handleSubmit(e) {
@@ -109,7 +149,13 @@ export default function NewStorePage() {
       // 1. Crear tienda
       const res = await fetch('/api/superadmin/stores', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, initial_categories: categories }),
+        body: JSON.stringify({
+          ...form,
+          whatsapp_number: waNumber.trim(),
+          address: waAddress.trim(),
+          pickup_info: waPickup.trim(),
+          hours: storeHours,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -121,15 +167,34 @@ export default function NewStorePage() {
         await fetch(`/api/superadmin/stores/${storeId}/logo`, { method: 'POST', body: fd });
       }
 
-      // 3. Subir imágenes del carrusel
+      // 3. Subir imágenes del carrusel con captions
       for (let i = 0; i < carouselFiles.length; i++) {
         const fd = new FormData();
         fd.append('image', carouselFiles[i].file);
         fd.append('sort_order', String(i));
+        fd.append('caption', carouselFiles[i].caption || '');
         await fetch(`/api/superadmin/stores/${storeId}/images`, { method: 'POST', body: fd });
       }
 
-      // 4. Admin
+      // 4. Crear categorías e imágenes
+      for (const cat of categories) {
+        const catRes = await fetch(`/api/superadmin/stores/${storeId}/categories`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: cat.name }),
+        });
+        const catData = await catRes.json();
+        if (catRes.ok && cat.imageFile) {
+          const fd = new FormData();
+          fd.append('image', cat.imageFile);
+          await fetch(`/api/superadmin/stores/${storeId}/categories/${catData.id}`, {
+            method: 'PUT',
+            body: fd,
+          });
+        }
+      }
+
+      // 5. Admin
       if (adminMode === 'new' && adminForm.username && adminForm.email && adminForm.password) {
         await fetch('/api/superadmin/users', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -233,9 +298,60 @@ export default function NewStorePage() {
             <ColorField label="Fondo carrito/vestidor" value={form.panel_bg_color} placeholder="Vacío = #fafaf8" onChange={v => setForm({ ...form, panel_bg_color: v })} />
             <ColorField label="Texto carrito/vestidor" value={form.panel_text_color} placeholder="Vacío = #0f0f0f" onChange={v => setForm({ ...form, panel_text_color: v })} />
           </div>
+
+          {/* Tipografía del header */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ ...lbl, color: '#a78bfa' }}>Tipografía del Header (navbar)</label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px', paddingLeft: '12px', borderLeft: '2px solid rgba(167,139,250,0.3)' }}>
+            <div>
+              <label style={lbl}>Tipo de letra</label>
+              <select value={form.header_font} onChange={e => setForm({ ...form, header_font: e.target.value })} style={inp}>
+                <option value="">Igual a la tienda ({form.font_family || 'Inter'})</option>
+                {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>Tamaño (0.7rem, 1rem...)</label>
+              <input type="text" value={form.header_font_size} onChange={e => setForm({ ...form, header_font_size: e.target.value })} style={inp} placeholder="Ej: 0.75rem, 14px" />
+            </div>
+            <div>
+              <label style={lbl}>Color del texto</label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input type="color" value={form.header_text_color || '#0f0f0f'} onChange={e => setForm({ ...form, header_text_color: e.target.value })} style={{ width: '40px', height: '36px', padding: '2px', border: '0.5px solid #e0dbd4', borderRadius: '2px', cursor: 'pointer' }} />
+                <input type="text" value={form.header_text_color} onChange={e => setForm({ ...form, header_text_color: e.target.value })} style={{ ...inp, fontFamily: 'monospace' }} placeholder="Vacío = color primario" />
+              </div>
+            </div>
+          </div>
+
+          {/* Tipografía del footer */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ ...lbl, color: '#a78bfa' }}>Tipografía del Footer</label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px', paddingLeft: '12px', borderLeft: '2px solid rgba(167,139,250,0.3)' }}>
+            <div>
+              <label style={lbl}>Tipo de letra</label>
+              <select value={form.footer_font} onChange={e => setForm({ ...form, footer_font: e.target.value })} style={inp}>
+                <option value="">Serif por defecto</option>
+                {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={lbl}>Tamaño (1rem, 1.2rem...)</label>
+              <input type="text" value={form.footer_font_size} onChange={e => setForm({ ...form, footer_font_size: e.target.value })} style={inp} placeholder="Ej: 1rem, 1.2rem, 16px" />
+            </div>
+            <div>
+              <label style={lbl}>Color del texto</label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input type="color" value={form.footer_text_color || '#1a1a1a'} onChange={e => setForm({ ...form, footer_text_color: e.target.value })} style={{ width: '40px', height: '36px', padding: '2px', border: '0.5px solid #e0dbd4', borderRadius: '2px', cursor: 'pointer' }} />
+                <input type="text" value={form.footer_text_color} onChange={e => setForm({ ...form, footer_text_color: e.target.value })} style={{ ...inp, fontFamily: 'monospace' }} placeholder="Vacío = oscuro por defecto" />
+              </div>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
             <div>
-              <label style={lbl}>Tipografía</label>
+              <label style={lbl}>Tipografía principal</label>
               <select value={form.font_family} onChange={set('font_family')} style={{ ...inp, fontFamily: form.font_family }}>
                 {FONTS.map(f => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
               </select>
@@ -248,13 +364,22 @@ export default function NewStorePage() {
             </div>
           </div>
           {/* Preview */}
-          <div style={{ padding: '20px', background: form.primary_color, borderRadius: '4px', textAlign: 'center' }}>
+          <div style={{ padding: '20px', background: form.primary_color, borderRadius: '4px', textAlign: 'center', marginBottom: '16px' }}>
             <p style={{ fontFamily: form.font_family, fontSize: '1.5rem', color: form.secondary_color, margin: 0 }}>{form.name || 'Nombre de tienda'}</p>
             <p style={{ fontFamily: form.font_family, fontSize: '0.8rem', color: form.secondary_color, opacity: 0.7, margin: '4px 0 12px' }}>{form.tagline || 'Tagline aquí'}</p>
             <button type="button" style={{ padding: '8px 20px', background: form.accent_color, color: '#fff', border: 'none', borderRadius: btnRadius, fontFamily: form.font_family, fontSize: '0.72rem', letterSpacing: '0.08em', cursor: 'default' }}>
               {form.hero_button_text || 'Ver colección'}
             </button>
           </div>
+        </div>
+
+        {/* Vista previa Header / Footer / Paneles */}
+        <div style={card}>
+          <h2 style={h2s}>Vista previa — Header, Footer y Paneles</h2>
+          <p style={{ margin: '-12px 0 20px', color: '#6b6560', fontSize: '0.78rem' }}>
+            Así se ve en tiempo real con los colores y fuentes configurados arriba.
+          </p>
+          <StoreHeaderFooterPreview form={form} />
         </div>
 
         {/* 4. Carrusel de imágenes */}
@@ -272,11 +397,21 @@ export default function NewStorePage() {
           </button>
 
           {carouselFiles.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
               {carouselFiles.map((f, i) => (
-                <div key={i} style={{ position: 'relative', border: '0.5px solid #e0dbd4', borderRadius: '4px', overflow: 'hidden' }}>
-                  <img src={f.preview} alt="" style={{ width: '100%', height: '90px', objectFit: 'cover' }} />
-                  <button type="button" onClick={() => removeCarouselFile(i)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', cursor: 'pointer', width: '20px', height: '20px', borderRadius: '50%', fontSize: '0.7rem', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={i} style={{ position: 'relative', border: '0.5px solid #e0dbd4', borderRadius: '4px', overflow: 'hidden', background: '#fff' }}>
+                  <img src={f.preview} alt="" style={{ width: '100%', height: '110px', objectFit: 'cover' }} />
+                  <div style={{ padding: '8px' }}>
+                    <label style={{ ...lbl, fontSize: '0.6rem', marginBottom: '4px' }}>Caption (opcional)</label>
+                    <input
+                      type="text"
+                      value={f.caption}
+                      onChange={e => handleCarouselCaptionChange(i, e.target.value)}
+                      placeholder="Descripción..."
+                      style={{ ...inp, padding: '4px 6px', fontSize: '0.75rem' }}
+                    />
+                  </div>
+                  <button type="button" onClick={() => removeCarouselFile(i)} style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', cursor: 'pointer', width: '20px', height: '20px', borderRadius: '50%', fontSize: '0.7rem', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     ✕
                   </button>
                 </div>
@@ -285,34 +420,110 @@ export default function NewStorePage() {
           )}
         </div>
 
-        {/* 5. Redes y contacto */}
+        {/* 5. Contacto y horarios de atención */}
         <div style={card}>
-          <h2 style={h2s}>5. Redes sociales y contacto</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div><label style={lbl}>Instagram</label><input type="text" value={form.social_instagram} onChange={set('social_instagram')} style={inp} placeholder="@mitienda o URL" /></div>
-            <div><label style={lbl}>WhatsApp</label><input type="text" value={form.social_whatsapp} onChange={set('social_whatsapp')} style={inp} placeholder="+54911xxxxxxxx" /></div>
-            <div><label style={lbl}>Facebook</label><input type="text" value={form.social_facebook} onChange={set('social_facebook')} style={inp} placeholder="https://facebook.com/..." /></div>
-            <div><label style={lbl}>Email de contacto</label><input type="email" value={form.contact_email} onChange={set('contact_email')} style={inp} placeholder="contacto@tienda.com" /></div>
-            <div><label style={lbl}>Teléfono</label><input type="text" value={form.contact_phone} onChange={set('contact_phone')} style={inp} placeholder="+54 11 xxxx-xxxx" /></div>
+          <h2 style={h2s}>5. Contacto y horarios de atención</h2>
+          
+          <div style={{ marginBottom: '14px' }}>
+            <label style={lbl}>Número de WhatsApp de la tienda</label>
+            <input type="text" value={waNumber} onChange={e => setWaNumber(e.target.value)} style={inp} placeholder="5491112345678" />
+            <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Sin espacios ni +. Ej: 5491112345678</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+            <div>
+              <label style={lbl}>Dirección física</label>
+              <textarea value={waAddress} onChange={e => setWaAddress(e.target.value)} rows={2} style={{ ...inp, resize: 'vertical' }} placeholder="Av. Corrientes 1234, CABA" />
+            </div>
+            <div>
+              <label style={lbl}>Info de retiro</label>
+              <textarea value={waPickup} onChange={e => setWaPickup(e.target.value)} rows={2} style={{ ...inp, resize: 'vertical' }} placeholder="Retiro de Lun a Vie. Coordinar por WA." />
+            </div>
+          </div>
+
+          {/* Horarios */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ ...lbl, marginBottom: '10px' }}>Horarios de atención</label>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+              <thead>
+                <tr style={{ background: '#f5f3f0' }}>
+                  {['Día', 'Abierto', 'Apertura', 'Cierre'].map(h => (
+                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: '0.6rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6560', fontWeight: 400 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {storeHours.map((h, i) => (
+                  <tr key={i} style={{ borderBottom: '0.5px solid #f0ede8' }}>
+                    <td style={{ padding: '8px 10px' }}>{DAY_NAMES_SA[h.day_of_week]}</td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="checkbox" checked={h.is_open} onChange={e => setStoreHours(prev => prev.map((x, j) => j === i ? { ...x, is_open: e.target.checked } : x))} style={{ cursor: 'pointer' }} />
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="time" value={h.open_time} disabled={!h.is_open} onChange={e => setStoreHours(prev => prev.map((x, j) => j === i ? { ...x, open_time: e.target.value } : x))} style={{ ...inp, width: 'auto', fontSize: '0.78rem', opacity: h.is_open ? 1 : 0.4 }} />
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="time" value={h.close_time} disabled={!h.is_open} onChange={e => setStoreHours(prev => prev.map((x, j) => j === i ? { ...x, close_time: e.target.value } : x))} style={{ ...inp, width: 'auto', fontSize: '0.78rem', opacity: h.is_open ? 1 : 0.4 }} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
-        {/* 6. Categorías iniciales */}
+        {/* 6. Redes y contacto */}
         <div style={card}>
-          <h2 style={h2s}>6. Categorías iniciales</h2>
+          <h2 style={h2s}>6. Redes sociales y enlaces</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div><label style={lbl}>Instagram</label><input type="text" value={form.social_instagram} onChange={set('social_instagram')} style={inp} placeholder="@mitienda o URL" /></div>
+            <div><label style={lbl}>WhatsApp (Enlace social)</label><input type="text" value={form.social_whatsapp} onChange={set('social_whatsapp')} style={inp} placeholder="+54911xxxxxxxx" /></div>
+            <div><label style={lbl}>Facebook</label><input type="text" value={form.social_facebook} onChange={set('social_facebook')} style={inp} placeholder="https://facebook.com/..." /></div>
+            <div><label style={lbl}>Email público de contacto</label><input type="email" value={form.contact_email} onChange={set('contact_email')} style={inp} placeholder="contacto@tienda.com" /></div>
+            <div><label style={lbl}>Teléfono público</label><input type="text" value={form.contact_phone} onChange={set('contact_phone')} style={inp} placeholder="+54 11 xxxx-xxxx" /></div>
+          </div>
+        </div>
+
+        {/* 7. Categorías iniciales */}
+        <div style={card}>
+          <h2 style={h2s}>7. Categorías iniciales</h2>
           <p style={{ margin: '-10px 0 16px', color: '#6b6560', fontSize: '0.78rem' }}>
-            Las imágenes de categorías se agregan después desde el panel de edición.
+            Agregá las categorías iniciales para la tienda y asignale una imagen de portada si querés.
           </p>
+
           {categories.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
               {categories.map(cat => (
-                <span key={cat} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0ede8', border: '0.5px solid #e0dbd4', padding: '5px 12px', borderRadius: '999px', fontSize: '0.78rem', fontFamily: 'var(--font-sans)', color: '#0f0f0f' }}>
-                  {cat}
-                  <button type="button" onClick={() => removeCategory(cat)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', padding: 0, lineHeight: 1, fontSize: '0.85rem' }}>×</button>
-                </span>
+                <div key={cat.tempId} style={{ border: '0.5px solid #e0dbd4', borderRadius: '6px', overflow: 'hidden', background: '#fff' }}>
+                  {/* Preview imagen */}
+                  <div style={{ height: '100px', background: cat.imagePreview ? 'transparent' : (form.primary_color || '#009aae'), position: 'relative', overflow: 'hidden' }}>
+                    {cat.imagePreview && (
+                      <img src={cat.imagePreview} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', textAlign: 'center' }}>
+                      <span style={{ color: '#fff', fontFamily: 'var(--font-serif)', fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+                        {cat.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div style={{ padding: '8px' }}>
+                    <label style={{ display: 'block', width: '100%', textAlign: 'center', padding: '6px', border: '0.5px solid #a78bfa', color: '#7c3aed', borderRadius: '3px', fontSize: '0.62rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', marginBottom: '6px' }}>
+                      {cat.imageFile ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                      <input type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={e => handleCategoryImageChange(cat.tempId, e.target.files[0])} />
+                    </label>
+                    <button type="button" onClick={() => removeCategory(cat.tempId)}
+                      style={{ width: '100%', border: '0.5px solid #fecaca', background: 'none', cursor: 'pointer', padding: '5px', fontSize: '0.62rem', borderRadius: '3px', color: '#c0392b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           )}
+
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="text" value={catInput} onChange={e => setCatInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCategory(e); } }} placeholder="Ej: Remeras, Pantalones..." style={{ ...inp, flex: 1 }} />
             <button type="button" onClick={addCategory} disabled={!catInput.trim()} style={{ padding: '9px 16px', background: catInput.trim() ? '#1a0a2e' : '#ccc', color: '#fff', border: 'none', cursor: catInput.trim() ? 'pointer' : 'not-allowed', borderRadius: '2px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
@@ -321,9 +532,9 @@ export default function NewStorePage() {
           </div>
         </div>
 
-        {/* 7. Admin de la tienda */}
+        {/* 8. Admin de la tienda */}
         <div style={card}>
-          <h2 style={h2s}>7. Admin de la tienda</h2>
+          <h2 style={h2s}>8. Admin de la tienda</h2>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
             {['new', 'assign'].map(m => (
               <button key={m} type="button" onClick={() => setAdminMode(m)} style={{ padding: '8px 16px', border: '0.5px solid', borderColor: adminMode === m ? '#1a0a2e' : '#e0dbd4', background: adminMode === m ? '#1a0a2e' : 'none', color: adminMode === m ? '#fff' : '#6b6560', cursor: 'pointer', borderRadius: '2px', fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
