@@ -125,7 +125,7 @@ export function FittingRoomProvider({ children }) {
 
   const addToFittingRoom = (product) => {
     setItems(prev => {
-      const filtered = prev.filter(item => item.category !== product.category);
+      const filtered = prev.filter(item => item.category !== product.category && item.id !== product.id);
       const newItems = [...filtered, product];
       try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(newItems)); } catch {}
       return newItems;
