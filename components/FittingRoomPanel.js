@@ -31,7 +31,7 @@ const ZONE_CONFIG = [
 export default function FittingRoomPanel({ storeId }) {
   const { items, isPanelOpen, setIsPanelOpen, removeFromFittingRoom } = useFittingRoom();
   const { addItem, setIsOpen: openCart } = useCart();
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [usageStatus, setUsageStatus] = useState(null);
 
   const [bodyPhotoUrl,    setBodyPhotoUrl]    = useState(null);
@@ -43,6 +43,8 @@ export default function FittingRoomPanel({ storeId }) {
   const [savingLook,      setSavingLook]      = useState(false);
   const [addedAll,        setAddedAll]        = useState(false);
   const [error,           setError]           = useState('');
+  const [height,          setHeight]          = useState('');
+  const [weight,          setWeight]          = useState('');
   const [lightboxOpen,    setLightboxOpen]    = useState(false);
   const [zoom,            setZoom]            = useState(1);
   const [resendCooldown,  setResendCooldown]  = useState(0);
@@ -102,11 +104,49 @@ export default function FittingRoomPanel({ storeId }) {
     }
   };
 
+  const handleUpdateMeasurements = async (newHeight, newWeight) => {
+    setHeight(newHeight);
+    setWeight(newWeight);
+    if (!session?.user) return;
+
+    try {
+      await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: session.user.username,
+          email: session.user.email,
+          first_name: session.user.first_name,
+          last_name: session.user.last_name,
+          birth_date: session.user.birth_date,
+          height: newHeight ? Number(newHeight) : null,
+          weight: newWeight ? Number(newWeight) : null,
+        }),
+      });
+      if (typeof update === 'function') {
+        await update({
+          height: newHeight ? Number(newHeight) : null,
+          weight: newWeight ? Number(newWeight) : null,
+        });
+      }
+    } catch (e) {
+      console.error('Error al actualizar las medidas en tiempo real:', e);
+    }
+  };
+
   useEffect(() => {
     if (!session?.user) return;
     fetch('/api/profile/body-photo')
       .then(r => r.json())
       .then(d => { if (d.body_photo_url) setBodyPhotoUrl(d.body_photo_url); })
+      .catch(() => {});
+
+    fetch('/api/profile')
+      .then(r => r.json())
+      .then(d => {
+        if (d.height) setHeight(d.height);
+        if (d.weight) setWeight(d.weight);
+      })
       .catch(() => {});
   }, [session]);
 
@@ -189,6 +229,8 @@ export default function FittingRoomPanel({ storeId }) {
       fd.append('garment', collageBlob, 'collage.jpg');
       if (storeId) fd.append('store_id', storeId);
       fd.append('product_ids', JSON.stringify(items.map(i => i.id)));
+      if (height) fd.append('height', height);
+      if (weight) fd.append('weight', weight);
 
       const res  = await fetch('/api/tryon', { method: 'POST', body: fd });
       const data = await res.json();
@@ -534,9 +576,61 @@ export default function FittingRoomPanel({ storeId }) {
               </div>
             )}
 
-            {/* Paso 2: Botón */}
+            {/* Paso 2: Medidas de cuerpo (Opcional) */}
+            <div style={{ background: '#f5f3f0', border: '0.5px solid #e0dbd4', borderRadius: '6px', padding: '12px 14px', marginBottom: '16px' }}>
+              <p style={{ margin: '0 0 8px', fontSize: '0.74rem', color: '#0f0f0f', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📏 <span>Medidas para probada más exacta</span>
+              </p>
+              <p style={{ margin: '0 0 10px', fontSize: '0.68rem', color: '#6b6560', lineHeight: 1.35 }}>
+                Ingresá tus datos para que la IA adapte la prenda perfectamente a tu contextura física real (se sincroniza con tu perfil).
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6560', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Altura (cm)</label>
+                  <input
+                    type="number"
+                    min="50"
+                    max="250"
+                    placeholder="Ej: 175"
+                    value={height}
+                    onChange={e => handleUpdateMeasurements(e.target.value, weight)}
+                    style={{ width: '100%', padding: '6px 10px', fontSize: '0.78rem', border: '0.5px solid #d4cfc8', borderRadius: '3px', outline: 'none', background: '#fff', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.6rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6560', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Peso (kg)</label>
+                  <input
+                    type="number"
+                    min="20"
+                    max="300"
+                    placeholder="Ej: 70"
+                    value={weight}
+                    onChange={e => handleUpdateMeasurements(height, e.target.value)}
+                    style={{ width: '100%', padding: '6px 10px', fontSize: '0.78rem', border: '0.5px solid #d4cfc8', borderRadius: '3px', outline: 'none', background: '#fff', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              {(!height || !weight) ? (
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', background: '#fffbeb', border: '0.5px solid #fef3c7', padding: '8px 10px', borderRadius: '4px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>💡</span>
+                  <p style={{ margin: 0, fontSize: '0.66rem', color: '#b45309', lineHeight: 1.35 }}>
+                    <strong>Sin medidas especificadas:</strong> se utilizará la imagen proporcionada y si no es de cuerpo entero, la IA generará un cuerpo adaptado por defecto.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', background: '#f0fdf4', border: '0.5px solid #bbf7d0', padding: '8px 10px', borderRadius: '4px', marginTop: '4px' }}>
+                  <span style={{ fontSize: '0.9rem', lineHeight: 1 }}>✓</span>
+                  <p style={{ margin: 0, fontSize: '0.66rem', color: '#166534', lineHeight: 1.35 }}>
+                    <strong>Medidas activadas:</strong> la IA adaptará la contextura física de forma exacta a tu cuerpo.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Paso 3: Botón */}
             <p style={{ margin: '0 0 10px', fontFamily: 'var(--font-sans)', fontSize: '0.68rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--store-panel-text, #6b6560)', opacity: 0.7 }}>
-              Paso 2 — Generá tu look
+              Paso 3 — Generá tu look
             </p>
 
             {!isVerified ? (
