@@ -209,9 +209,11 @@ export default function ProfilePage() {
     first_name: user?.first_name || '',
     last_name:  user?.last_name  || '',
     birth_date: user?.birth_date ? user.birth_date.substring(0, 10) : '',
+    height:     user?.height     || '',
+    weight:     user?.weight     || '',
   };
 
-  const hasPersonalData = user?.first_name || user?.last_name || user?.birth_date;
+  const hasPersonalData = user?.first_name || user?.last_name || user?.birth_date || user?.height || user?.weight;
 
   async function handleSaveProfile(e) {
     e.preventDefault();
@@ -229,6 +231,8 @@ export default function ProfilePage() {
         first_name: data.first_name,
         last_name: data.last_name,
         birth_date: data.birth_date,
+        height: data.height,
+        weight: data.weight,
       });
       setProfileForm(null);
       showToast('Datos actualizados correctamente');
@@ -591,14 +595,30 @@ export default function ProfilePage() {
                     style={inputStyle} placeholder="Tu apellido" />
                 </div>
               </div>
-              <div style={{ maxWidth: '240px' }}>
-                <label style={labelStyle}>Fecha de nacimiento</label>
-                <input type="date" value={form.birth_date}
-                  onChange={e => setProfileForm({ ...form, birth_date: e.target.value })}
-                  style={inputStyle} />
-                <p style={{ fontSize: '0.68rem', color: '#6b6560', margin: '4px 0 0' }}>
-                  Usada para enviarte descuentos en tu cumpleaños
-                </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', gap: '14px', alignItems: 'flex-start' }}>
+                <div>
+                  <label style={labelStyle}>Fecha de nacimiento</label>
+                  <input type="date" value={form.birth_date}
+                    onChange={e => setProfileForm({ ...form, birth_date: e.target.value })}
+                    style={inputStyle} />
+                  <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>
+                    Para tu descuento de cumpleaños
+                  </p>
+                </div>
+                <div>
+                  <label style={labelStyle}>Altura (cm)</label>
+                  <input type="number" min="50" max="250" value={form.height}
+                    onChange={e => setProfileForm({ ...form, height: e.target.value })}
+                    style={inputStyle} placeholder="Ej: 175" />
+                  <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Para probador virtual</p>
+                </div>
+                <div>
+                  <label style={labelStyle}>Peso (kg)</label>
+                  <input type="number" min="20" max="300" value={form.weight}
+                    onChange={e => setProfileForm({ ...form, weight: e.target.value })}
+                    style={inputStyle} placeholder="Ej: 70" />
+                  <p style={{ fontSize: '0.65rem', color: '#6b6560', margin: '4px 0 0' }}>Para probador virtual</p>
+                </div>
               </div>
             </div>
 

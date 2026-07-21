@@ -69,7 +69,7 @@ export default function SuperadminStoresPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: '#f0ede8' }}>
-                  {['Nombre', 'Slug', 'Admin', 'Productos', 'Estado', 'Acciones'].map(h => (
+                  {['Nombre', 'Slug', 'Admin', 'Productos', 'Tipo', 'Estado', 'Acciones'].map(h => (
                     <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', fontWeight: 400, whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -78,7 +78,7 @@ export default function SuperadminStoresPage() {
               </thead>
               <tbody>
                 {stores.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: '48px', textAlign: 'center', color: '#6b6560' }}>No hay tiendas</td></tr>
+                  <tr><td colSpan={7} style={{ padding: '48px', textAlign: 'center', color: '#6b6560' }}>No hay tiendas</td></tr>
                 ) : stores.map(store => (
                   <tr key={store.id} style={{ borderBottom: '0.5px solid #e0dbd4' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 500 }}>
@@ -91,6 +91,11 @@ export default function SuperadminStoresPage() {
                     <td style={{ padding: '12px 16px', color: '#6b6560' }}>{store.admin_name || <span style={{ color: '#ccc' }}>—</span>}</td>
                     <td style={{ padding: '12px 16px' }}>{store.product_count ?? 0}</td>
                     <td style={{ padding: '12px 16px' }}>
+                      <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.62rem', background: store.is_independent ? '#e0f2fe' : '#fef3c7', color: store.is_independent ? '#0369a1' : '#b45309', fontWeight: 500 }}>
+                        {store.is_independent ? 'Independiente' : 'Shopping'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
                       <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.62rem', background: store.active ? '#e8f5e9' : '#f5f5f5', color: store.active ? '#2e7d32' : '#6b6560' }}>
                         {store.active ? 'Activa' : 'Inactiva'}
                       </span>
@@ -100,7 +105,7 @@ export default function SuperadminStoresPage() {
                         <Link href={`/superadmin/stores/${store.id}/edit`} style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: '#0f0f0f', textDecoration: 'none' }}>
                           Editar
                         </Link>
-                        <Link href={`/store/${store.slug}`} target="_blank" style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: '#6b6560', textDecoration: 'none' }}>
+                        <Link href={store.is_independent ? `/store/${store.slug}` : '/stores'} target="_blank" style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: '#6b6560', textDecoration: 'none' }}>
                           Ver →
                         </Link>
                         <button onClick={() => toggleActive(store)} style={{ border: `0.5px solid ${store.active ? '#fecaca' : '#bbf7d0'}`, background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: store.active ? '#c0392b' : '#2e7d32' }}>

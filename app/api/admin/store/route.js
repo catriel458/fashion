@@ -47,6 +47,7 @@ export async function PUT(request) {
       header_font, header_font_size, header_text_color,
       footer_font, footer_font_size, footer_text_color,
       panel_bg_color, panel_text_color,
+      is_independent,
     } = body;
 
     const existing = await sql`SELECT * FROM stores WHERE id = ${storeId}`;
@@ -82,6 +83,7 @@ export async function PUT(request) {
         footer_text_color = ${footer_text_color ?? prev.footer_text_color},
         panel_bg_color    = ${panel_bg_color    ?? prev.panel_bg_color},
         panel_text_color  = ${panel_text_color  ?? prev.panel_text_color},
+        is_independent    = ${is_independent    ?? prev.is_independent},
         updated_at        = NOW()
       WHERE id = ${storeId}
       RETURNING *

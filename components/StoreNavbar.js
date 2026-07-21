@@ -25,6 +25,7 @@ export default function StoreNavbar({
   headerFontSize = null,
   primaryColor = '#009aae',
   categories   = [],
+  isIndependent = false,
 }) {
   const { itemCount, setIsOpen } = useCart();
   const { items: fittingItems, setIsPanelOpen } = useFittingRoom();
@@ -63,9 +64,15 @@ export default function StoreNavbar({
     }}>
 
       {/* TnB logo — siempre contrasta con el fondo del header */}
-      <Link href="/" style={{ textDecoration: 'none', color: textColor, fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.15rem', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
-        TnB
-      </Link>
+      {isIndependent ? (
+        <span style={{ color: textColor, fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.15rem', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+          TnB
+        </span>
+      ) : (
+        <Link href="/" style={{ textDecoration: 'none', color: textColor, fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.15rem', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+          TnB
+        </Link>
+      )}
 
       <span style={{ color: textColor, opacity: 0.3, fontWeight: 300, fontSize: '1rem' }}>/</span>
 
@@ -87,27 +94,44 @@ export default function StoreNavbar({
 
       {/* Category links desktop */}
       {!isMobile && (
-        <div style={{ display: 'flex', gap: '20px', marginLeft: '16px', flex: 1 }}>
-          {navItems.map(cat => (
-            <Link
-              key={cat.slug}
-              href={`/store/${storeSlug}/category/${cat.slug}`}
-              style={{
-                textDecoration: 'none',
-                color: textColor,
-                opacity: 0.65,
-                fontFamily: font,
-                fontSize: fSize,
-                letterSpacing: '0.16em', textTransform: 'uppercase',
-                transition: 'opacity 0.2s', whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
-              onMouseLeave={e => { e.currentTarget.style.opacity = '0.65'; }}
-            >
-              {cat.label}
-            </Link>
-          ))}
-        </div>
+        <>
+          <style>{`
+            .navbar-categories::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
+          <div className="navbar-categories" style={{
+            display: 'flex',
+            gap: '20px',
+            marginLeft: '16px',
+            flex: 1,
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            whiteSpace: 'nowrap',
+            padding: '4px 0',
+          }}>
+            {navItems.map(cat => (
+              <Link
+                key={cat.slug}
+                href={`/store/${storeSlug}/category/${cat.slug}`}
+                style={{
+                  textDecoration: 'none',
+                  color: textColor,
+                  opacity: 0.65,
+                  fontFamily: font,
+                  fontSize: fSize,
+                  letterSpacing: '0.16em', textTransform: 'uppercase',
+                  transition: 'opacity 0.2s', whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.65'; }}
+              >
+                {cat.label}
+              </Link>
+            ))}
+          </div>
+        </>
       )}
 
       {isMobile && <div style={{ flex: 1 }} />}
@@ -212,7 +236,7 @@ export default function StoreNavbar({
       )}
 
       {isMobile && menuOpen && (
-        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, background: bg, backdropFilter: 'blur(12px)', borderBottom: '0.5px solid rgba(128,128,128,0.15)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: 16, zIndex: 99 }}>
+        <div style={{ position: 'fixed', top: '56px', left: 0, right: 0, maxHeight: 'calc(100vh - 56px)', overflowY: 'auto', background: bg, backdropFilter: 'blur(12px)', borderBottom: '0.5px solid rgba(128,128,128,0.15)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: 16, zIndex: 99 }}>
           {navItems.map(cat => (
             <Link key={cat.slug} href={`/store/${storeSlug}/category/${cat.slug}`} onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', color: textColor, fontFamily: font, fontSize: '0.8rem', letterSpacing: '0.16em', textTransform: 'uppercase', borderBottom: `0.5px solid ${textColor}20`, paddingBottom: 14 }}>
               {cat.label}

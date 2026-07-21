@@ -100,7 +100,7 @@ async function registerFittingUsage(storeId, userId, productIds) {
   }
 }
 
-async function handleJsonMode(parsed) {
+async function handleJsonMode(parsed, height, weight) {
   const { personImage, clothingImages } = parsed;
   if (!personImage || !Array.isArray(clothingImages) || clothingImages.length === 0) {
     return Response.json({ error: 'Faltan personImage o clothingImages' }, { status: 400 });
@@ -109,7 +109,9 @@ async function handleJsonMode(parsed) {
   try {
     const imageResult = await callTryOnIa({
       personImage,
-      clothingImages
+      clothingImages,
+      height,
+      weight
     });
     return Response.json({ image: imageResult });
   } catch (e) {
@@ -124,6 +126,12 @@ export async function POST(request) {
     return Response.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   }
   const userId = Number(session.user.id);
+
+  // Consultar peso y altura del usuario en la base de datos
+  const users = await sql`SELECT height, weight FROM users WHERE id = ${userId}`;
+  const userObj = users[0] || {};
+  const height = userObj.height || null;
+  const weight = userObj.weight || null;
 
   // Modo JSON: acepta { personImage: URL, clothingImages: [URLs], store_id, product_ids }
   const ct = request.headers.get('content-type') || '';
@@ -140,7 +148,7 @@ export async function POST(request) {
 
     const productIds = parsed.product_ids || parsed.productIds || [];
 
-    const result = await handleJsonMode(parsed);
+    const result = await handleJsonMode(parsed, height, weight);
     if (result.status === 200) {
       await registerFittingUsage(limitCheck.storeId, userId, productIds);
     }
@@ -189,7 +197,9 @@ export async function POST(request) {
 
     const imageResult = await callTryOnIa({
       personImage: { b64: personB64, mime: personFile.type },
-      clothingImages: [{ b64: garmentB64, mime: garmentFile.type }]
+      clothingImages: [{ b64: garmentB64, mime: garmentFile.type }],
+      height,
+      weight
     });
 
     await registerFittingUsage(limitCheck.storeId, userId, productIds);

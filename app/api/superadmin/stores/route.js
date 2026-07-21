@@ -47,6 +47,7 @@ export async function POST(req) {
       footer_font, footer_font_size, footer_text_color,
       whatsapp_number, address, pickup_info, hours,
       initial_categories,
+      is_independent,
     } = body;
     if (!name?.trim()) return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });
 
@@ -62,7 +63,8 @@ export async function POST(req) {
         header_font, header_font_size, header_text_color,
         footer_font, footer_font_size, footer_text_color,
         whatsapp_number, address, pickup_info,
-        fitting_plan, fitting_monthly_limit, fitting_daily_limit_per_user, fitting_month_reset_at, plan_status
+        fitting_plan, fitting_monthly_limit, fitting_daily_limit_per_user, fitting_month_reset_at, plan_status,
+        is_independent
       )
       VALUES (
         ${name.trim()},
@@ -98,7 +100,8 @@ export async function POST(req) {
         20,
         2,
         NOW(),
-        'active'
+        'active',
+        ${is_independent ?? false}
       )
       RETURNING *
     `;

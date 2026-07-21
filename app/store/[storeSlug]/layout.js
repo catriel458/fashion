@@ -46,6 +46,7 @@ export default async function StoreLayout({ children, params }) {
         headerFontSize={store.header_font_size || null}
         primaryColor={store.primary_color || '#009aae'}
         categories={categories}
+        isIndependent={!!store.is_independent}
       />
       <CartSidebar storeSlug={storeSlug} />
       <FittingRoomPanel storeId={store.id} />

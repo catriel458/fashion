@@ -9,7 +9,7 @@ export async function GET() {
 
   try {
     const [user] = await sql`
-      SELECT id, username, email, role, avatar_url, first_name, last_name, birth_date, email_verified, points, level
+      SELECT id, username, email, role, avatar_url, first_name, last_name, birth_date, email_verified, points, level, height, weight
       FROM users WHERE id = ${session.user.id}
     `;
     if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
@@ -24,7 +24,7 @@ export async function PUT(req) {
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   try {
-    const { username, email, first_name, last_name, birth_date } = await req.json();
+    const { username, email, first_name, last_name, birth_date, height, weight } = await req.json();
     if (!username?.trim() || !email?.trim()) {
       return NextResponse.json({ error: 'Username y email son requeridos' }, { status: 400 });
     }
@@ -44,9 +44,11 @@ export async function PUT(req) {
         first_name = ${first_name?.trim() || null},
         last_name  = ${last_name?.trim() || null},
         birth_date = ${birth_date || null},
+        height     = ${height ? Number(height) : null},
+        weight     = ${weight ? Number(weight) : null},
         updated_at = NOW()
       WHERE id = ${session.user.id}
-      RETURNING id, username, email, role, avatar_url, first_name, last_name, birth_date
+      RETURNING id, username, email, role, avatar_url, first_name, last_name, birth_date, height, weight
     `;
     return NextResponse.json(user);
   } catch (error) {

@@ -42,6 +42,7 @@ export async function PUT(request, { params }) {
       footer_font, footer_font_size, footer_text_color,
       panel_bg_color, panel_text_color,
       whatsapp_number, whatsapp_message_template, address, pickup_info, hours,
+      is_independent,
     } = body;
 
     const cleanWa = whatsapp_number ? whatsapp_number.replace(/\D/g, '') || null : undefined;
@@ -82,6 +83,7 @@ export async function PUT(request, { params }) {
         footer_text_color = ${footer_text_color ?? prev.footer_text_color},
         panel_bg_color              = ${panel_bg_color              ?? prev.panel_bg_color},
         panel_text_color            = ${panel_text_color            ?? prev.panel_text_color},
+        is_independent              = ${is_independent              ?? prev.is_independent},
         whatsapp_number             = ${cleanWa                    !== undefined ? cleanWa          : (prev.whatsapp_number             ?? null)},
         whatsapp_message_template   = ${whatsapp_message_template  !== undefined ? whatsapp_message_template : (prev.whatsapp_message_template   ?? null)},
         address                     = ${address                    !== undefined ? address          : (prev.address                     ?? null)},

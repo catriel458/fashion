@@ -98,7 +98,7 @@ export async function POST(request) {
       );
     }
 
-    const { userPhoto, garments } = body;
+    const { userPhoto, garments, height, weight } = body;
     garmentsCount = Array.isArray(garments) ? garments.length : 0;
 
     if (!userPhoto) {
@@ -150,7 +150,7 @@ export async function POST(request) {
     }
 
     // 4. Ejecutar simulación IA
-    const fitResult = await processFitting({ userPhoto, garments });
+    const fitResult = await processFitting({ userPhoto, garments, height, weight });
 
     // 5. Registrar e incrementar uso
     await incrementUsage(apiKeyId);
