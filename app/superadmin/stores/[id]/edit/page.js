@@ -123,6 +123,7 @@ export default function EditStorePage({ params }) {
           active:           data.active,
           is_independent:   data.is_independent  ?? false,
           featured_until:   data.featured_until ? new Date(data.featured_until).toISOString().slice(0, 16) : '',
+          fitting_plan:     data.fitting_plan || 'free',
           header_color:      data.header_color      || '',
           footer_color:      data.footer_color      || '',
           panel_bg_color:    data.panel_bg_color    || '',
@@ -418,6 +419,22 @@ export default function EditStorePage({ params }) {
                 <label style={lbl}>Lema o frase corta de tu marca</label>
                 <input type="text" value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} style={inp} placeholder="Ej: Vestite con estilo y comodidad" />
                 <p style={descStyle}>Una frase corta promocional que acompaña al nombre de la tienda para resumir rápidamente lo que ofrecés (ej: "Moda femenina y accesorios").</p>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={lbl}>Plan de Suscripción</label>
+                <select 
+                  value={form.fitting_plan || 'free'} 
+                  onChange={e => setForm({ ...form, fitting_plan: e.target.value })} 
+                  style={inp}
+                >
+                  <option value="free">Free (Gratuito - 20 usos/mes)</option>
+                  <option value="starter">Starter (100 usos/mes)</option>
+                  <option value="growth">Growth (500 usos/mes)</option>
+                  <option value="pro">Pro (2000 usos/mes - Habilita Destacado)</option>
+                  <option value="scale">Scale (10000 usos/mes - Habilita Destacado)</option>
+                </select>
+                <p style={descStyle}>Elegí el nivel de suscripción de la tienda. El plan influye en el límite mensual de uso del probador virtual y en la disponibilidad de destacados.</p>
               </div>
 
               <div style={{ marginBottom: '16px' }}>

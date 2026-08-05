@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { del } from '@vercel/blob';
 import sql from '@/lib/db';
+import { PLANS } from '@/lib/fitting-plans';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,7 @@ export async function PUT(request, { params }) {
       footer_font, footer_font_size, footer_text_color,
       panel_bg_color, panel_text_color,
       whatsapp_number, whatsapp_message_template, address, pickup_info, hours,
-      is_independent, featured_until,
+      is_independent, featured_until, fitting_plan,
     } = body;
 
     const cleanWa = whatsapp_number ? whatsapp_number.replace(/\D/g, '') || null : undefined;
@@ -85,6 +86,9 @@ export async function PUT(request, { params }) {
         panel_text_color            = ${panel_text_color            ?? prev.panel_text_color},
         is_independent              = ${is_independent              ?? prev.is_independent},
         featured_until              = ${featured_until !== undefined ? (featured_until === '' ? null : featured_until) : prev.featured_until},
+        fitting_plan                = ${fitting_plan !== undefined ? fitting_plan : prev.fitting_plan},
+        fitting_monthly_limit       = ${fitting_plan !== undefined && PLANS[fitting_plan] ? PLANS[fitting_plan].monthly_limit : prev.fitting_monthly_limit},
+        fitting_daily_limit_per_user = ${fitting_plan !== undefined && PLANS[fitting_plan] ? PLANS[fitting_plan].daily_limit : prev.fitting_daily_limit_per_user},
         whatsapp_number             = ${cleanWa                    !== undefined ? cleanWa          : (prev.whatsapp_number             ?? null)},
         whatsapp_message_template   = ${whatsapp_message_template  !== undefined ? whatsapp_message_template : (prev.whatsapp_message_template   ?? null)},
         address                     = ${address                    !== undefined ? address          : (prev.address                     ?? null)},
