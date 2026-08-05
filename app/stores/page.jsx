@@ -445,6 +445,28 @@ export default function Home() {
                     style={{ backgroundImage: `url(${coverImage})` }}
                   />
                   
+                  {/* Badge Destacado */}
+                  {store.is_featured_by_payment && (
+                    <div style={{
+                      position: 'absolute',
+                      top: isMobile ? '16px' : '24px',
+                      left: isMobile ? '16px' : '24px',
+                      background: 'rgba(15, 15, 15, 0.75)',
+                      backdropFilter: 'blur(8px)',
+                      border: '0.5px solid rgba(255, 255, 255, 0.25)',
+                      color: '#fff',
+                      fontSize: '9px',
+                      fontWeight: 600,
+                      letterSpacing: '0.15em',
+                      textTransform: 'uppercase',
+                      padding: '4px 8px',
+                      borderRadius: '2px',
+                      zIndex: 3,
+                    }}>
+                      Destacado
+                    </div>
+                  )}
+                  
                   {/* Gradient overlay */}
                   <div className="bento-card-overlay" />
                   

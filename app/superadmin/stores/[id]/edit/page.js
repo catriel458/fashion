@@ -122,6 +122,7 @@ export default function EditStorePage({ params }) {
           contact_phone:    data.contact_phone      || '',
           active:           data.active,
           is_independent:   data.is_independent  ?? false,
+          featured_until:   data.featured_until ? new Date(data.featured_until).toISOString().slice(0, 16) : '',
           header_color:      data.header_color      || '',
           footer_color:      data.footer_color      || '',
           panel_bg_color:    data.panel_bg_color    || '',
@@ -417,6 +418,19 @@ export default function EditStorePage({ params }) {
                 <label style={lbl}>Lema o frase corta de tu marca</label>
                 <input type="text" value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} style={inp} placeholder="Ej: Vestite con estilo y comodidad" />
                 <p style={descStyle}>Una frase corta promocional que acompaña al nombre de la tienda para resumir rápidamente lo que ofrecés (ej: "Moda femenina y accesorios").</p>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={lbl}>Destacar tienda en catálogo central (Hasta fecha/hora)</label>
+                <input 
+                  type="datetime-local" 
+                  value={form.featured_until || ''} 
+                  onChange={e => setForm({ ...form, featured_until: e.target.value })} 
+                  style={inp} 
+                />
+                <p style={descStyle}>
+                  Elegí la fecha y hora límite para mantener a esta tienda destacada en el catálogo general (válido solo para tiendas en plan Pro o Scale). Dejalo vacío para desactivar.
+                </p>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'flex-start' }}>
