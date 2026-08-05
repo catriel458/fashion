@@ -159,7 +159,7 @@ export default function Home() {
             transition: 'opacity 1s ease',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.3) 100%)' }} />
             <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: isMobile ? '0 1.5rem' : '0 2rem' }}>
               <p style={{
                 fontSize: 10, letterSpacing: '0.25em', textTransform: 'uppercase',
@@ -175,31 +175,47 @@ export default function Home() {
               }}>
                 {item.label}
               </h1>
-              <Link href="/stores#tiendas" style={{
-                display: 'inline-block', fontSize: 11, letterSpacing: '0.18em',
-                textTransform: 'uppercase', color: '#fff',
-                border: '0.5px solid rgba(255,255,255,0.6)',
-                padding: isMobile ? '12px 28px' : '14px 36px', textDecoration: 'none',
-              }}>
-                Ver tiendas
-              </Link>
+              <div style={{ display: 'flex', gap: '24px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link href="/stores#tiendas" style={{
+                  display: 'inline-block', fontSize: 11, letterSpacing: '0.18em',
+                  textTransform: 'uppercase', color: '#fff',
+                  border: '0.5px solid rgba(255,255,255,0.6)',
+                  padding: isMobile ? '12px 28px' : '14px 36px', textDecoration: 'none',
+                }}>
+                  Ver tiendas
+                </Link>
+                <a href="#editorial-section" style={{
+                  fontSize: 11, letterSpacing: '0.18em',
+                  textTransform: 'uppercase', color: '#fff',
+                  textDecoration: 'underline', textUnderlineOffset: '6px',
+                  fontWeight: 500, cursor: 'pointer',
+                }}>
+                  Descubrir novedades
+                </a>
+              </div>
             </div>
           </div>
         ))}
 
-        {/* Dots */}
+        {/* Slim Progress Bar Indicator */}
         <div style={{
-          position: 'absolute', bottom: isMobile ? 24 : 32,
+          position: 'absolute', bottom: isMobile ? 32 : 40,
           left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', gap: 8,
-        }}>
-          {CAROUSEL_ITEMS.map((_, i) => (
-            <div key={i} onClick={() => setCurrent(i)} style={{
-              width: i === current ? 24 : 6, height: 6, borderRadius: 3,
-              background: i === current ? '#fff' : 'rgba(255,255,255,0.4)',
-              cursor: 'pointer', transition: 'all 0.3s',
-            }} />
-          ))}
+          width: '180px', height: '2px',
+          background: 'rgba(255,255,255,0.2)',
+          borderRadius: '1px',
+          overflow: 'hidden',
+          cursor: 'pointer',
+        }}
+        onClick={() => setCurrent(c => (c + 1) % CAROUSEL_ITEMS.length)}
+        title="Siguiente slide"
+        >
+          <div style={{
+            width: `${((current + 1) / CAROUSEL_ITEMS.length) * 100}%`,
+            height: '100%',
+            background: '#fff',
+            transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+          }} />
         </div>
       </div>
 
