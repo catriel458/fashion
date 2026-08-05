@@ -277,43 +277,81 @@ export default function Home() {
           </h2>
         </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(180px, 1fr))',
-          gap: isMobile ? 10 : 16,
-        }}>
+        <div className="bento-grid">
           {stores.length === 0 ? (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--gray-dark)', fontSize: 13, padding: '32px 0' }}>
               Cargando tiendas...
             </div>
-          ) : stores.map(store => (
-            <Link key={store.id} href={`/store/${store.slug}`} style={{ textDecoration: 'none' }}>
-              <div style={{
-                border: '0.5px solid #e0dbd4', borderRadius: 10,
-                overflow: 'hidden', background: '#fff', cursor: 'pointer',
-                transition: 'all 0.25s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; e.currentTarget.style.borderColor = '#ccc'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e0dbd4'; }}
+          ) : stores.map((store, index) => {
+            const isFirst = index === 0;
+            const gridColumn = isFirst ? 'span 2' : 'span 1';
+            const gridRow = isFirst ? (isMobile ? 'span 1' : 'span 2') : 'span 1';
+            const height = isFirst ? (isMobile ? '280px' : '480px') : (isMobile ? '160px' : '230px');
+            
+            // Premium fallback placeholders from Unsplash
+            const fallbackImages = [
+              'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800&auto=format&fit=crop',
+              'https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=800&auto=format&fit=crop',
+              'https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=800&auto=format&fit=crop',
+              'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800&auto=format&fit=crop',
+            ];
+            const coverImage = store.cover_image_url || fallbackImages[index % fallbackImages.length];
+
+            return (
+              <Link
+                key={store.id}
+                href={`/store/${store.slug}`}
+                className="bento-card"
+                style={{
+                  gridColumn,
+                  gridRow,
+                  height,
+                }}
               >
-                {/* Zona de logo/nombre — fondo blanco */}
-                <div style={{
-                  padding: isMobile ? '28px 16px 20px' : '36px 20px 24px',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  minHeight: isMobile ? '110px' : '130px', gap: '8px',
-                }}>
-                  <StoreLogo store={store} isMobile={isMobile} />
+                {/* Full-bleed background */}
+                <div
+                  className="bento-card-bg"
+                  style={{ backgroundImage: `url(${coverImage})` }}
+                />
+                
+                {/* Gradient overlay */}
+                <div className="bento-card-overlay" />
+                
+                {/* Content */}
+                <div className="bento-card-content">
+                  <h3 style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: isFirst ? (isMobile ? '1.5rem' : '2.4rem') : (isMobile ? '1.15rem' : '1.45rem'),
+                    color: '#fff',
+                    fontWeight: 300,
+                    letterSpacing: '0.04em',
+                    lineHeight: 1.2,
+                    margin: '0 0 6px 0',
+                  }}>
+                    {store.name}
+                  </h3>
                   {store.tagline && (
-                    <div style={{ fontSize: 10, color: '#6b6560', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    <p style={{
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: isFirst ? '0.78rem' : '0.68rem',
+                      color: 'rgba(255,255,255,0.7)',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      margin: 0,
+                    }}>
                       {store.tagline}
-                    </div>
+                    </p>
                   )}
+                  <div style={{
+                    height: '2px',
+                    width: '32px',
+                    background: store.primary_color || '#009aae',
+                    marginTop: '12px',
+                  }} />
                 </div>
-                {/* Franja de color de marca abajo */}
-                <div style={{ height: '5px', background: store.primary_color || '#009aae' }} />
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
 
