@@ -262,6 +262,94 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── SECCIÓN EDITORIAL ── */}
+      <section id="editorial-section" style={{
+        padding: isMobile ? '64px 1.2rem' : '100px 2.5rem',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: 'center',
+        gap: isMobile ? '32px' : '64px',
+      }}>
+        {/* Image side */}
+        <div style={{
+          flex: 1,
+          width: '100%',
+          height: isMobile ? '320px' : '480px',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          position: 'relative',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.06)',
+        }}>
+          <img
+            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=800&auto=format&fit=crop"
+            alt="Tendencia de la semana"
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        </div>
+
+        {/* Text side */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <span style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '0.72rem',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            color: 'var(--gray-dark)',
+            marginBottom: '16px',
+            fontWeight: 600,
+            display: 'block',
+          }}>
+            Tendencia de la semana
+          </span>
+          <h2 style={{
+            fontFamily: 'var(--font-serif)',
+            fontSize: isMobile ? '2rem' : '3.4rem',
+            fontWeight: 300,
+            lineHeight: 1.15,
+            color: 'var(--black)',
+            margin: '0 0 24px 0',
+            letterSpacing: '0.01em',
+          }}>
+            La sofisticación de la sastrería relajada
+          </h2>
+          <p style={{
+            fontFamily: 'var(--font-sans)',
+            fontSize: '0.9rem',
+            lineHeight: 1.7,
+            color: '#4a4540',
+            margin: '0 0 32px 0',
+            fontWeight: 300,
+          }}>
+            Esta temporada, las siluetas holgadas y las texturas naturales redefinen la elegancia cotidiana. Descubrí cómo combinar prendas atemporales con tecnología interactiva en nuestro probador virtual para crear un guardarropa inteligente y adaptado a tu estilo.
+          </p>
+          <div>
+            <a href="#tiendas" style={{
+              display: 'inline-block',
+              fontSize: '0.72rem',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--black)',
+              borderBottom: '1px solid var(--black)',
+              textDecoration: 'none',
+              paddingBottom: '4px',
+              fontWeight: 600,
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >
+              Explorar Colecciones →
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── SECCIÓN MARCAS ── */}
       <section id="tiendas" style={{ padding: isMobile ? '56px 1.2rem' : '80px 2.5rem', maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}>
