@@ -100,9 +100,9 @@ export default function Home() {
         {/* Links desktop */}
         {!isMobile && (
           <div style={{ display: 'flex', gap: '2rem', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>
-            <span style={{ cursor: 'pointer' }}>Tiendas</span>
-            <span style={{ cursor: 'pointer' }}>Novedades</span>
-            <span style={{ cursor: 'pointer' }}>Ofertas</span>
+            <a href="#tiendas" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--black)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--gray-dark)'}>Tiendas</a>
+            <a href="#editorial-section" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--black)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--gray-dark)'}>Novedades</a>
+            <a href="#tiendas" style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = 'var(--black)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--gray-dark)'}>Ofertas</a>
           </div>
         )}
 
@@ -137,15 +137,27 @@ export default function Home() {
           padding: '1.5rem 1.5rem 2rem',
           display: 'flex', flexDirection: 'column', gap: 20,
         }}>
-          {['Tiendas', 'Novedades', 'Ofertas'].map(item => (
-            <span key={item} style={{
-              fontSize: 14, letterSpacing: '0.12em', textTransform: 'uppercase',
-              color: 'var(--gray-dark)', cursor: 'pointer',
-              borderBottom: '0.5px solid #e8e4df', paddingBottom: 16,
-            }}>
-              {item}
-            </span>
-          ))}
+          <a href="#tiendas" onClick={() => setMenuOpen(false)} style={{
+            fontSize: 14, letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: 'var(--gray-dark)', cursor: 'pointer', textDecoration: 'none',
+            borderBottom: '0.5px solid #e8e4df', paddingBottom: 16,
+          }}>
+            Tiendas
+          </a>
+          <a href="#editorial-section" onClick={() => setMenuOpen(false)} style={{
+            fontSize: 14, letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: 'var(--gray-dark)', cursor: 'pointer', textDecoration: 'none',
+            borderBottom: '0.5px solid #e8e4df', paddingBottom: 16,
+          }}>
+            Novedades
+          </a>
+          <a href="#tiendas" onClick={() => setMenuOpen(false)} style={{
+            fontSize: 14, letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: 'var(--gray-dark)', cursor: 'pointer', textDecoration: 'none',
+            borderBottom: '0.5px solid #e8e4df', paddingBottom: 16,
+          }}>
+            Ofertas
+          </a>
         </div>
       )}
 
