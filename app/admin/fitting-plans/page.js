@@ -313,10 +313,12 @@ export default function FittingPlansPage() {
                   {plan.name}
                 </div>
 
+                {/*
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '8px' }}>
                   <span style={{ fontSize: '2.2rem', fontWeight: 700 }}>${plan.price_usd}</span>
                   <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>USD/mes</span>
                 </div>
+                */}
 
                 <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.45)', margin: '0 0 18px', lineHeight: 1.5 }}>
                   {plan.description}
@@ -398,9 +400,11 @@ export default function FittingPlansPage() {
                 <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 600 }}>
                   Contratar plan {selectedPlan.name}
                 </h3>
+                {/*
                 <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
                   Monto: USD {selectedPlan.price_usd}
                 </p>
+                */}
 
                 {!paymentConfig.transfer_enabled && !paymentConfig.mp_enabled && (
                   <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.85rem' }}>
@@ -442,9 +446,11 @@ export default function FittingPlansPage() {
                 <h3 style={{ margin: '0 0 6px', fontSize: '1.15rem', fontWeight: 600 }}>
                   Transferencia bancaria
                 </h3>
+                {/*
                 <p style={{ margin: '0 0 18px', fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
                   Monto: USD {transferData.amount_usd}
                 </p>
+                */}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
                   {[

@@ -37,7 +37,9 @@ export async function GET() {
     const rows = await sql`
       SELECT id, name, slug, welcome_popup_discount, primary_color
       FROM stores
-      WHERE welcome_popup_enabled = true AND (is_independent = false OR is_independent IS NULL)
+      WHERE welcome_popup_enabled = true 
+        AND (is_independent = false OR is_independent IS NULL)
+        AND shopping_id IS NULL
       ORDER BY welcome_popup_discount DESC
       LIMIT 1
     `;

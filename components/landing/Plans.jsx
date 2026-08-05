@@ -93,10 +93,12 @@ export default function Plans() {
               {/* Nombre y Precio */}
               <div>
                 <h3 className="font-serif text-xl font-medium text-[#f5f0eb] mb-2">{plan.name}</h3>
+                {/*
                 <div className="flex items-baseline gap-1 my-6">
                   <span className="text-4xl md:text-5xl font-extrabold text-[#f5f0eb] tracking-tight">{plan.price}</span>
                   {plan.period && <span className="text-[#d4c5b0]/60 text-sm">{plan.period}</span>}
                 </div>
+                */}
                 
                 <div className="h-[1px] bg-[#2a2a2a] my-6" />
 

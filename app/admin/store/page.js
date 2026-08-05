@@ -468,7 +468,7 @@ export default function AdminStorePage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={lbl}>Tipo de publicación</label>
+                    <label style={lbl}>Modo de publicación de la tienda</label>
                     <select value={form.is_independent ? 'independent' : 'shopping'} 
                       onChange={e => setForm({ ...form, is_independent: e.target.value === 'independent' })} 
                       style={inp}>

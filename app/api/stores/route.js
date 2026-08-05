@@ -8,7 +8,9 @@ export async function GET() {
     const stores = await sql`
       SELECT id, name, slug, tagline, logo_url, primary_color, secondary_color, font_family, active
       FROM stores
-      WHERE active = true AND (is_independent = false OR is_independent IS NULL)
+      WHERE active = true 
+        AND (is_independent = false OR is_independent IS NULL)
+        AND shopping_id IS NULL
       ORDER BY name
     `;
     return NextResponse.json(stores);

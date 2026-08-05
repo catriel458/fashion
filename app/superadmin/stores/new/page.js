@@ -401,6 +401,28 @@ export default function NewStorePage() {
                 </div>
               </div>
 
+                <p style={{ ...descStyle, marginTop: '8px', marginBottom: '16px' }}>
+                  {form.is_independent 
+                    ? '✓ Tu tienda tendrá su propia dirección web directa. Funcionará de forma independiente y estará oculta del catálogo central (ideal para tu propia marca o publicidad).'
+                    : '✓ Tu tienda aparecerá en el catálogo general, en el buscador multimarca y en las recomendaciones para todos los usuarios.'
+                  }
+                </p>
+
+                {form.is_independent && (
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f8fafc', padding: '12px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                    <label style={lbl}>Enlace directo de la tienda (Previsualización)</label>
+                    <span style={{ fontSize: '0.78rem', color: '#009aae', fontWeight: 600, wordBreak: 'break-all', marginTop: '4px' }}>
+                      {form.slug ? (
+                        <a href={`/store/${form.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: '#009aae', textDecoration: 'underline' }}>
+                          {typeof window !== 'undefined' ? `${window.location.origin}/store/${form.slug}` : `/store/${form.slug}`}
+                        </a>
+                      ) : ' (Completa la dirección URL (Slug) arriba)'}
+                    </span>
+                    <p style={{ ...descStyle, margin: '4px 0 0' }}>Enlace exclusivo donde estará disponible tu tienda independiente.</p>
+                  </div>
+                )}
+              </div>
+
               {form.is_independent ? (
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
                   <label style={lbl}>Dirección web (URL) de tu tienda</label>

@@ -73,9 +73,6 @@ export default function OwnShoppingService() {
                     <Link href={`/shopping/${shop.slug}`} className="flex-1 text-center py-2.5 px-4 text-[10px] font-bold tracking-wider text-[#0a0a0a] bg-[#f5f0eb] hover:bg-[#8B2635] hover:text-[#f5f0eb] uppercase rounded-sm transition-all duration-200">
                       Entrar
                     </Link>
-                    <Link href="/login" className="py-2.5 px-3 text-[10px] font-bold tracking-wider text-[#f5f0eb] border border-[#2a2a2a] hover:border-[#8B2635] uppercase rounded-sm transition-all duration-200">
-                      Admin
-                    </Link>
                   </div>
                 </div>
               ))}
