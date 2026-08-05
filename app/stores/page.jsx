@@ -509,6 +509,118 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── SECCIÓN QUÉ HACE ÚNICO A TnB ── */}
+      <section style={{
+        padding: isMobile ? '64px 1.2rem' : '100px 2.5rem',
+        background: '#fafaf8',
+        borderTop: '0.5px solid #e8e4df',
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ textAlign: 'center', marginBottom: isMobile ? '40px' : '64px' }}
+          >
+            <span style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.72rem',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'var(--gray-dark)',
+              marginBottom: '12px',
+              fontWeight: 600,
+              display: 'block',
+            }}>
+              Nuestra Visión
+            </span>
+            <h2 style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: isMobile ? '2rem' : '3.2rem',
+              fontWeight: 300,
+              color: 'var(--black)',
+              margin: 0,
+              letterSpacing: '0.01em',
+            }}>
+              Por qué TnB es distinto
+            </h2>
+          </motion.div>
+
+          {/* Pillars Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+            gap: isMobile ? '20px' : '32px',
+          }}>
+            {[
+              {
+                title: 'Probador virtual con IA',
+                description: 'Probate la ropa sin ir al local, utilizando tu propia foto para ver cómo te calza en segundos.',
+                image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=600&auto=format&fit=crop',
+              },
+              {
+                title: 'Cupones y beneficios',
+                description: 'Accedé a descuentos exclusivos y ventajas personalizadas al comprar en tus tiendas TnB preferidas.',
+                image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=600&auto=format&fit=crop',
+              },
+              {
+                title: 'Catálogo exclusivo',
+                description: 'Una selección curada de las mejores marcas y diseñadores independientes en un solo marketplace.',
+                image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=600&auto=format&fit=crop',
+              },
+            ].map((pilar, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.15, duration: 0.8 }}
+                className="bento-card"
+                style={{
+                  height: isMobile ? '280px' : '400px',
+                  display: 'flex',
+                }}
+              >
+                {/* Background image */}
+                <div
+                  className="bento-card-bg"
+                  style={{ backgroundImage: `url(${pilar.image})` }}
+                />
+                
+                {/* Overlay */}
+                <div className="bento-card-overlay" />
+                
+                {/* Content */}
+                <div className="bento-card-content" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%', boxSizing: 'border-box' }}>
+                  <h3 style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: isMobile ? '1.3rem' : '1.7rem',
+                    color: '#fff',
+                    fontWeight: 300,
+                    margin: '0 0 10px 0',
+                    letterSpacing: '0.02em',
+                  }}>
+                    {pilar.title}
+                  </h3>
+                  <p style={{
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '0.85rem',
+                    lineHeight: 1.5,
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    margin: 0,
+                    fontWeight: 300,
+                  }}>
+                    {pilar.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ── FOOTER ── */}
       <footer style={{
