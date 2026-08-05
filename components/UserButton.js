@@ -83,6 +83,16 @@ export default function UserButton() {
               Panel admin
             </Link>
           )}
+          {user.role === 'superadmin' && (
+            <>
+              <Link href="/superadmin/dashboard" onClick={() => setShowDropdown(false)} style={itemStyle}>
+                Panel superadmin
+              </Link>
+              <Link href="/admin/dashboard" onClick={() => setShowDropdown(false)} style={itemStyle}>
+                Panel de Tienda (Admin)
+              </Link>
+            </>
+          )}
           <button
             onClick={() => { signOut({ callbackUrl: '/stores' }); setShowDropdown(false); }}
             style={{
