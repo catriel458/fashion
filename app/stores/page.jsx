@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import UserButton from '@/components/UserButton';
 import WelcomePopupGeneral from '@/components/WelcomePopupGeneral';
 
@@ -220,16 +221,22 @@ export default function Home() {
       </div>
 
       {/* ── TIRA DE CONFIANZA ── */}
-      <div style={{
-        background: '#f4f3f0',
-        borderBottom: '0.5px solid #e8e4df',
-        padding: '16px 1rem',
-        color: '#6b6560',
-        fontFamily: 'var(--font-sans)',
-        fontSize: '0.72rem',
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-      }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+        style={{
+          background: '#f4f3f0',
+          borderBottom: '0.5px solid #e8e4df',
+          padding: '16px 1rem',
+          color: '#6b6560',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '0.72rem',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}
+      >
         <div style={{
           maxWidth: '1200px',
           margin: '0 auto',
@@ -260,18 +267,25 @@ export default function Home() {
             <span>Atención exclusiva</span>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── SECCIÓN EDITORIAL ── */}
-      <section id="editorial-section" style={{
-        padding: isMobile ? '64px 1.2rem' : '100px 2.5rem',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        alignItems: 'center',
-        gap: isMobile ? '32px' : '64px',
-      }}>
+      <motion.section
+        id="editorial-section"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.0 }}
+        style={{
+          padding: isMobile ? '64px 1.2rem' : '100px 2.5rem',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: 'center',
+          gap: isMobile ? '32px' : '64px',
+        }}
+      >
         {/* Image side */}
         <div style={{
           flex: 1,
@@ -348,11 +362,17 @@ export default function Home() {
             </a>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ── SECCIÓN MARCAS ── */}
       <section id="tiendas" style={{ padding: isMobile ? '56px 1.2rem' : '80px 2.5rem', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}
+        >
           <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--gray-dark)', marginBottom: 12 }}>
             Nuestras tiendas
           </p>
@@ -363,7 +383,7 @@ export default function Home() {
           }}>
             Las mejores marcas, en un solo lugar
           </h2>
-        </div>
+        </motion.div>
 
         <div className="bento-grid">
           {stores.length === 0 ? (
@@ -386,58 +406,70 @@ export default function Home() {
             const coverImage = store.cover_image_url || fallbackImages[index % fallbackImages.length];
 
             return (
-              <Link
+              <motion.div
                 key={store.id}
-                href={`/store/${store.slug}`}
-                className="bento-card"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1, duration: 0.8 }}
                 style={{
                   gridColumn,
                   gridRow,
                   height,
+                  display: 'flex',
                 }}
               >
-                {/* Full-bleed background */}
-                <div
-                  className="bento-card-bg"
-                  style={{ backgroundImage: `url(${coverImage})` }}
-                />
-                
-                {/* Gradient overlay */}
-                <div className="bento-card-overlay" />
-                
-                {/* Content */}
-                <div className="bento-card-content">
-                  <h3 style={{
-                    fontFamily: 'var(--font-serif)',
-                    fontSize: isFirst ? (isMobile ? '1.5rem' : '2.4rem') : (isMobile ? '1.15rem' : '1.45rem'),
-                    color: '#fff',
-                    fontWeight: 300,
-                    letterSpacing: '0.04em',
-                    lineHeight: 1.2,
-                    margin: '0 0 6px 0',
-                  }}>
-                    {store.name}
-                  </h3>
-                  {store.tagline && (
-                    <p style={{
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: isFirst ? '0.78rem' : '0.68rem',
-                      color: 'rgba(255,255,255,0.7)',
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      margin: 0,
+                <Link
+                  href={`/store/${store.slug}`}
+                  className="bento-card"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                  }}
+                >
+                  {/* Full-bleed background */}
+                  <div
+                    className="bento-card-bg"
+                    style={{ backgroundImage: `url(${coverImage})` }}
+                  />
+                  
+                  {/* Gradient overlay */}
+                  <div className="bento-card-overlay" />
+                  
+                  {/* Content */}
+                  <div className="bento-card-content">
+                    <h3 style={{
+                      fontFamily: 'var(--font-serif)',
+                      fontSize: isFirst ? (isMobile ? '1.5rem' : '2.4rem') : (isMobile ? '1.15rem' : '1.45rem'),
+                      color: '#fff',
+                      fontWeight: 300,
+                      letterSpacing: '0.04em',
+                      lineHeight: 1.2,
+                      margin: '0 0 6px 0',
                     }}>
-                      {store.tagline}
-                    </p>
-                  )}
-                  <div style={{
-                    height: '2px',
-                    width: '32px',
-                    background: store.primary_color || '#009aae',
-                    marginTop: '12px',
-                  }} />
-                </div>
-              </Link>
+                      {store.name}
+                    </h3>
+                    {store.tagline && (
+                      <p style={{
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: isFirst ? '0.78rem' : '0.68rem',
+                        color: 'rgba(255,255,255,0.7)',
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        margin: 0,
+                      }}>
+                        {store.tagline}
+                      </p>
+                    )}
+                    <div style={{
+                      height: '2px',
+                      width: '32px',
+                      background: store.primary_color || '#009aae',
+                      marginTop: '12px',
+                    }} />
+                  </div>
+                </Link>
+              </motion.div>
             );
           })}
         </div>
