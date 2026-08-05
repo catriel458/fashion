@@ -45,3 +45,26 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+  try {
+    const [prev] = await sql`SELECT body_photo_url FROM users WHERE id = ${session.user.id}`;
+
+    await sql`
+      UPDATE users SET body_photo_url = NULL, updated_at = NOW()
+      WHERE id = ${session.user.id}
+    `;
+
+    if (prev?.body_photo_url) {
+      try { await del(prev.body_photo_url); } catch {}
+    }
+
+    return NextResponse.json({ success: true, body_photo_url: null });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+

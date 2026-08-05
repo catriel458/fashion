@@ -33,6 +33,12 @@ export default async function StoreLayout({ children, params }) {
 
   const categories = await sql`SELECT * FROM categories WHERE store_id = ${store.id} ORDER BY name`;
 
+  let shoppingSlug = null;
+  if (store.shopping_id) {
+    const [shop] = await sql`SELECT slug FROM shoppings WHERE id = ${store.shopping_id}`;
+    if (shop) shoppingSlug = shop.slug;
+  }
+
   return (
     <CartProvider>
       <StoreThemeProvider store={store} />
@@ -47,6 +53,7 @@ export default async function StoreLayout({ children, params }) {
         primaryColor={store.primary_color || '#009aae'}
         categories={categories}
         isIndependent={!!store.is_independent}
+        shoppingSlug={shoppingSlug}
       />
       <CartSidebar storeSlug={storeSlug} />
       <FittingRoomPanel storeId={store.id} />

@@ -15,7 +15,7 @@ export async function PUT(request, { params }) {
   try {
     const { id } = params;
     const body = await request.json();
-    const { username, email, password, role, store_id, active } = body;
+    const { username, email, password, role, store_id, active, max_stores } = body;
 
     const existing = await sql`SELECT * FROM users WHERE id = ${id}`;
     if (existing.length === 0) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
@@ -31,9 +31,10 @@ export async function PUT(request, { params }) {
         password_hash = ${hash},
         role          = ${role      ?? prev.role},
         store_id      = ${store_id  !== undefined ? (store_id || null) : prev.store_id},
-        active        = ${active    ?? prev.active}
+        active        = ${active    ?? prev.active},
+        max_stores    = ${max_stores !== undefined ? parseInt(max_stores) : prev.max_stores}
       WHERE id = ${id}
-      RETURNING id, username, email, role, store_id, active, created_at
+      RETURNING id, username, email, role, store_id, max_stores, active, created_at
     `;
     return NextResponse.json(user[0]);
   } catch (error) {

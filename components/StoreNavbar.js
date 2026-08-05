@@ -26,6 +26,7 @@ export default function StoreNavbar({
   primaryColor = '#009aae',
   categories   = [],
   isIndependent = false,
+  shoppingSlug = null,
 }) {
   const { itemCount, setIsOpen } = useCart();
   const { items: fittingItems, setIsPanelOpen } = useFittingRoom();
@@ -69,7 +70,7 @@ export default function StoreNavbar({
           TnB
         </span>
       ) : (
-        <Link href="/" style={{ textDecoration: 'none', color: textColor, fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.15rem', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
+        <Link href={shoppingSlug ? `/shopping/${shoppingSlug}` : '/'} style={{ textDecoration: 'none', color: textColor, fontFamily: 'var(--font-serif)', fontWeight: 400, fontSize: isMobile ? '1rem' : '1.15rem', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
           TnB
         </Link>
       )}

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 export async function GET() {
   try {
-    // Expandir el CHECK constraint de roles para incluir superadmin
+    // Expandir el CHECK constraint de roles para incluir superadmin y shopping_admin
     const constraints = await sql`
       SELECT conname FROM pg_constraint
       WHERE conrelid = 'users'::regclass AND contype = 'c' AND conname LIKE '%role%'
@@ -14,7 +14,7 @@ export async function GET() {
     }
     await sql`
       ALTER TABLE users ADD CONSTRAINT users_role_check
-      CHECK (role IN ('visitor', 'admin', 'superadmin'))
+      CHECK (role IN ('visitor', 'admin', 'superadmin', 'shopping_admin'))
     `;
 
     await sql`
@@ -47,12 +47,48 @@ export async function GET() {
       )
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS shoppings (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) NOT NULL UNIQUE,
+        tagline TEXT,
+        description TEXT,
+        owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        primary_color VARCHAR(7) DEFAULT '#009aae',
+        secondary_color VARCHAR(7) DEFAULT '#ffffff',
+        font_family VARCHAR(100) DEFAULT 'Inter',
+        hero_title TEXT,
+        hero_subtitle TEXT,
+        logo_url TEXT,
+        active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS idx_shoppings_owner ON shoppings(owner_id)`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS shopping_images (
+        id SERIAL PRIMARY KEY,
+        shopping_id INTEGER REFERENCES shoppings(id) ON DELETE CASCADE,
+        image_url TEXT NOT NULL,
+        caption TEXT,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
     await sql`ALTER TABLE products   ADD COLUMN IF NOT EXISTS store_id INTEGER REFERENCES stores(id)`;
     await sql`ALTER TABLE categories ADD COLUMN IF NOT EXISTS store_id INTEGER REFERENCES stores(id)`;
     await sql`ALTER TABLE orders     ADD COLUMN IF NOT EXISTS store_id INTEGER REFERENCES stores(id)`;
     await sql`ALTER TABLE users      ADD COLUMN IF NOT EXISTS store_id INTEGER REFERENCES stores(id)`;
     await sql`ALTER TABLE users      ADD COLUMN IF NOT EXISTS height INTEGER`;
     await sql`ALTER TABLE users      ADD COLUMN IF NOT EXISTS weight INTEGER`;
+    await sql`ALTER TABLE users      ADD COLUMN IF NOT EXISTS max_stores INTEGER DEFAULT 5`;
+    await sql`ALTER TABLE stores     ADD COLUMN IF NOT EXISTS shopping_id INTEGER REFERENCES shoppings(id) ON DELETE SET NULL`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_stores_shopping ON stores(shopping_id)`;
 
     await sql`
       INSERT INTO stores (name, slug, tagline, primary_color, font_family, hero_title, hero_subtitle)

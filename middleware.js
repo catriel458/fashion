@@ -13,6 +13,10 @@ export default withAuth(
     if (pathname.startsWith('/admin') && token?.role !== 'admin' && token?.role !== 'superadmin') {
       return NextResponse.redirect(new URL('/unauthorized', req.url));
     }
+
+    if (pathname.startsWith('/shopping-admin') && token?.role !== 'shopping_admin' && token?.role !== 'superadmin') {
+      return NextResponse.redirect(new URL('/unauthorized', req.url));
+    }
   },
   {
     callbacks: {
@@ -22,5 +26,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ['/admin/:path*', '/superadmin/:path*', '/profile/:path*'],
+  matcher: ['/admin/:path*', '/superadmin/:path*', '/profile/:path*', '/shopping-admin/:path*'],
 };

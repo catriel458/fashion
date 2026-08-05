@@ -105,7 +105,7 @@ export default function SuperadminStoresPage() {
                         <Link href={`/superadmin/stores/${store.id}/edit`} style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: '#0f0f0f', textDecoration: 'none' }}>
                           Editar
                         </Link>
-                        <Link href={store.is_independent ? `/store/${store.slug}` : '/stores'} target="_blank" style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: '#6b6560', textDecoration: 'none' }}>
+                        <Link href={`/store/${store.slug}`} target="_blank" style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: '#6b6560', textDecoration: 'none' }}>
                           Ver →
                         </Link>
                         <button onClick={() => toggleActive(store)} style={{ border: `0.5px solid ${store.active ? '#fecaca' : '#bbf7d0'}`, background: 'none', cursor: 'pointer', padding: '4px 10px', fontSize: '0.65rem', borderRadius: '2px', color: store.active ? '#c0392b' : '#2e7d32' }}>

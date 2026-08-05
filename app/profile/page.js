@@ -55,6 +55,7 @@ export default function ProfilePage() {
   const [savingPw, setSavingPw] = useState(false);
 
   const [uploadingAvatar,    setUploadingAvatar]    = useState(false);
+  const [deletingAvatar,     setDeletingAvatar]     = useState(false);
   const [deletingAccount,    setDeletingAccount]    = useState(false);
   const [confirmDelete,      setConfirmDelete]      = useState(false);
   const [verifyCooldown,     setVerifyCooldown]     = useState(0);
@@ -63,6 +64,7 @@ export default function ProfilePage() {
   const [bodyPhotoUrl,       setBodyPhotoUrl]       = useState(null);
   const [bodyPhotoPreview,   setBodyPhotoPreview]   = useState(null);
   const [uploadingBodyPhoto, setUploadingBodyPhoto] = useState(false);
+  const [deletingBodyPhoto,  setDeletingBodyPhoto]  = useState(false);
   const [savedAddress,       setSavedAddress]       = useState(null);
   const [addressInput,       setAddressInput]       = useState('');
   const [addressLat,         setAddressLat]         = useState(null);
@@ -302,6 +304,37 @@ export default function ProfilePage() {
       showToast(err.message, 'error');
     } finally {
       setUploadingBodyPhoto(false);
+    }
+  }
+
+  async function handleDeleteAvatar() {
+    setDeletingAvatar(true);
+    try {
+      const res = await fetch('/api/profile/avatar', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      await updateSession({ avatar_url: null });
+      showToast('Foto de perfil eliminada');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setDeletingAvatar(false);
+    }
+  }
+
+  async function handleDeleteBodyPhoto() {
+    setDeletingBodyPhoto(true);
+    try {
+      const res = await fetch('/api/profile/body-photo', { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setBodyPhotoUrl(null);
+      setBodyPhotoPreview(null);
+      showToast('Foto del probador eliminada');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setDeletingBodyPhoto(false);
     }
   }
 
@@ -680,10 +713,18 @@ export default function ProfilePage() {
             </div>
             <div>
               <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
-              <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}
-                style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: uploadingAvatar ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
-                {uploadingAvatar ? 'Subiendo...' : 'Cambiar foto'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar || deletingAvatar}
+                  style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: (uploadingAvatar || deletingAvatar) ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
+                  {uploadingAvatar ? 'Subiendo...' : 'Cambiar foto'}
+                </button>
+                {user.avatar_url && (
+                  <button onClick={handleDeleteAvatar} disabled={uploadingAvatar || deletingAvatar}
+                    style={{ border: '0.5px solid #f87171', background: 'none', color: '#dc2626', cursor: (uploadingAvatar || deletingAvatar) ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
+                    {deletingAvatar ? 'Eliminando...' : 'Eliminar foto'}
+                  </button>
+                )}
+              </div>
               <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: '6px 0 0' }}>JPG, PNG o WEBP. Máx 4 MB.</p>
             </div>
           </div>
@@ -703,10 +744,18 @@ export default function ProfilePage() {
             </div>
             <div>
               <input ref={bodyPhotoInputRef} type="file" accept="image/*" onChange={handleBodyPhotoChange} style={{ display: 'none' }} />
-              <button onClick={() => bodyPhotoInputRef.current?.click()} disabled={uploadingBodyPhoto}
-                style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: uploadingBodyPhoto ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
-                {uploadingBodyPhoto ? 'Subiendo...' : bodyPhotoUrl ? 'Cambiar foto' : 'Subir foto'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button onClick={() => bodyPhotoInputRef.current?.click()} disabled={uploadingBodyPhoto || deletingBodyPhoto}
+                  style={{ border: '0.5px solid #e0dbd4', background: 'none', cursor: (uploadingBodyPhoto || deletingBodyPhoto) ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
+                  {uploadingBodyPhoto ? 'Subiendo...' : bodyPhotoUrl ? 'Cambiar foto' : 'Subir foto'}
+                </button>
+                {bodyPhotoUrl && (
+                  <button onClick={handleDeleteBodyPhoto} disabled={uploadingBodyPhoto || deletingBodyPhoto}
+                    style={{ border: '0.5px solid #f87171', background: 'none', color: '#dc2626', cursor: (uploadingBodyPhoto || deletingBodyPhoto) ? 'not-allowed' : 'pointer', padding: '8px 16px', fontSize: '0.72rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}>
+                    {deletingBodyPhoto ? 'Eliminando...' : 'Eliminar foto'}
+                  </button>
+                )}
+              </div>
               <p style={{ fontSize: '0.72rem', color: '#6b6560', margin: '6px 0 0' }}>
                 Foto de frente, cuerpo entero. JPG, PNG o WEBP.
               </p>

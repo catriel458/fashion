@@ -354,7 +354,7 @@ export default function EditStorePage({ params }) {
         <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: '1.8rem', margin: 0, letterSpacing: '0.02em', color: '#0f172a', flex: 1 }}>
           Editar Tienda: {store.name}
         </h1>
-        <Link href={(form ? form.is_independent : store.is_independent) ? `/store/${store.slug}` : '/stores'} target="_blank" style={{ fontSize: '0.75rem', color: '#009aae', textDecoration: 'none', border: '1px solid #009aae', padding: '7px 14px', borderRadius: '6px', fontWeight: 600 }}>
+        <Link href={`/store/${store.slug}`} target="_blank" style={{ fontSize: '0.75rem', color: '#009aae', textDecoration: 'none', border: '1px solid #009aae', padding: '7px 14px', borderRadius: '6px', fontWeight: 600 }}>
           Ver tienda pública →
         </Link>
       </div>
@@ -399,39 +399,70 @@ export default function EditStorePage({ params }) {
           {currentStep === 1 && (
             <div style={card}>
               <h2 style={h2s}>1. Datos básicos de identidad</h2>
-              <p style={descStyle}>Configura los campos de identidad y tipo de acceso para la tienda.</p>
+              <p style={descStyle}>Configurá el nombre público de tu tienda, su dirección web única y cómo se mostrará a tus clientes en internet.</p>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={lbl}>Nombre de la tienda *</label>
-                <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inp} />
+                <label style={lbl}>Nombre comercial de la tienda *</label>
+                <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inp} placeholder="Ej: Bloom Boutique" />
+                <p style={descStyle}>El nombre público de tu marca o local comercial (ej: "Bloom Boutique"). Así aparecerá en las cabeceras, menús y pie de página de tu sitio.</p>
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={lbl}>Dirección URL (Slug) *</label>
-                <input type="text" required value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} style={inp} />
-                <p style={descStyle}>Dirección web única. Ej: /store/zara</p>
+                <label style={lbl}>Dirección web única (enlace/slug) *</label>
+                <input type="text" required value={form.slug} onChange={e => setForm({ ...form, slug: e.target.value })} style={inp} placeholder="ej: bloom-boutique" />
+                <p style={descStyle}>Dirección web única. Usá solo letras minúsculas, números y guiones, sin espacios. Ejemplo: "bloom-boutique" (tu tienda se podrá visitar en /store/bloom-boutique)</p>
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={lbl}>Lema / Tagline</label>
-                <input type="text" value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} style={inp} />
+                <label style={lbl}>Lema o frase corta de tu marca</label>
+                <input type="text" value={form.tagline} onChange={e => setForm({ ...form, tagline: e.target.value })} style={inp} placeholder="Ej: Vestite con estilo y comodidad" />
+                <p style={descStyle}>Una frase corta promocional que acompaña al nombre de la tienda para resumir rápidamente lo que ofrecés (ej: "Moda femenina y accesorios").</p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'center' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'flex-start' }}>
                 <div>
                   <label style={lbl}>Tipo de publicación</label>
                   <select value={form.is_independent ? 'independent' : 'shopping'} 
                     onChange={e => setForm({ ...form, is_independent: e.target.value === 'independent' })} 
                     style={inp}>
-                    <option value="shopping">Shopping Virtual (Directorio central)</option>
-                    <option value="independent">Página Independiente (URL propia sin catálogo general)</option>
+                    <option value="shopping">Aparecer en el Shopping (Catálogo central)</option>
+                    <option value="independent">Tienda Independiente (Página privada y exclusiva)</option>
                   </select>
+                  <p style={descStyle}>
+                    {form.is_independent 
+                      ? 'Página Independiente: Tu tienda tendrá un sitio web exclusivo (URL única). Ideal si querés difundir tu marca de manera directa y personalizada sin mezclarte con otros locales.'
+                      : 'Shopping Virtual: Tu marca se integra al catálogo colectivo de la plataforma. Los clientes te encontrarán buscando en la página de inicio común junto a otras tiendas.'
+                    }
+                  </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '20px' }}>
                   <input type="checkbox" id="store-active" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} style={{ cursor: 'pointer', width: '18px', height: '18px' }} />
-                  <label htmlFor="store-active" style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', cursor: 'pointer', color: '#1e293b', fontWeight: 600 }}>Tienda activa</label>
+                  <label htmlFor="store-active" style={{ fontFamily: 'var(--font-sans)', fontSize: '0.8rem', cursor: 'pointer', color: '#1e293b', fontWeight: 600 }}>Habilitar tienda (Poner en línea)</label>
                 </div>
               </div>
+
+              {form.is_independent ? (
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
+                  <label style={lbl}>Dirección web (URL) de tu tienda</label>
+                  <span style={{ fontSize: '0.78rem', color: '#0f172a', fontWeight: 600, wordBreak: 'break-all', marginTop: '4px' }}>
+                    {form.slug ? (
+                      <a href={`/store/${form.slug}`} target="_blank" rel="noopener noreferrer" style={{ color: '#009aae', textDecoration: 'underline' }}>
+                        {typeof window !== 'undefined' ? `${window.location.origin}/store/${form.slug}` : `/store/${form.slug}`}
+                      </a>
+                    ) : 'Se generará automáticamente cuando escribas el nombre o slug'}
+                  </span>
+                  <p style={{ ...descStyle, margin: '6px 0 0' }}>
+                    Esta tienda está configurada como Página Independiente. Funciona de manera aislada (fuera del shopping), por lo que tus clientes solo podrán ingresar usando este enlace directo.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
+                  <label style={lbl}>Publicación en el Shopping</label>
+                  <p style={{ ...descStyle, margin: '0', fontSize: '0.8rem' }}>
+                    Esta tienda está configurada como Shopping Virtual. Aparecerá en el catálogo colectivo y en el buscador central de la plataforma para que cualquier visitante la pueda encontrar.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -439,20 +470,20 @@ export default function EditStorePage({ params }) {
           {currentStep === 2 && (
             <div style={card}>
               <h2 style={h2s}>2. Colores y Estilos Visuales</h2>
-              <p style={descStyle}>Elige la paleta de colores oficial. El mock de la derecha se refrescará en tiempo real.</p>
+              <p style={descStyle}>Elegí la paleta de colores oficial de tu catálogo. El simulador de la derecha cambiará en vivo.</p>
 
-              <ColorField label="Color Primario (Fondo)" value={form.primary_color} explanation="Fondo principal del cuerpo de la tienda." onChange={v => setForm({ ...form, primary_color: v })} />
-              <ColorField label="Color Secundario" value={form.secondary_color} explanation="Color de contraste para textos del banner." onChange={v => setForm({ ...form, secondary_color: v })} />
-              <ColorField label="Color de Botones" value={form.accent_color} explanation="Color para los botones de comprar y probador." onChange={v => setForm({ ...form, accent_color: v })} />
+              <ColorField label="Color de Fondo Principal (Primario)" value={form.primary_color} explanation="Fondo de la página. Te sugerimos usar color blanco o un tono gris muy claro para que las fotos de tu ropa se luzcan y contrasten bien." onChange={v => setForm({ ...form, primary_color: v })} />
+              <ColorField label="Color de Contraste (Secundario)" value={form.secondary_color} explanation="Color para textos de la portada/banner. Este color se usará para el título y descripción principales de la portada." onChange={v => setForm({ ...form, secondary_color: v })} />
+              <ColorField label="Color de Botones de Acción" value={form.accent_color} explanation="Color de los botones más importantes (Comprar y Probarse). Elegí un color que llame la atención (negro, azul oscuro, verde o rojo) para que la gente vea rápido dónde hacer clic." onChange={v => setForm({ ...form, accent_color: v })} />
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                <ColorField label="Fondo del Header (Menú)" value={form.header_color} explanation="Color de fondo del menú superior." onChange={v => setForm({ ...form, header_color: v })} />
-                <ColorField label="Fondo del Footer" value={form.footer_color} explanation="Color de fondo del pie de página." onChange={v => setForm({ ...form, footer_color: v })} />
+                <ColorField label="Fondo del Menú Superior (Header)" value={form.header_color} explanation="Color del Menú Superior. La barra de navegación de arriba. Te recomendamos un tono neutro o el mismo color que el fondo general." onChange={v => setForm({ ...form, header_color: v })} />
+                <ColorField label="Fondo del Pie de Página (Footer)" value={form.footer_color} explanation="Color del Pie de Página. La barra inferior al final de tu web. Se suele usar un color oscuro o sobrio." onChange={v => setForm({ ...form, footer_color: v })} />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                <ColorField label="Fondo del Carrito y Probador" value={form.panel_bg_color} explanation="Fondo del panel lateral desplegable." onChange={v => setForm({ ...form, panel_bg_color: v })} />
-                <ColorField label="Texto del Carrito y Probador" value={form.panel_text_color} explanation="Letras del panel lateral." onChange={v => setForm({ ...form, panel_text_color: v })} />
+                <ColorField label="Fondo del Vestidor y Carrito" value={form.panel_bg_color} explanation="Fondo del Carrito y Probador. Color del panel que se desliza por el costado cuando tus clientes prueban prendas o ven sus compras." onChange={v => setForm({ ...form, panel_bg_color: v })} />
+                <ColorField label="Texto del Vestidor y Carrito" value={form.panel_text_color} explanation="Color de las letras en Carrito/Probador. Asegurate de que contraste con el fondo elegido arriba para que se lea con facilidad." onChange={v => setForm({ ...form, panel_text_color: v })} />
               </div>
             </div>
           )}
@@ -461,20 +492,22 @@ export default function EditStorePage({ params }) {
           {currentStep === 3 && (
             <div style={card}>
               <h2 style={h2s}>3. Tipografías de la Web</h2>
-              <p style={descStyle}>Alinea el estilo de letras y bordes de botones.</p>
+              <p style={descStyle}>Elegí la tipografía general (el estilo de letra) y la forma que tendrán tus botones.</p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <label style={lbl}>Tipografía General</label>
+                  <label style={lbl}>Estilo de Letra Principal (Tipografía)</label>
                   <select value={form.font_family} onChange={e => setForm({ ...form, font_family: e.target.value })} style={inp}>
                     {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
                   </select>
+                  <p style={descStyle}>El estilo de letra principal que se usará para los nombres de tus productos, descripciones y precios.</p>
                 </div>
                 <div>
-                  <label style={lbl}>Estilo de Botones</label>
+                  <label style={lbl}>Silueta de los Botones</label>
                   <select value={form.button_style} onChange={e => setForm({ ...form, button_style: e.target.value })} style={inp}>
                     {BUTTON_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
+                  <p style={descStyle}>Elegí el diseño de tus botones. 'Cuadrado' se ve muy moderno y minimalista, 'Redondeado' es el estilo clásico por excelencia, y 'Cápsula (Pill)' tiene las esquinas totalmente redondeadas, dándole un toque más amigable.</p>
                 </div>
               </div>
 
@@ -529,18 +562,19 @@ export default function EditStorePage({ params }) {
           {/* Paso 4: Portada */}
           {currentStep === 4 && (
             <div style={card}>
-              <h2 style={h2s}>4. Portada de la tienda (Hero)</h2>
-              <p style={descStyle}>El banner de bienvenida y sección institucional.</p>
+              <h2 style={h2s}>4. Portada de la tienda (Banner Principal)</h2>
+              <p style={descStyle}>La portada o "Hero" es la marquesina de bienvenida al inicio de tu web. Es lo primero que ven tus clientes al entrar.</p>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div><label style={lbl}>Texto de temporada</label><input type="text" value={form.hero_season} onChange={e => setForm({ ...form, hero_season: e.target.value })} style={inp} /></div>
-                <div><label style={lbl}>Título de bienvenida</label><input type="text" value={form.hero_title} onChange={e => setForm({ ...form, hero_title: e.target.value })} style={inp} /></div>
-                <div><label style={lbl}>Subtítulo descriptivo</label><input type="text" value={form.hero_subtitle} onChange={e => setForm({ ...form, hero_subtitle: e.target.value })} style={inp} /></div>
-                <div><label style={lbl}>Texto botón principal</label><input type="text" value={form.hero_button_text} onChange={e => setForm({ ...form, hero_button_text: e.target.value })} style={inp} /></div>
+                <div><label style={lbl}>Texto destacado (Etiqueta de temporada)</label><input type="text" value={form.hero_season} onChange={e => setForm({ ...form, hero_season: e.target.value })} style={inp} placeholder="Ej: Nueva Colección 2026" /><p style={descStyle}>Una etiqueta flotante opcional arriba del título principal (ej: "NUEVO", "TEMPORADA 2026").</p></div>
+                <div><label style={lbl}>Título de la Portada</label><input type="text" value={form.hero_title} onChange={e => setForm({ ...form, hero_title: e.target.value })} style={inp} placeholder="Ej: Bienvenidos a Bloom Boutique" /><p style={descStyle}>El encabezado principal o saludo gigante de la portada de tu web.</p></div>
+                <div><label style={lbl}>Subtítulo o Anuncio Promocional</label><input type="text" value={form.hero_subtitle} onChange={e => setForm({ ...form, hero_subtitle: e.target.value })} style={inp} placeholder="Ej: 3 cuotas sin interés en todo el local" /><p style={descStyle}>Frase corta promocional o informativa que va debajo de tu título principal.</p></div>
+                <div><label style={lbl}>Texto del Botón Principal</label><input type="text" value={form.hero_button_text} onChange={e => setForm({ ...form, hero_button_text: e.target.value })} style={inp} placeholder="Ej: Ver catálogo" /><p style={descStyle}>El llamado a la acción del botón de la portada (ej: "Explorar Colección" o "Ver Catálogo").</p></div>
               </div>
               <div>
-                <label style={lbl}>Sobre nosotros</label>
-                <textarea value={form.about_text} onChange={e => setForm({ ...form, about_text: e.target.value })} rows={4} style={{ ...inp, resize: 'vertical' }} />
+                <label style={lbl}>Sobre tu marca (Historia o Quiénes Somos)</label>
+                <textarea value={form.about_text} onChange={e => setForm({ ...form, about_text: e.target.value })} rows={4} style={{ ...inp, resize: 'vertical' }} placeholder="Escribí un breve párrafo contando los valores, origen o propuesta de tu local..." />
+                <p style={descStyle}>Sección informativa al final de la página donde contás la historia y propuesta de valor de tu marca. Esto te ayudará a generar confianza con tus clientes.</p>
               </div>
             </div>
           )}
@@ -550,7 +584,8 @@ export default function EditStorePage({ params }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Logo */}
               <div style={card}>
-                <h2 style={h2s}>Logotipo oficial</h2>
+                <h2 style={h2s}>Logotipo oficial de tu marca</h2>
+                <p style={descStyle}>El logo se mostrará en la barra superior de tu tienda. Te aconsejamos usar un formato con fondo transparente (PNG) y de diseño horizontal.</p>
                 {store?.logo_url ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px', padding: '12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                     <img src={store.logo_url} alt="Logo" style={{ height: '48px', maxWidth: '160px', objectFit: 'contain', background: '#fff', padding: '6px', borderRadius: '4px', border: '1px solid #e2e8f0' }} />
@@ -570,7 +605,8 @@ export default function EditStorePage({ params }) {
 
               {/* Carrusel */}
               <div style={card}>
-                <h2 style={h2s}>Imágenes del Carrusel Superior</h2>
+                <h2 style={h2s}>Fotos de Portada (Carrusel de imágenes)</h2>
+                <p style={descStyle}>Subí imágenes grandes para el carrusel superior. Se recomiendan fotos rectangulares en formato horizontal y de buena definición.</p>
                 {images.length === 0 ? <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '16px' }}>Sin portadas cargadas.</p> : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                     {images.map((img, i) => (
@@ -604,14 +640,29 @@ export default function EditStorePage({ params }) {
           {/* Paso 6: Horarios */}
           {currentStep === 6 && (
             <div style={card}>
-              <h2 style={h2s}>6. Pedidos y Horarios</h2>
+              <h2 style={h2s}>6. Canales de Contacto y Horarios</h2>
+              <p style={descStyle}>Configurá el número de WhatsApp a donde te llegarán los pedidos de compra, la dirección de tu local y tus horarios de atención comercial.</p>
+
               <div style={{ marginBottom: '16px' }}>
-                <label style={lbl}>WhatsApp de Pedidos *</label>
-                <input type="text" value={waNumber} onChange={e => setWaNumber(e.target.value)} style={inp} placeholder="5491112345678" />
+                <label style={lbl}>WhatsApp para recibir pedidos *</label>
+                <input type="text" value={waNumber} onChange={e => setWaNumber(e.target.value)} style={inp} placeholder="Ej: 5491133334444" />
+                <p style={descStyle}>El número telefónico donde vas a recibir los carritos de compra armados. Escribilo completo y todo corrido, sin el símbolo "+", sin espacios ni guiones. Ejemplo en Argentina: 5491133334444 (código de país 54 + prefijo de celular 9 + código de área 11 + número).</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                <div><label style={lbl}>Dirección física</label><textarea value={waAddress} onChange={e => setWaAddress(e.target.value)} rows={2} style={inp} /></div>
-                <div><label style={lbl}>Pickup en tienda</label><textarea value={waPickup} onChange={e => setWaPickup(e.target.value)} rows={2} style={inp} /></div>
+                <div><label style={lbl}>Dirección de tu Local Físico o Showroom</label><textarea value={waAddress} onChange={e => setWaAddress(e.target.value)} rows={2} style={inp} placeholder="Ej: Av. Santa Fe 1234, CABA" /><p style={descStyle}>Completá la dirección física de tu local o showroom únicamente si tenés atención presencial al público.</p></div>
+                <div><label style={lbl}>Indicaciones para el retiro (Pickup)</label><textarea value={waPickup} onChange={e => setWaPickup(e.target.value)} rows={2} style={inp} placeholder="Ej: Retiros de Lunes a Viernes de 12 a 19 hs. Coordinar cita previa." /><p style={descStyle}>Instrucciones claras para tus clientes si eligen retirar sus productos de forma presencial (ej: "Coordinar día por WhatsApp, timbre 4B").</p></div>
+              </div>
+
+              {/* Redes */}
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginBottom: '16px' }}>
+                <h3 style={{ ...lbl, color: '#009aae', marginBottom: '10px' }}>Redes sociales y Soporte</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div><label style={lbl}>Usuario de Instagram</label><input type="text" value={form.social_instagram} onChange={e => setForm({ ...form, social_instagram: e.target.value })} style={inp} placeholder="Ej: @mi.marca" /></div>
+                  <div><label style={lbl}>Enlace directo de WhatsApp</label><input type="text" value={form.social_whatsapp} onChange={e => setForm({ ...form, social_whatsapp: e.target.value })} style={inp} placeholder="Ej: https://wa.me/54911..." /></div>
+                  <div><label style={lbl}>Página de Facebook</label><input type="text" value={form.social_facebook} onChange={e => setForm({ ...form, social_facebook: e.target.value })} style={inp} placeholder="Ej: facebook.com/mi.marca" /></div>
+                  <div><label style={lbl}>Email de Soporte</label><input type="email" value={form.contact_email} onChange={e => setForm({ ...form, contact_email: e.target.value })} style={inp} placeholder="Ej: soporte@mi.marca.com" /></div>
+                  <div style={{ gridColumn: '1 / -1' }}><label style={lbl}>Teléfono de línea o contacto</label><input type="text" value={form.contact_phone} onChange={e => setForm({ ...form, contact_phone: e.target.value })} style={inp} placeholder="Ej: 011 4444-5555" /></div>
+                </div>
               </div>
 
               {/* Horarios */}
@@ -649,7 +700,8 @@ export default function EditStorePage({ params }) {
           {/* Paso 7: Categorías */}
           {currentStep === 7 && (
             <div style={card}>
-              <h2 style={h2s}>Categorías del Catálogo</h2>
+              <h2 style={h2s}>7. Categorías de Ropa (Secciones del catálogo)</h2>
+              <p style={descStyle}>Organizá tus prendas creando secciones o divisiones (ej: 'Remeras', 'Jeans', 'Vestidos'). Para una experiencia súper visual e intuitiva para tus clientes, te recomendamos subir una linda foto representativa para cada categoría.</p>
               {categories.length === 0 ? (
                 <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '20px' }}>Sin categorías creadas aún.</p>
               ) : (

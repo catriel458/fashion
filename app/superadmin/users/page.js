@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 const labelStyle = { display: 'block', marginBottom: '6px', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6b6560' };
 const inputStyle = { width: '100%', padding: '9px 11px', border: '0.5px solid #e0dbd4', background: '#fafaf8', fontFamily: 'var(--font-sans)', fontSize: '0.875rem', outline: 'none', borderRadius: '2px', boxSizing: 'border-box', color: '#0f0f0f' };
 
-const EMPTY_FORM = { username: '', email: '', password: '', role: 'admin', store_id: '' };
+const EMPTY_FORM = { username: '', email: '', password: '', role: 'admin', store_id: '', max_stores: 5 };
 
 export default function SuperadminUsersPage() {
   const [users,         setUsers]         = useState([]);
@@ -52,7 +52,7 @@ export default function SuperadminUsersPage() {
 
   function openEdit(user) {
     setEditingUser(user);
-    setForm({ username: user.username, email: user.email, password: '', role: user.role, store_id: user.store_id ? String(user.store_id) : '' });
+    setForm({ username: user.username, email: user.email, password: '', role: user.role, store_id: user.store_id ? String(user.store_id) : '', max_stores: user.max_stores || 5 });
     setError('');
     setShowForm(true);
   }
@@ -62,7 +62,13 @@ export default function SuperadminUsersPage() {
     setSaving(true);
     setError('');
     try {
-      const body = { username: form.username, email: form.email, role: form.role, store_id: form.store_id ? parseInt(form.store_id) : null };
+      const body = { 
+        username: form.username, 
+        email: form.email, 
+        role: form.role, 
+        store_id: form.store_id ? parseInt(form.store_id) : null,
+        max_stores: form.role === 'shopping_admin' ? parseInt(form.max_stores) : null
+      };
       if (form.password) body.password = form.password;
 
       if (editingUser) {
@@ -102,7 +108,12 @@ export default function SuperadminUsersPage() {
     }
   }
 
-  const ROLE_COLORS = { superadmin: { bg: '#ede9fe', color: '#7c3aed' }, admin: { bg: '#e8f0fe', color: '#1a56db' }, visitor: { bg: '#f0ede8', color: '#6b6560' } };
+  const ROLE_COLORS = { 
+    superadmin: { bg: '#ede9fe', color: '#7c3aed' }, 
+    admin: { bg: '#e8f0fe', color: '#1a56db' }, 
+    shopping_admin: { bg: '#e0f2fe', color: '#0369a1' },
+    visitor: { bg: '#f0ede8', color: '#6b6560' } 
+  };
 
   return (
     <div style={{ padding: 'clamp(2rem, 4vw, 3rem) clamp(1.2rem, 4vw, 2.5rem)', fontFamily: 'var(--font-sans)' }}>
@@ -122,7 +133,8 @@ export default function SuperadminUsersPage() {
         <select value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ ...inputStyle, maxWidth: '160px', background: '#fff' }}>
           <option value="">Todos los roles</option>
           <option value="superadmin">Superadmin</option>
-          <option value="admin">Admin</option>
+          <option value="shopping_admin">Admin de Shopping Propio</option>
+          <option value="admin">Admin de Tienda</option>
           <option value="visitor">Visitor</option>
         </select>
         <select value={filterStore} onChange={e => setFilterStore(e.target.value)} style={{ ...inputStyle, maxWidth: '200px', background: '#fff' }}>
@@ -143,7 +155,7 @@ export default function SuperadminUsersPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: '#f0ede8' }}>
-                  {['Usuario', 'Email', 'Rol', 'Tienda', 'Estado', 'Registro', 'Acciones'].map(h => (
+                  {['Usuario', 'Email', 'Rol', 'Tienda / Límite', 'Estado', 'Registro', 'Acciones'].map(h => (
                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', fontWeight: 400, whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -158,7 +170,9 @@ export default function SuperadminUsersPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.62rem', ...ROLE_COLORS[user.role] }}>{user.role}</span>
                     </td>
-                    <td style={{ padding: '10px 14px', color: '#6b6560', fontSize: '0.8rem' }}>{user.store_name || '—'}</td>
+                    <td style={{ padding: '10px 14px', color: '#6b6560', fontSize: '0.8rem' }}>
+                      {user.role === 'shopping_admin' ? `Shopping propio (Límite: ${user.max_stores ?? 5})` : (user.store_name || '—')}
+                    </td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.62rem', background: user.active ? '#e8f5e9' : '#f5f5f5', color: user.active ? '#2e7d32' : '#6b6560' }}>
                         {user.active ? 'Activo' : 'Inactivo'}
@@ -224,17 +238,27 @@ export default function SuperadminUsersPage() {
                 <label style={labelStyle}>Rol *</label>
                 <select required value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} style={inputStyle}>
                   <option value="visitor">Visitor</option>
-                  <option value="admin">Admin</option>
+                  <option value="admin">Admin de Tienda</option>
+                  <option value="shopping_admin">Admin de Shopping Propio</option>
                   <option value="superadmin">Superadmin</option>
                 </select>
               </div>
-              <div style={{ marginBottom: '24px' }}>
-                <label style={labelStyle}>Tienda asignada</label>
-                <select value={form.store_id} onChange={e => setForm({ ...form, store_id: e.target.value })} style={inputStyle}>
-                  <option value="">Sin tienda</option>
-                  {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-              </div>
+              {form.role === 'admin' && (
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={labelStyle}>Tienda asignada</label>
+                  <select value={form.store_id} onChange={e => setForm({ ...form, store_id: e.target.value })} style={inputStyle}>
+                    <option value="">Sin tienda</option>
+                    {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+              )}
+              {form.role === 'shopping_admin' && (
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={labelStyle}>Límite de Tiendas *</label>
+                  <input type="number" required min={1} value={form.max_stores} onChange={e => setForm({ ...form, max_stores: e.target.value })} style={inputStyle} />
+                  <p style={{ margin: '4px 0 0', color: '#6b6560', fontSize: '0.72rem' }}>Número de tiendas que este administrador podrá crear en su propio shopping.</p>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowForm(false)} style={{ padding: '10px 20px', border: '0.5px solid #e0dbd4', background: 'none', cursor: 'pointer', fontSize: '0.78rem', borderRadius: '2px' }}>Cancelar</button>
                 <button type="submit" disabled={saving} style={{ padding: '10px 22px', background: saving ? '#ccc' : '#1a0a2e', color: '#fff', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', fontSize: '0.78rem', borderRadius: '2px' }}>

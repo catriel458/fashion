@@ -64,14 +64,14 @@ export async function GET(request) {
 export async function POST(req) {
   if (!await checkSuperadmin()) return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
   try {
-    const { username, email, password, role, store_id } = await req.json();
+    const { username, email, password, role, store_id, max_stores } = await req.json();
     if (!username || !email || !password) return NextResponse.json({ error: 'username, email y password son requeridos' }, { status: 400 });
 
     const hash = await bcrypt.hash(password, 10);
     const user = await sql`
-      INSERT INTO users (username, email, password_hash, role, store_id)
-      VALUES (${username}, ${email}, ${hash}, ${role || 'admin'}, ${store_id || null})
-      RETURNING id, username, email, role, store_id, active, created_at
+      INSERT INTO users (username, email, password_hash, role, store_id, max_stores)
+      VALUES (${username}, ${email}, ${hash}, ${role || 'admin'}, ${store_id || null}, ${max_stores !== undefined && role === 'shopping_admin' ? parseInt(max_stores) : 5})
+      RETURNING id, username, email, role, store_id, max_stores, active, created_at
     `;
     return NextResponse.json(user[0], { status: 201 });
   } catch (error) {

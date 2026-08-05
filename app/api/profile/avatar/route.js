@@ -34,3 +34,26 @@ export async function POST(req) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+  try {
+    const [prev] = await sql`SELECT avatar_url FROM users WHERE id = ${session.user.id}`;
+    
+    await sql`
+      UPDATE users SET avatar_url = NULL, updated_at = NOW()
+      WHERE id = ${session.user.id}
+    `;
+
+    if (prev?.avatar_url) {
+      try { await del(prev.avatar_url); } catch {}
+    }
+
+    return NextResponse.json({ success: true, avatar_url: null });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+

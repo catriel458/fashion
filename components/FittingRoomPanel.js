@@ -37,6 +37,7 @@ export default function FittingRoomPanel({ storeId }) {
   const [bodyPhotoUrl,    setBodyPhotoUrl]    = useState(null);
   const [bodyPhotoPreview, setBodyPhotoPreview] = useState(null);
   const [uploadingPhoto,  setUploadingPhoto]  = useState(false);
+  const [deletingPhoto,   setDeletingPhoto]   = useState(false);
   const [generating,      setGenerating]      = useState(false);
   const [result,          setResult]          = useState(null);
   const [savedLook,       setSavedLook]       = useState(false);
@@ -172,6 +173,24 @@ export default function FittingRoomPanel({ storeId }) {
     setUploadingPhoto(false);
   };
 
+  const handlePhotoDelete = async () => {
+    setDeletingPhoto(true);
+    try {
+      const res = await fetch('/api/profile/body-photo', { method: 'DELETE' });
+      if (res.ok) {
+        setBodyPhotoUrl(null);
+        setBodyPhotoPreview(null);
+        toast.success('Foto eliminada');
+      } else {
+        toast.error('Error al eliminar la foto');
+      }
+    } catch {
+      toast.error('Error al eliminar la foto');
+    } finally {
+      setDeletingPhoto(false);
+    }
+  };
+
   const buildCollage = async (urls) => {
     // Trae cada URL como blob local para evitar problemas de CORS en Canvas
     const blobs = await Promise.all(urls.map(url => fetch(url).then(r => r.blob())));
@@ -211,7 +230,11 @@ export default function FittingRoomPanel({ storeId }) {
   };
 
   const handleTryOn = async () => {
-    if (!bodyPhotoUrl || items.length === 0) return;
+    if (!bodyPhotoUrl) {
+      toast.error('Primero cargue una foto');
+      return;
+    }
+    if (items.length === 0) return;
     setGenerating(true);
     setResult(null);
     setSavedLook(false);
@@ -337,7 +360,7 @@ export default function FittingRoomPanel({ storeId }) {
   };
 
   const isVerified  = session?.user?.email_verified !== false;
-  const canTryOn    = isVerified && !!bodyPhotoUrl && !uploadingPhoto && items.length > 0 && !generating;
+  const canTryOn    = isVerified && !uploadingPhoto && items.length > 0 && !generating;
   const displayPhoto = bodyPhotoPreview || bodyPhotoUrl;
 
   return (
@@ -550,13 +573,22 @@ export default function FittingRoomPanel({ storeId }) {
                   <p style={{ margin: '0 0 8px', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: '#888' }}>
                     Guardada en tu perfil
                   </p>
-                  <button
-                    onClick={() => photoInputRef.current?.click()}
-                    disabled={uploadingPhoto}
-                    style={{ border: '0.5px solid #e0dbd4', background: '#fff', cursor: 'pointer', padding: '5px 10px', fontSize: '0.66rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}
-                  >
-                    Cambiar
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => photoInputRef.current?.click()}
+                      disabled={uploadingPhoto || deletingPhoto}
+                      style={{ border: '0.5px solid #e0dbd4', background: '#fff', cursor: (uploadingPhoto || deletingPhoto) ? 'not-allowed' : 'pointer', padding: '5px 10px', fontSize: '0.66rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}
+                    >
+                      Cambiar
+                    </button>
+                    <button
+                      onClick={handlePhotoDelete}
+                      disabled={uploadingPhoto || deletingPhoto}
+                      style={{ border: '0.5px solid #f87171', background: '#fff', color: '#dc2626', cursor: (uploadingPhoto || deletingPhoto) ? 'not-allowed' : 'pointer', padding: '5px 10px', fontSize: '0.66rem', borderRadius: '2px', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'var(--font-sans)' }}
+                    >
+                      {deletingPhoto ? 'Eliminando...' : 'Eliminar'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
