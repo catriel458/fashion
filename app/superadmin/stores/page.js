@@ -69,7 +69,7 @@ export default function SuperadminStoresPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ background: '#f0ede8' }}>
-                  {['Nombre', 'Slug', 'Admin', 'Productos', 'Tipo', 'Destacado', 'Estado', 'Acciones'].map(h => (
+                  {['Nombre', 'Slug', 'Admin', 'Productos', 'Plan', 'Tipo', 'Destacado', 'Estado', 'Acciones'].map(h => (
                     <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '0.62rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', fontWeight: 400, whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -78,7 +78,7 @@ export default function SuperadminStoresPage() {
               </thead>
               <tbody>
                 {stores.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: '48px', textAlign: 'center', color: '#6b6560' }}>No hay tiendas</td></tr>
+                  <tr><td colSpan={9} style={{ padding: '48px', textAlign: 'center', color: '#6b6560' }}>No hay tiendas</td></tr>
                 ) : stores.map(store => (
                   <tr key={store.id} style={{ borderBottom: '0.5px solid #e0dbd4' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 500 }}>
@@ -90,6 +90,16 @@ export default function SuperadminStoresPage() {
                     <td style={{ padding: '12px 16px', color: '#6b6560', fontSize: '0.78rem' }}>{store.slug}</td>
                     <td style={{ padding: '12px 16px', color: '#6b6560' }}>{store.admin_name || <span style={{ color: '#ccc' }}>—</span>}</td>
                     <td style={{ padding: '12px 16px' }}>{store.product_count ?? 0}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{
+                        padding: '3px 8px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600,
+                        background: store.fitting_plan === 'free' ? '#e2e8f0' : (store.fitting_plan === 'pro' || store.fitting_plan === 'scale' ? '#fef3c7' : '#f1f5f9'),
+                        color: store.fitting_plan === 'free' ? '#475569' : (store.fitting_plan === 'pro' || store.fitting_plan === 'scale' ? '#b45309' : '#334155'),
+                        textTransform: 'uppercase'
+                      }}>
+                        {store.fitting_plan || 'free'}
+                      </span>
+                    </td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{ padding: '3px 8px', borderRadius: '20px', fontSize: '0.62rem', background: store.is_independent ? '#e0f2fe' : '#fef3c7', color: store.is_independent ? '#0369a1' : '#b45309', fontWeight: 500 }}>
                         {store.is_independent ? 'Independiente' : 'Shopping'}
