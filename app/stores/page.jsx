@@ -219,6 +219,49 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── TIRA DE CONFIANZA ── */}
+      <div style={{
+        background: '#f4f3f0',
+        borderBottom: '0.5px solid #e8e4df',
+        padding: '16px 1rem',
+        color: '#6b6560',
+        fontFamily: 'var(--font-sans)',
+        fontSize: '0.72rem',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+      }}>
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '12px' : '0px',
+          textAlign: 'center',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            <span>Envío a todo el país</span>
+          </div>
+          {!isMobile && <span style={{ opacity: 0.3 }}>|</span>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span>Cambios simples</span>
+          </div>
+          {!isMobile && <span style={{ opacity: 0.3 }}>|</span>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Pago 100% seguro</span>
+          </div>
+          {!isMobile && <span style={{ opacity: 0.3 }}>|</span>}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            <span>Atención exclusiva</span>
+          </div>
+        </div>
+      </div>
+
       {/* ── SECCIÓN MARCAS ── */}
       <section id="tiendas" style={{ padding: isMobile ? '56px 1.2rem' : '80px 2.5rem', maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 56 }}>
