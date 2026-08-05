@@ -475,7 +475,6 @@ export default function EditStorePage({ params }) {
                     <p style={{ ...descStyle, margin: '4px 0 0' }}>Enlace exclusivo donde estará disponible tu tienda independiente.</p>
                   </div>
                 )}
-              </div>
 
               {form.is_independent ? (
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
