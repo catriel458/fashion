@@ -88,6 +88,7 @@ export async function GET() {
     await sql`ALTER TABLE users      ADD COLUMN IF NOT EXISTS weight INTEGER`;
     await sql`ALTER TABLE users      ADD COLUMN IF NOT EXISTS max_stores INTEGER DEFAULT 5`;
     await sql`ALTER TABLE stores     ADD COLUMN IF NOT EXISTS shopping_id INTEGER REFERENCES shoppings(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE stores     ADD COLUMN IF NOT EXISTS featured_until TIMESTAMPTZ`;
     await sql`CREATE INDEX IF NOT EXISTS idx_stores_shopping ON stores(shopping_id)`;
 
     await sql`
