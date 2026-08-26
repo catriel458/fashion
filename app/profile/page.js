@@ -406,10 +406,17 @@ export default function ProfilePage() {
       {/* Header */}
       <div style={{ background: '#0f0f0f', padding: '0 0 0 0' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px clamp(1.2rem, 4vw, 2.5rem)' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', letterSpacing: '0.08em', color: '#fff', marginBottom: '20px' }}>
-              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px', letterSpacing: '0.16em' }}>Try & Buy</span>
-            </div>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: '24px',
+                width: 'auto',
+                objectFit: 'contain',
+                marginBottom: '20px',
+              }}
+            />
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#333', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

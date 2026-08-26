@@ -46,10 +46,17 @@ function ResetPasswordForm() {
     <div style={{ minHeight: '100vh', background: '#f5f3f0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '8px', padding: '40px 36px', width: '100%', maxWidth: '420px' }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.3rem', color: '#0f0f0f', letterSpacing: '0.08em' }}>
-              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', marginLeft: '4px' }}>Try & Buy</span>
-            </div>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: '24px',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: 'invert(1)',
+              }}
+            />
           </Link>
           <h1 style={{ fontSize: '1.1rem', fontWeight: 400, margin: '16px 0 4px' }}>Nueva contraseña</h1>
         </div>

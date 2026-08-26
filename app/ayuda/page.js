@@ -165,10 +165,17 @@ export default function AyudaPage() {
       {/* Header */}
       <div style={{ background: '#0f0f0f', padding: '24px clamp(1.2rem,5vw,4rem)' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', color: '#fff', marginBottom: '16px', letterSpacing: '0.08em' }}>
-              TnB<span style={{ color: '#6b6560', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', marginLeft: '4px' }}>Try & Buy</span>
-            </div>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: '24px',
+                width: 'auto',
+                objectFit: 'contain',
+                marginBottom: '16px',
+              }}
+            />
           </Link>
           <h1 style={{ color: '#fff', fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.5rem,4vw,2rem)', margin: '0 0 16px' }}>
             Centro de ayuda

@@ -31,10 +31,16 @@ export default function SuperadminSidebar() {
         position: 'fixed', top: 0, left: 0, height: '100vh', zIndex: 200,
       }} className={`admin-sidebar ${open ? 'open' : ''}`}>
         <div style={{ padding: '22px 20px', borderBottom: '0.5px solid rgba(255,255,255,0.08)' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.05rem', letterSpacing: '0.08em', color: '#fff' }}>
-              TnB<span style={{ color: '#a78bfa', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', letterSpacing: '0.18em', marginLeft: '4px' }}>Try & Buy</span>
-            </div>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: '24px',
+                width: 'auto',
+                objectFit: 'contain',
+              }}
+            />
           </Link>
           <div style={{ fontSize: '0.58rem', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.18em', textTransform: 'uppercase', marginTop: '3px' }}>
             Panel Superadmin
@@ -86,11 +92,17 @@ export default function SuperadminSidebar() {
         <button onClick={() => setOpen(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '1.4rem', padding: '4px' }} aria-label="Abrir menú">
           ☰
         </button>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', letterSpacing: '0.08em', color: '#fff' }}>
-            TnB
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: '20px',
+                width: 'auto',
+                objectFit: 'contain',
+              }}
+            />
           </div>
-        </Link>
         <div style={{ width: 28 }} />
       </div>
 

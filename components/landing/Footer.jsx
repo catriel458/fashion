@@ -8,8 +8,7 @@ export default function Footer() {
         
         {/* Nombre / Branding */}
         <div className="flex flex-col items-center md:items-start leading-tight">
-          <span className="font-serif font-light text-2xl tracking-wider text-[#f5f0eb]">TnB</span>
-          <span className="text-[9px] uppercase tracking-widest text-[#d4c5b0]/55 mt-0.5 font-sans">Try & Buy</span>
+          <img src="/tnb.png" alt="TnB" className="h-8 w-auto object-contain" />
         </div>
 
         {/* Enlaces del Footer */}

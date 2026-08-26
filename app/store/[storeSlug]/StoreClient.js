@@ -18,6 +18,24 @@ function btnRadius(style) {
   return '4px';
 }
 
+function isColorDark(color) {
+  if (!color) return true;
+  const hex = color.replace('#', '');
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  }
+  return true;
+}
+
 export default function StoreClient({ store, images, categories, products, storeSlug }) {
   const primary  = store.primary_color  || '#009aae';
   const accent   = store.accent_color   || store.primary_color || '#0f0f0f';
@@ -308,9 +326,18 @@ export default function StoreClient({ store, images, categories, products, store
           )}
         </div>
 
-        <div style={{ borderTop: '0.5px solid #e8e4df', marginTop: '2rem', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '0.9rem', letterSpacing: '0.08em', color: 'var(--store-footer-text-color, #1a1a1a)', opacity: 0.6 }}>
-            TnB
+        <div style={{ borderTop: '0.5px solid #e8e4df', marginTop: '2rem', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', opacity: 0.6 }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: '20px',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: isColorDark(store.footer_text_color || '#1a1a1a') ? 'invert(1)' : 'none',
+              }}
+            />
           </div>
           <div style={{ fontFamily: 'var(--font-sans)', fontSize: '0.7rem', color: 'var(--store-footer-text-color, #bbb)', letterSpacing: '0.06em', opacity: 0.5 }}>
             © {new Date().getFullYear()} TnB · {store.name}

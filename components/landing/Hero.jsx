@@ -46,21 +46,15 @@ export default function Hero() {
         transition={{ duration: 1.4, ease: 'easeOut' }}
         className="z-10 max-w-5xl"
       >
-        {/* Etiqueta superior */}
-        <span
-          style={{ textShadow: '0 1px 10px rgba(0,0,0,0.8)' }}
-          className="block font-sans text-xs tracking-[0.28em] text-[#d4c5b0] uppercase mb-4"
-        >
-          TRY & BUY
-        </span>
 
         {/* Título Principal */}
-        <h1 
-          style={{ textShadow: '0 2px 30px rgba(0,0,0,0.9)' }}
-          className="font-serif text-6xl sm:text-8xl md:text-9xl font-light tracking-wide text-[#f5f0eb] select-none mb-8"
-        >
-          TnB
-        </h1>
+        <div className="flex justify-center mb-8">
+          <img
+            src="/tnb.png"
+            alt="TnB"
+            className="h-20 sm:h-28 md:h-36 w-auto object-contain select-none filter drop-shadow-[0_2px_30px_rgba(0,0,0,0.9)]"
+          />
+        </div>
 
         {/* Leyenda y Tagline Premium */}
         <motion.p

@@ -90,11 +90,19 @@ export default function Home() {
       }}>
 
         {/* Logo */}
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: isMobile ? 18 : 22, fontWeight: 400, letterSpacing: '0.08em' }}>TnB</span>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: isMobile ? '20px' : '24px',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: 'invert(1)',
+              }}
+            />
           </Link>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)', marginTop: 1 }}>Try & Buy</span>
         </div>
 
         {/* Links desktop */}
@@ -633,9 +641,17 @@ export default function Home() {
         gap: isMobile ? 16 : 0,
         background: 'var(--white)',
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: 18, fontWeight: 400, letterSpacing: '0.08em', color: '#1a1a1a' }}>TnB</span>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>Try & Buy</span>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <img
+            src="/tnb.png"
+            alt="TnB"
+            style={{
+              height: '20px',
+              width: 'auto',
+              objectFit: 'contain',
+              filter: 'invert(1)',
+            }}
+          />
         </div>
 
         <div style={{ display: 'flex', gap: '2rem', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gray-dark)' }}>

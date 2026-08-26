@@ -1,7 +1,23 @@
 'use client';
 
-// Vista previa en vivo del header y footer de una tienda.
-// Recibe el objeto `form` con todos los campos del formulario de personalización.
+function isColorDark(color) {
+  if (!color) return true;
+  const hex = color.replace('#', '');
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 < 128;
+  }
+  return true;
+}
+
 export default function StoreHeaderFooterPreview({ form }) {
   const headerBg    = form.header_color    || 'rgba(250,250,248,0.95)';
   const headerText  = form.header_text_color || '#0f0f0f';
@@ -48,8 +64,17 @@ export default function StoreHeaderFooterPreview({ form }) {
           flexWrap: 'nowrap', overflow: 'hidden',
         }}>
           {/* TnB logo */}
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1rem', fontWeight: 400, letterSpacing: '0.08em', color: headerText, whiteSpace: 'nowrap', flexShrink: 0 }}>
-            TnB
+          <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <img
+              src="/tnb.png"
+              alt="TnB"
+              style={{
+                height: '20px',
+                width: 'auto',
+                objectFit: 'contain',
+                filter: isColorDark(headerText) ? 'invert(1)' : 'none',
+              }}
+            />
           </span>
           <span style={{ color: headerText, opacity: 0.3, fontSize: '0.9rem', flexShrink: 0 }}>/</span>
 
@@ -150,8 +175,19 @@ export default function StoreHeaderFooterPreview({ form }) {
           </div>
 
           {/* Copyright bar */}
-          <div style={{ borderTop: `0.5px solid ${footerText}20`, paddingTop: '12px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-            <span style={{ fontFamily: 'var(--font-serif)', fontSize: '0.85rem', color: footerText, opacity: 0.5 }}>TnB</span>
+          <div style={{ borderTop: `0.5px solid ${footerText}20`, paddingTop: '12px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+            <span style={{ display: 'flex', alignItems: 'center', opacity: 0.5 }}>
+              <img
+                src="/tnb.png"
+                alt="TnB"
+                style={{
+                  height: '18px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  filter: isColorDark(footerText) ? 'invert(1)' : 'none',
+                }}
+              />
+            </span>
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.65rem', color: footerText, opacity: 0.4 }}>
               © {new Date().getFullYear()} TnB · {storeName}
             </span>
