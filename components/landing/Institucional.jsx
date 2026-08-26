@@ -50,7 +50,7 @@ const itemVariants = {
 
 export default function Institucional() {
   return (
-    <section id="institucional-section" className="relative bg-[#0a0a0a] text-[#e8ddd0] py-24 px-6 md:px-12 border-t border-[#1f1f1f]">
+    <section id="institucional-section" className="relative bg-[#0a0a0a] text-[#e8ddd0] py-24 px-6 md:px-12 border-t border-[#1f1f1f] overflow-hidden">
       {/* Background radial highlight */}
       <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-[#8B2635]/5 rounded-full blur-[120px] pointer-events-none" />
 
