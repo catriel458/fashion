@@ -30,31 +30,241 @@ export default function AvatarGuide() {
   const currentStore = stores.find(s => s.slug === storeSlug);
   const storeName = currentStore ? currentStore.name : (storeSlug ? storeSlug.toUpperCase() : null);
 
-  // Initial greeting state configuration
-  const getInitialState = () => ({
-    messages: [
-      {
-        role: 'assistant',
-        text: '¡Hola! Soy tu asistente de estilo TnB. ¿Qué tipo de prendas te gustaría probarte hoy?',
-      }
-    ],
-    options: [
-      { label: '👕 Remeras', type: 'category', value: 'remeras' },
-      { label: '👖 Pantalones', type: 'category', value: 'pantalones' },
-      { label: '👔 Camisas', type: 'category', value: 'camisas' },
-      { label: '🧥 Abrigos', type: 'category', value: 'abrigos' },
-      { label: '👟 Zapatillas', type: 'category', value: 'zapatillas' },
-      { label: '🏬 Ver catálogo completo', type: 'catalog' },
-      { label: '❓ Otra cosa', type: 'other' },
-    ]
-  });
+  const getCategoryEmoji = (slug) => {
+    const s = (slug || '').toLowerCase();
+    if (s.includes('remera')) return '👕';
+    if (s.includes('pantalon') || s.includes('jean') || s.includes('short')) return '👖';
+    if (s.includes('camisa')) return '👔';
+    if (s.includes('abrigo') || s.includes('buzo') || s.includes('campera') || s.includes('saco')) return '🧥';
+    if (s.includes('zapatilla') || s.includes('zapato') || s.includes('sneaker')) return '👟';
+    if (s.includes('gorro') || s.includes('cap') || s.includes('hat')) return '🧢';
+    if (s.includes('accesorio') || s.includes('collar') || s.includes('cartera') || s.includes('bolso')) return '👜';
+    return '🛍️';
+  };
+
+  // Initial greeting state configuration (lists stores if not in a store)
+  const getInitialState = (currentStores, currentStoreSlug) => {
+    if (!currentStoreSlug) {
+      return {
+        messages: [
+          {
+            role: 'assistant',
+            text: '¡Hola! Soy tu asistente de compras TnB. ¿Qué tienda te gustaría explorar hoy?',
+          }
+        ],
+        options: currentStores.slice(0, 4).map(s => ({
+          label: `🏬 ${s.name}`,
+          type: 'store',
+          value: s.slug
+        })).concat([
+          { label: '🏬 Ver catálogo completo', type: 'catalog' },
+          { label: '❓ Otra cosa', type: 'other' }
+        ])
+      };
+    }
+
+    const sObj = currentStores.find(s => s.slug === currentStoreSlug);
+    const name = sObj ? sObj.name : currentStoreSlug.toUpperCase();
+    return {
+      messages: [
+        {
+          role: 'assistant',
+          text: `¡Hola! Bienvenido a ${name}. Te puedo ayudar a recorrer las categorías y probarte prendas. ¿Qué tipo de ropa estás buscando hoy?`,
+        }
+      ],
+      options: []
+    };
+  };
 
   // History stack for backward navigation
-  const [history, setHistory] = useState([getInitialState()]);
+  const [history, setHistory] = useState([getInitialState([], null)]);
 
-  // Reset wizard on page load (saved in session memory/react state only)
+  // State hydration logic on mount and path changes
   useEffect(() => {
-    setHistory([getInitialState()]);
+    if (stores.length === 0) return;
+
+    const savedState = sessionStorage.getItem('tnb_guide_state');
+    const savedOpen = sessionStorage.getItem('tnb_guide_is_open') === 'true';
+    
+    if (savedOpen) {
+      setIsOpen(true);
+    }
+
+    const initial = getInitialState(stores, storeSlug);
+
+    const loadCategories = (slug) => {
+      fetch(`/api/categories?storeSlug=${slug}`)
+        .then(r => r.json())
+        .then(cats => {
+          const storeObj = stores.find(s => s.slug === slug);
+          const name = storeObj ? storeObj.name : slug.toUpperCase();
+          
+          const categoriesMsg = {
+            role: 'assistant',
+            text: `¡Bienvenido a ${name}! Te muestro las categorías disponibles en esta tienda. ¿Qué te gustaría probarte hoy?`
+          };
+
+          const prevMsg = sessionStorage.getItem('tnb_guide_store_slug') ? [
+            { role: 'user', text: `🏬 ${name}` }
+          ] : [];
+
+          setHistory([
+            getInitialState(stores, null),
+            {
+              messages: [
+                ...getInitialState(stores, null).messages,
+                ...prevMsg,
+                categoriesMsg
+              ],
+              options: cats.map(cat => ({
+                label: `${getCategoryEmoji(cat.slug)} ${cat.name}`,
+                type: 'category',
+                value: cat.id,
+                slug: cat.slug,
+                name: cat.name
+              })).concat([
+                { label: '🏬 Volver a tiendas', type: 'back-to-stores' }
+              ])
+            }
+          ]);
+        })
+        .catch(err => console.error('Error fetching categories for guide:', err));
+    };
+
+    const loadProducts = (slug, catId, catName, catSlug) => {
+      fetch(`/api/products?storeSlug=${slug}&category_id=${catId}`)
+        .then(r => r.json())
+        .then(prods => {
+          const storeObj = stores.find(s => s.slug === slug);
+          const name = storeObj ? storeObj.name : slug.toUpperCase();
+          const baseInitial = getInitialState(stores, null);
+
+          const stepMessages = [
+            ...baseInitial.messages,
+            { role: 'user', text: `🏬 ${name}` },
+            { role: 'assistant', text: `¡Bienvenido a ${name}! Te muestro las categorías disponibles en esta tienda. ¿Qué te gustaría probarte hoy?` },
+            { role: 'user', text: `${getCategoryEmoji(catSlug)} ${catName}` },
+            { role: 'assistant', text: `En la categoría ${catName} tenemos estos productos disponibles. Hacé click en el que te guste para verlo y probarlo:` }
+          ];
+
+          setHistory([
+            baseInitial,
+            {
+              messages: stepMessages.slice(0, 3),
+              options: []
+            },
+            {
+              messages: stepMessages,
+              options: prods.map(p => ({
+                label: `✨ ${p.name} - $${p.price}`,
+                type: 'product',
+                value: p.slug,
+                name: p.name
+              })).concat([
+                { label: '← Volver a categorías', type: 'back-to-categories' }
+              ])
+            }
+          ]);
+        })
+        .catch(err => console.error('Error fetching products for guide:', err));
+    };
+
+    const loadExplainTryon = (slug, prodName, catId, catName, catSlug) => {
+      const storeObj = stores.find(s => s.slug === slug);
+      const name = storeObj ? storeObj.name : slug.toUpperCase();
+      const baseInitial = getInitialState(stores, null);
+
+      const finalMessages = [
+        ...baseInitial.messages,
+        { role: 'user', text: `🏬 ${name}` },
+        { role: 'assistant', text: `¡Bienvenido a ${name}! Te muestro las categorías disponibles en esta tienda. ¿Qué te gustaría probarte hoy?` },
+        { role: 'user', text: `${getCategoryEmoji(catSlug)} ${catName}` },
+        { role: 'assistant', text: `En la categoría ${catName} tenemos estos productos disponibles. Hacé click en el que te guste para verlo y probarlo:` },
+        { role: 'user', text: `✨ ${prodName}` },
+        {
+          role: 'assistant',
+          text: `¡Excelente! Para probarte la prenda "${prodName}" en nuestro probador inteligente con IA:\n\n1. Hacé click en el botón "Al vestidor" 🧥 (ubicado en esta página del producto) para guardarlo.\n2. Asegurate de tener tu foto de cuerpo completo cargada en tu Perfil.\n3. Una vez agregada, ¡hacé click en "Probar" en el vestidor lateral para generar tu look con IA!\n\nAbriendo el vestidor lateral en 2 segundos...`
+        }
+      ];
+
+      setHistory([
+        baseInitial,
+        {
+          messages: finalMessages.slice(0, 3),
+          options: []
+        },
+        {
+          messages: finalMessages.slice(0, 5),
+          options: []
+        },
+        {
+          messages: finalMessages,
+          options: [
+            { label: '🧥 Abrir vestidor lateral', type: 'open-fitting-room' },
+            { label: '← Volver a productos', type: 'back-to-products' },
+            { label: '🏬 Volver a categorías', type: 'back-to-categories' }
+          ]
+        }
+      ]);
+    };
+
+    if (savedState === 'list-categories' && storeSlug) {
+      loadCategories(storeSlug);
+    } else if (savedState === 'list-products' && storeSlug) {
+      const catId = sessionStorage.getItem('tnb_guide_category_id');
+      const catName = sessionStorage.getItem('tnb_guide_category_name');
+      const catSlug = sessionStorage.getItem('tnb_guide_category_slug');
+      if (catId && catName) {
+        loadProducts(storeSlug, catId, catName, catSlug);
+      } else {
+        loadCategories(storeSlug);
+      }
+    } else if (savedState === 'explain-tryon' && storeSlug) {
+      const prodName = sessionStorage.getItem('tnb_guide_product_name');
+      const catId = sessionStorage.getItem('tnb_guide_category_id');
+      const catName = sessionStorage.getItem('tnb_guide_category_name');
+      const catSlug = sessionStorage.getItem('tnb_guide_category_slug');
+      if (prodName) {
+        loadExplainTryon(storeSlug, prodName, catId, catName, catSlug);
+      } else {
+        loadCategories(storeSlug);
+      }
+    } else {
+      // Deterministic fallback depending on current path
+      if (pathname.includes('/product/')) {
+        const prodName = sessionStorage.getItem('tnb_guide_product_name') || 'esta prenda';
+        const catId = sessionStorage.getItem('tnb_guide_category_id');
+        const catName = sessionStorage.getItem('tnb_guide_category_name') || 'Categoría';
+        const catSlug = sessionStorage.getItem('tnb_guide_category_slug') || 'ropa';
+        loadExplainTryon(storeSlug, prodName, catId, catName, catSlug);
+      } else if (pathname.includes('/category/')) {
+        const catId = sessionStorage.getItem('tnb_guide_category_id');
+        const catName = sessionStorage.getItem('tnb_guide_category_name') || 'Categoría';
+        const catSlug = sessionStorage.getItem('tnb_guide_category_slug') || 'ropa';
+        if (catId) {
+          loadProducts(storeSlug, catId, catName, catSlug);
+        } else {
+          loadCategories(storeSlug);
+        }
+      } else if (storeSlug) {
+        loadCategories(storeSlug);
+      } else {
+        setHistory([initial]);
+      }
+    }
+  }, [pathname, stores]);
+
+  // Handle automatic fitting room opening in product page
+  useEffect(() => {
+    const savedState = sessionStorage.getItem('tnb_guide_state');
+    if (savedState === 'explain-tryon' || pathname.includes('/product/')) {
+      const timer = setTimeout(() => {
+        setIsPanelOpen(true);
+        // Consume state to avoid loops on manual refreshes
+        sessionStorage.removeItem('tnb_guide_state');
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
   }, [pathname]);
 
   // Entrance notification / greeting animation
@@ -74,84 +284,94 @@ export default function AvatarGuide() {
   }, [history]);
 
   const togglePanel = () => {
-    setIsOpen(!isOpen);
+    const nextOpen = !isOpen;
+    setIsOpen(nextOpen);
+    sessionStorage.setItem('tnb_guide_is_open', nextOpen ? 'true' : 'false');
     if (showTooltip) setShowTooltip(false);
   };
 
-  const current = history[history.length - 1];
+  const current = history[history.length - 1] || getInitialState([], null);
 
   const handleOptionClick = (opt) => {
-    const nextMessages = [
-      ...current.messages,
-      { role: 'user', text: opt.label }
-    ];
-
-    let nextText = '';
-    let nextOptions = [];
-
-    if (opt.type === 'category') {
-      const categoryName = opt.label.split(' ')[1]; // Extract label name without emoji
-      if (storeSlug) {
-        // User is currently browsing a store
-        nextText = `¡Buenísima elección! Encontré la sección de ${categoryName} en esta tienda (${storeName}). ¿Querés explorarla acá o preferís ver otras marcas?`;
-        nextOptions = [
-          { label: `🛍️ Ver en ${storeName}`, type: 'link', url: `/store/${storeSlug}/category/${opt.value}` },
-          { label: '🏬 Explorar todas las tiendas', type: 'link', url: '/stores' }
-        ];
-      } else {
-        // User is not in a store (e.g. landing page or stores catalog)
-        nextText = `¡Excelente elección! Para probarte ${categoryName} en el probador inteligente con IA, primero tenés que ingresar a una tienda. ¿Cuál te gustaría visitar?`;
-        
-        // Show first 3 active stores as options
-        const storeOptions = stores.slice(0, 3).map(s => ({
-          label: `🏬 ${s.name}`,
-          type: 'link',
-          url: `/store/${s.slug}/category/${opt.value}`
-        }));
-
-        nextOptions = [
-          ...storeOptions,
-          { label: '🏬 Ver todas las marcas', type: 'link', url: '/stores' }
-        ];
-      }
+    if (opt.type === 'store') {
+      sessionStorage.setItem('tnb_guide_store_slug', opt.value);
+      sessionStorage.setItem('tnb_guide_state', 'list-categories');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = `/store/${opt.value}`;
+    } else if (opt.type === 'category') {
+      sessionStorage.setItem('tnb_guide_category_id', opt.value);
+      sessionStorage.setItem('tnb_guide_category_name', opt.name);
+      sessionStorage.setItem('tnb_guide_category_slug', opt.slug);
+      sessionStorage.setItem('tnb_guide_state', 'list-products');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = `/store/${storeSlug}/category/${opt.slug}`;
+    } else if (opt.type === 'product') {
+      sessionStorage.setItem('tnb_guide_product_name', opt.name);
+      sessionStorage.setItem('tnb_guide_product_slug', opt.value);
+      sessionStorage.setItem('tnb_guide_state', 'explain-tryon');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = `/store/${storeSlug}/product/${opt.value}`;
     } else if (opt.type === 'catalog') {
-      nextText = 'Redirigiendo al catálogo completo de marcas y tiendas disponibles en TnB...';
-      setTimeout(() => {
-        window.location.href = '/stores';
-      }, 800);
+      sessionStorage.removeItem('tnb_guide_state');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = '/stores';
+    } else if (opt.type === 'back-to-stores') {
+      sessionStorage.removeItem('tnb_guide_state');
+      sessionStorage.removeItem('tnb_guide_store_slug');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = '/stores';
+    } else if (opt.type === 'back-to-categories') {
+      sessionStorage.setItem('tnb_guide_state', 'list-categories');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = `/store/${storeSlug}`;
+    } else if (opt.type === 'back-to-products') {
+      const catSlug = sessionStorage.getItem('tnb_guide_category_slug');
+      sessionStorage.setItem('tnb_guide_state', 'list-products');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = `/store/${storeSlug}/category/${catSlug}`;
+    } else if (opt.type === 'open-fitting-room') {
+      setIsPanelOpen(true);
     } else if (opt.type === 'other') {
-      nextText = '¿En qué más te puedo ayudar hoy?';
-      nextOptions = [
-        { label: 'ℹ️ ¿Cómo funciona el probador?', type: 'how-it-works' },
-        { label: '🏬 Ver tiendas disponibles', type: 'link', url: '/stores' },
-        { label: '❓ Ir al centro de ayuda', type: 'link', url: '/ayuda' },
-      ];
+      setHistory([
+        ...history,
+        {
+          messages: [
+            ...current.messages,
+            { role: 'user', text: opt.label },
+            { role: 'assistant', text: '¿En qué más te puedo ayudar hoy?' }
+          ],
+          options: [
+            { label: 'ℹ️ ¿Cómo funciona el probador?', type: 'how-it-works' },
+            { label: '🏬 Ver tiendas disponibles', type: 'catalog' },
+            { label: '❓ Ir al centro de ayuda', type: 'link', url: '/ayuda' },
+          ]
+        }
+      ]);
     } else if (opt.type === 'how-it-works') {
-      nextText = `El probador inteligente con IA te permite ver cómo te queda la ropa de forma virtual. Es muy fácil:\n\n1. Subí una foto tuya de cuerpo entero en tu Perfil.\n2. Entrá a cualquier tienda y agregá prendas "Al vestidor".\n3. Abrí el probador virtual en la esquina inferior derecha para generar tu imagen con IA.`;
-      nextOptions = [
-        { label: '👤 Ir a mi Perfil', type: 'link', url: '/profile' },
-        { label: '🏬 Ver tiendas', type: 'link', url: '/stores' }
-      ];
+      setHistory([
+        ...history,
+        {
+          messages: [
+            ...current.messages,
+            { role: 'user', text: opt.label },
+            { 
+              role: 'assistant', 
+              text: `El probador inteligente con IA te permite ver cómo te queda la ropa de forma virtual. Es muy fácil:\n\n1. Subí una foto tuya de cuerpo entero en tu Perfil.\n2. Entrá a cualquier tienda y agregá prendas "Al vestidor" 🧥.\n3. Abrí el probador virtual en la esquina inferior derecha para generar tu imagen con IA.` 
+            }
+          ],
+          options: [
+            { label: '👤 Ir a mi Perfil', type: 'link', url: '/profile' },
+            { label: '🏬 Ver tiendas', type: 'catalog' }
+          ]
+        }
+      ]);
     } else if (opt.type === 'link') {
       window.location.href = opt.url;
-      return;
     }
-
-    setHistory([
-      ...history,
-      {
-        messages: [
-          ...nextMessages,
-          { role: 'assistant', text: nextText }
-        ],
-        options: nextOptions
-      }
-    ]);
   };
 
   const handleOpenFittingRoom = () => {
     if (storeSlug) {
-      // Open virtual fitting room
       setIsPanelOpen(true);
       setHistory([
         ...history,
@@ -165,11 +385,10 @@ export default function AvatarGuide() {
         }
       ]);
     } else {
-      // Guide user to choose a store first
       const storeOptions = stores.slice(0, 3).map(s => ({
         label: `🏬 ${s.name}`,
-        type: 'link',
-        url: `/store/${s.slug}`
+        type: 'store',
+        value: s.slug
       }));
 
       setHistory([
@@ -182,7 +401,7 @@ export default function AvatarGuide() {
           ],
           options: [
             ...storeOptions,
-            { label: '🏬 Ver todas las marcas', type: 'link', url: '/stores' }
+            { label: '🏬 Ver todas las marcas', type: 'catalog' }
           ]
         }
       ]);
@@ -192,6 +411,30 @@ export default function AvatarGuide() {
   const handleBack = () => {
     if (history.length > 1) {
       setHistory(prev => prev.slice(0, -1));
+      return;
+    }
+
+    // Path-based backward redirection fallback
+    if (pathname.includes('/product/')) {
+      const catSlug = sessionStorage.getItem('tnb_guide_category_slug');
+      if (catSlug) {
+        sessionStorage.setItem('tnb_guide_state', 'list-products');
+        sessionStorage.setItem('tnb_guide_is_open', 'true');
+        window.location.href = `/store/${storeSlug}/category/${catSlug}`;
+      } else {
+        sessionStorage.setItem('tnb_guide_state', 'list-categories');
+        sessionStorage.setItem('tnb_guide_is_open', 'true');
+        window.location.href = `/store/${storeSlug}`;
+      }
+    } else if (pathname.includes('/category/')) {
+      sessionStorage.setItem('tnb_guide_state', 'list-categories');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = `/store/${storeSlug}`;
+    } else if (pathname.startsWith('/store/')) {
+      sessionStorage.removeItem('tnb_guide_state');
+      sessionStorage.removeItem('tnb_guide_store_slug');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = '/stores';
     }
   };
 
@@ -332,7 +575,10 @@ export default function AvatarGuide() {
               </div>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setIsOpen(false);
+                sessionStorage.setItem('tnb_guide_is_open', 'false');
+              }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -499,12 +745,11 @@ export default function AvatarGuide() {
             >
               <button
                 onClick={handleBack}
-                disabled={history.length <= 1}
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: history.length <= 1 ? '#ccc' : '#6b6560',
-                  cursor: history.length <= 1 ? 'default' : 'pointer',
+                  color: '#6b6560',
+                  cursor: 'pointer',
                   fontSize: '0.72rem',
                   display: 'flex',
                   alignItems: 'center',
@@ -515,7 +760,10 @@ export default function AvatarGuide() {
                 ← Volver atrás
               </button>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  setIsOpen(false);
+                  sessionStorage.setItem('tnb_guide_is_open', 'false');
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
