@@ -216,18 +216,42 @@ export default function OrdersPage() {
       {/* Header */}
       <div style={{ background: '#0f0f0f' }}>
         <div style={{ maxWidth: '700px', margin: '0 auto', padding: '24px clamp(1.2rem, 4vw, 2.5rem)' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-            <img
-              src="/tnb.png"
-              alt="TnB"
-              style={{
-                height: '24px',
-                width: 'auto',
-                objectFit: 'contain',
-                marginBottom: '16px',
-              }}
-            />
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+              <img
+                src="/tnb.png"
+                alt="TnB"
+                style={{
+                  height: '24px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
+            </Link>
+            <Link href="/stores" style={{
+              textDecoration: 'none',
+              color: '#d4c5b0',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.72rem',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              border: '0.5px solid rgba(212, 197, 176, 0.4)',
+              padding: '6px 14px',
+              borderRadius: '2px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = '#fff';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'rgba(212, 197, 176, 0.4)';
+              e.currentTarget.style.color = '#d4c5b0';
+            }}
+            >
+              ← Volver a tiendas
+            </Link>
+          </div>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: '1.6rem', color: '#fff', margin: '0 0 16px' }}>
             Mis pedidos
           </h1>

@@ -80,8 +80,8 @@ function LoginForm() {
             FASHION<span style={{ color: '#6b6560' }}>MALL</span>
           </span>
         </Link>
-        <Link href="/" style={{ fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', textDecoration: 'none' }}>
-          ← Volver al inicio
+        <Link href="/stores" style={{ fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6b6560', textDecoration: 'none' }}>
+          ← Volver a tiendas
         </Link>
       </div>
 

@@ -165,18 +165,42 @@ export default function AyudaPage() {
       {/* Header */}
       <div style={{ background: '#0f0f0f', padding: '24px clamp(1.2rem,5vw,4rem)' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-            <img
-              src="/tnb.png"
-              alt="TnB"
-              style={{
-                height: '24px',
-                width: 'auto',
-                objectFit: 'contain',
-                marginBottom: '16px',
-              }}
-            />
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+              <img
+                src="/tnb.png"
+                alt="TnB"
+                style={{
+                  height: '24px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                }}
+              />
+            </Link>
+            <Link href="/stores" style={{
+              textDecoration: 'none',
+              color: '#d4c5b0',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.72rem',
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              border: '0.5px solid rgba(212, 197, 176, 0.4)',
+              padding: '6px 14px',
+              borderRadius: '2px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = '#fff';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'rgba(212, 197, 176, 0.4)';
+              e.currentTarget.style.color = '#d4c5b0';
+            }}
+            >
+              ← Volver a tiendas
+            </Link>
+          </div>
           <h1 style={{ color: '#fff', fontFamily: 'var(--font-serif)', fontWeight: 300, fontSize: 'clamp(1.5rem,4vw,2rem)', margin: '0 0 16px' }}>
             Centro de ayuda
           </h1>

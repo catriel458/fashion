@@ -46,18 +46,43 @@ function ResetPasswordForm() {
     <div style={{ minHeight: '100vh', background: '#f5f3f0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ background: '#fff', border: '0.5px solid #e0dbd4', borderRadius: '8px', padding: '40px 36px', width: '100%', maxWidth: '420px' }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-            <img
-              src="/tnb.png"
-              alt="TnB"
-              style={{
-                height: '24px',
-                width: 'auto',
-                objectFit: 'contain',
-                filter: 'invert(1)',
-              }}
-            />
-          </Link>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+            <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+              <img
+                src="/tnb.png"
+                alt="TnB"
+                style={{
+                  height: '24px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  filter: 'invert(1)',
+                }}
+              />
+            </Link>
+            <Link href="/stores" style={{
+              textDecoration: 'none',
+              color: '#6b6560',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '0.68rem',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              border: '0.5px solid #d4cecb',
+              padding: '5px 12px',
+              borderRadius: '2px',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = '#0f0f0f';
+              e.currentTarget.style.color = '#0f0f0f';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = '#d4cecb';
+              e.currentTarget.style.color = '#6b6560';
+            }}
+            >
+              ← Tiendas
+            </Link>
+          </div>
           <h1 style={{ fontSize: '1.1rem', fontWeight: 400, margin: '16px 0 4px' }}>Nueva contraseña</h1>
         </div>
 
