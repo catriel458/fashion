@@ -183,7 +183,7 @@ export default function AvatarGuide() {
         { role: 'user', text: `✨ ${prodName}` },
         {
           role: 'assistant',
-          text: `¡Excelente! Para probarte la prenda "${prodName}" en nuestro probador inteligente con IA:\n\n1. Hacé click en el botón "Al vestidor" 🧥 (ubicado en esta página del producto) para guardarlo.\n2. Asegurate de tener tu foto de cuerpo completo cargada en tu Perfil.\n3. Una vez agregada, ¡hacé click en "Probar" en el vestidor lateral para generar tu look con IA!\n\nAbriendo el vestidor lateral en 2 segundos...`
+          text: `¡Excelente! Para probarte la prenda "${prodName}" en nuestro probador inteligente con IA:\n\n1. Hacé click en el botón "Al vestidor" 🧥 (ubicado en esta página del producto) para guardarlo.\n2. Asegurate de tener tu foto de cuerpo completo cargada en tu Perfil.\n3. Una vez agregada, ¡hacé click en "Probar" en el vestidor lateral para generar tu look con IA!`
         }
       ];
 
