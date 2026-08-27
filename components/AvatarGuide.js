@@ -161,7 +161,8 @@ export default function AvatarGuide() {
                 value: p.slug,
                 name: p.name
               })).concat([
-                { label: '← Volver a categorías', type: 'back-to-categories' }
+                { label: '← Volver a categorías', type: 'back-to-categories' },
+                { label: '🏬 Volver al inicio', type: 'back-to-stores' }
               ])
             }
           ]);
@@ -201,7 +202,8 @@ export default function AvatarGuide() {
           messages: finalMessages,
           options: [
             { label: '← Volver a productos', type: 'back-to-products' },
-            { label: '🏬 Volver a categorías', type: 'back-to-categories' }
+            { label: '🏬 Volver a categorías', type: 'back-to-categories' },
+            { label: '🏬 Volver al inicio', type: 'back-to-stores' }
           ]
         }
       ]);
@@ -465,6 +467,12 @@ export default function AvatarGuide() {
       sessionStorage.setItem('tnb_guide_is_open', 'true');
       window.location.href = `/store/${storeSlug}`;
     } else if (pathname.startsWith('/store/')) {
+      sessionStorage.removeItem('tnb_guide_state');
+      sessionStorage.removeItem('tnb_guide_store_slug');
+      sessionStorage.setItem('tnb_guide_is_open', 'true');
+      window.location.href = '/stores';
+    } else {
+      // General path fallback (e.g. /profile, /ayuda, /login)
       sessionStorage.removeItem('tnb_guide_state');
       sessionStorage.removeItem('tnb_guide_store_slug');
       sessionStorage.setItem('tnb_guide_is_open', 'true');
