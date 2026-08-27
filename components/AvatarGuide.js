@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { useFittingRoom } from '@/components/FittingRoomContext';
+import { useFittingRoom, getFittingCategory } from '@/components/FittingRoomContext';
 
 export default function AvatarGuide() {
   const pathname = usePathname();
-  const { setIsPanelOpen } = useFittingRoom();
+  const { setIsPanelOpen, addToFittingRoom } = useFittingRoom();
 
   const [isOpen, setIsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
@@ -225,6 +225,7 @@ export default function AvatarGuide() {
       const catSlug = sessionStorage.getItem('tnb_guide_category_slug');
       if (prodName) {
         loadExplainTryon(storeSlug, prodName, catId, catName, catSlug);
+        sessionStorage.removeItem('tnb_guide_state');
       } else {
         loadCategories(storeSlug);
       }
@@ -252,19 +253,6 @@ export default function AvatarGuide() {
       }
     }
   }, [pathname, stores]);
-
-  // Handle automatic fitting room opening in product page
-  useEffect(() => {
-    const savedState = sessionStorage.getItem('tnb_guide_state');
-    if (savedState === 'explain-tryon' || pathname.includes('/product/')) {
-      const timer = setTimeout(() => {
-        setIsPanelOpen(true);
-        // Consume state to avoid loops on manual refreshes
-        sessionStorage.removeItem('tnb_guide_state');
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname]);
 
   // Entrance notification / greeting animation
   useEffect(() => {
@@ -371,18 +359,65 @@ export default function AvatarGuide() {
 
   const handleOpenFittingRoom = () => {
     if (storeSlug) {
-      setIsPanelOpen(true);
-      setHistory([
-        ...history,
-        {
-          messages: [
-            ...current.messages,
-            { role: 'user', text: 'Probar en el probador virtual' },
-            { role: 'assistant', text: '¡Excelente! Acabo de abrir el probador virtual en el panel lateral. Podés cargar tu foto y ver cómo te quedan las prendas seleccionadas.' }
-          ],
-          options: current.options
-        }
-      ]);
+      // Check if we are on a product detail page
+      const prodMatch = pathname.match(/\/product\/([^/]+)/);
+      const productSlug = prodMatch ? prodMatch[1] : null;
+
+      if (productSlug) {
+        // Fetch product and add it to fitting room, then open fitting room!
+        fetch(`/api/products?storeSlug=${storeSlug}&slug=${productSlug}`)
+          .then(r => r.json())
+          .then(productsList => {
+            const product = Array.isArray(productsList) ? productsList[0] : productsList;
+            if (product) {
+              const category = getFittingCategory(product.category_slug, product.category_name);
+              addToFittingRoom({
+                id: product.id,
+                name: product.name,
+                category,
+                image_url: product.image_url,
+                slug: product.slug
+              });
+              
+              setIsPanelOpen(true);
+
+              setHistory(prev => {
+                const current = prev[prev.length - 1];
+                return [
+                  ...prev,
+                  {
+                    messages: [
+                      ...current.messages,
+                      { role: 'user', text: 'Probar en el probador virtual' },
+                      { role: 'assistant', text: `¡Excelente! Agregué la prenda "${product.name}" a tu vestidor lateral y abrí el probador. ¡Cargá tu foto y dale click a "Probar" para probártela!` }
+                    ],
+                    options: current.options
+                  }
+                ];
+              });
+            } else {
+              setIsPanelOpen(true);
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching product for guide tryon:', err);
+            setIsPanelOpen(true);
+          });
+      } else {
+        // We are inside the store but not on a product page
+        setIsPanelOpen(true);
+        setHistory([
+          ...history,
+          {
+            messages: [
+              ...current.messages,
+              { role: 'user', text: 'Probar en el probador virtual' },
+              { role: 'assistant', text: '¡Excelente! Acabo de abrir el probador virtual en el panel lateral. Podés cargar tu foto y ver cómo te quedan las prendas seleccionadas.' }
+            ],
+            options: current.options
+          }
+        ]);
+      }
     } else {
       const storeOptions = stores.slice(0, 3).map(s => ({
         label: `🏬 ${s.name}`,
