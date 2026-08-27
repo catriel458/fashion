@@ -200,7 +200,6 @@ export default function AvatarGuide() {
         {
           messages: finalMessages,
           options: [
-            { label: '🧥 Abrir vestidor lateral', type: 'open-fitting-room' },
             { label: '← Volver a productos', type: 'back-to-products' },
             { label: '🏬 Volver a categorías', type: 'back-to-categories' }
           ]
